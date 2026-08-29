@@ -1905,7 +1905,9 @@ const api = {
 
     assignBarcode: (id: string) => ipcRenderer.invoke('items:assignBarcode', id),
 
-    regenerateBarcode: (id: string) => ipcRenderer.invoke('items:regenerateBarcode', id)
+    regenerateBarcode: (id: string) => ipcRenderer.invoke('items:regenerateBarcode', id),
+
+    getByBarcode: (barcode: string) => ipcRenderer.invoke('inventory:findByBarcode', barcode)
   },
 
   itemOpeningStock: {

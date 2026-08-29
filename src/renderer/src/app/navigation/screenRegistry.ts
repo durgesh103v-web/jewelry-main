@@ -59,6 +59,7 @@ const ItemMasterScreen = lazy(() => import('../../features/inventory/screens/Ite
 const AccountBalanceReportScreen = lazy(() => import('../../modules/reports/account-balance/AccountBalanceReportScreen'))
 const OutstandingReportScreen = lazy(() => import('../../modules/reports/outstanding/OutstandingReportScreen'))
 const CashBookReportScreen = lazy(() => import('../../modules/reports/cash-book/CashBookReportScreen'))
+const PosBillingScreen = lazy(() => import('../../features/sales/screens/PosBillingScreen'))
 
 export type ScreenComponentProps = {
   onClose: () => void
@@ -85,6 +86,7 @@ export const screenRegistry: Record<string, ScreenMapValue> = {
   'item-opening-stock': { component: ItemOpeningStockScreen },
   'firm-master': { component: FirmMasterScreen },
   'cash-fine-opening': { component: CashFineOpeningScreen },
+  'pos-billing': { component: PosBillingScreen },
   sale: { component: SaleScreen },
   'sale-return': { component: SaleReturnScreen },
   approval: { component: ApprovalScreen },

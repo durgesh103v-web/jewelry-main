@@ -1906,12 +1906,22 @@ interface Window {
     }
 
     items: {
-      list: () => Promise<ItemRecord[]>
+      list: (filter?: any) => Promise<ItemRecord[]>
       create: (payload: ItemPayload) => Promise<ItemRecord>
       update: (id: string, payload: ItemPayload) => Promise<ItemRecord>
       remove: (id: string) => Promise<{ success: boolean }>
       assignBarcode: (id: string) => Promise<ItemRecord>
       regenerateBarcode: (id: string) => Promise<ItemRecord>
+      getByBarcode: (barcode: string) => Promise<any>
+    }
+
+    inventory: {
+      findByBarcode: (barcode: string) => Promise<any>
+      findBySku: (sku: string) => Promise<any>
+      getItemStock: (itemId: string) => Promise<any>
+      getMovementHistory: (itemId: string) => Promise<any>
+      getLocations: () => Promise<any[]>
+      postMovement: (params: any) => Promise<any>
     }
 
     itemOpeningStock: {
