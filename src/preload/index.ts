@@ -2367,6 +2367,20 @@ const api = {
     create: (payload: any): Promise<any> => ipcRenderer.invoke('suppliers:create', payload),
     update: (id: string, payload: any): Promise<any> => ipcRenderer.invoke('suppliers:update', { id, payload }),
     remove: (id: string): Promise<{ success: boolean }> => ipcRenderer.invoke('suppliers:delete', id)
+  },
+
+  goldRates: {
+    list: (filter?: any): Promise<any[]> => ipcRenderer.invoke('gold-rates:list', filter),
+    getCurrent: (metalType?: string, purityName?: string): Promise<any> => ipcRenderer.invoke('gold-rates:get-current', { metalType, purityName }),
+    getByDate: (metalType: string, date: string, purityName?: string): Promise<any> => ipcRenderer.invoke('gold-rates:get-by-date', { metalType, date, purityName }),
+    getById: (id: string): Promise<any> => ipcRenderer.invoke('gold-rates:get-by-id', id),
+    create: (payload: any): Promise<any> => ipcRenderer.invoke('gold-rates:create', payload),
+    update: (id: string, payload: any): Promise<any> => ipcRenderer.invoke('gold-rates:update', { id, payload }),
+    remove: (id: string): Promise<{ success: boolean }> => ipcRenderer.invoke('gold-rates:delete', id)
+  },
+
+  pricing: {
+    calculate: (request: any): Promise<any> => ipcRenderer.invoke('pricing:calculate', request)
   }
 }
 

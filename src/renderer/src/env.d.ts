@@ -2165,5 +2165,19 @@ interface Window {
       update: (id: string, payload: any) => Promise<any>
       remove: (id: string) => Promise<{ success: boolean }>
     }
+
+    goldRates: {
+      list: (filter?: any) => Promise<any[]>
+      getCurrent: (metalType?: string, purityName?: string) => Promise<any>
+      getByDate: (metalType: string, date: string, purityName?: string) => Promise<any>
+      getById: (id: string) => Promise<any>
+      create: (payload: any) => Promise<any>
+      update: (id: string, payload: any) => Promise<any>
+      remove: (id: string) => Promise<{ success: boolean }>
+    }
+
+    pricing: {
+      calculate: (request: any) => Promise<any>
+    }
   }
 }
