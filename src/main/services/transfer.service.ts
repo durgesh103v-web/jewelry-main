@@ -2,6 +2,14 @@ import dayjs from 'dayjs'
 import { v4 as uuidv4 } from 'uuid'
 import { z } from 'zod'
 import { getDatabase } from '../database/connection'
+import { AccountRepository } from '../database/repositories/AccountRepository'
+import { AccountLedgerRepository } from '../database/repositories/AccountLedgerRepository'
+import { TransactionRepository } from '../database/repositories/TransactionRepository'
+import { ValidationError, NotFoundError } from '../ipc/errors'
+
+const accountRepository = new AccountRepository()
+const accountLedgerRepository = new AccountLedgerRepository()
+const transactionRepository = new TransactionRepository()
 
 const transferSchema = z.object({
   transferDate: z.string().trim().min(1, 'Transfer date is required'),
@@ -16,16 +24,7 @@ const transferSchema = z.object({
   narration: z.string().trim().optional().default('')
 })
 
-type TransferPayload = z.infer<typeof transferSchema>
-
-function assertAccountExists(accountId: string): void {
-  const db = getDatabase()
-  const account = db
-    .prepare(`SELECT id FROM accounts WHERE id = ? AND deleted_at IS NULL`)
-    .get(accountId)
-
-  if (!account) throw new Error('Account not found')
-}
+export type TransferPayload = z.infer<typeof transferSchema>
 
 function getNextTransferNo(): string {
   const db = getDatabase()
@@ -42,7 +41,7 @@ function getNextTransferNo(): string {
   return `TR-${String(maxNumber + 1).padStart(4, '0')}`
 }
 
-function insertLedgerPair(input: {
+function postLedgerPair(input: {
   transferId: string
   transferNo: string
   transferDate: string
@@ -57,67 +56,125 @@ function insertLedgerPair(input: {
   narration: string
   createdAt: string
 }): void {
-  const db = getDatabase()
   const narration = input.narration || `Transfer ${input.transferNo}`
 
   if (input.goldFine > 0) {
-    db.prepare(
-      `INSERT INTO account_ledger (id, source_type, source_id, entry_date, account_id, metal_type, fine_nave, narration, created_at)
-       VALUES (?, 'TRANSFER_OUT', ?, ?, ?, 'Gold', ?, ?, ?)`
-    ).run(uuidv4(), input.transferId, input.transferDate, input.fromAccountId, input.goldFine, narration, input.createdAt)
-
-    db.prepare(
-      `INSERT INTO account_ledger (id, source_type, source_id, entry_date, account_id, metal_type, fine_jama, narration, created_at)
-       VALUES (?, 'TRANSFER_IN', ?, ?, ?, 'Gold', ?, ?, ?)`
-    ).run(uuidv4(), input.transferId, input.transferDate, input.toAccountId, input.goldFine, narration, input.createdAt)
+    accountLedgerRepository.insert({
+      id: uuidv4(),
+      sourceType: 'TRANSFER_OUT',
+      sourceId: input.transferId,
+      entryDate: input.transferDate,
+      accountId: input.fromAccountId,
+      metalType: 'Gold',
+      fineNave: input.goldFine,
+      narration,
+      createdAt: input.createdAt
+    })
+    accountLedgerRepository.insert({
+      id: uuidv4(),
+      sourceType: 'TRANSFER_IN',
+      sourceId: input.transferId,
+      entryDate: input.transferDate,
+      accountId: input.toAccountId,
+      metalType: 'Gold',
+      fineJama: input.goldFine,
+      narration,
+      createdAt: input.createdAt
+    })
   }
 
   if (input.silverFine > 0) {
-    db.prepare(
-      `INSERT INTO account_ledger (id, source_type, source_id, entry_date, account_id, metal_type, fine_nave, narration, created_at)
-       VALUES (?, 'TRANSFER_OUT', ?, ?, ?, 'Silver', ?, ?, ?)`
-    ).run(uuidv4(), input.transferId, input.transferDate, input.fromAccountId, input.silverFine, narration, input.createdAt)
-
-    db.prepare(
-      `INSERT INTO account_ledger (id, source_type, source_id, entry_date, account_id, metal_type, fine_jama, narration, created_at)
-       VALUES (?, 'TRANSFER_IN', ?, ?, ?, 'Silver', ?, ?, ?)`
-    ).run(uuidv4(), input.transferId, input.transferDate, input.toAccountId, input.silverFine, narration, input.createdAt)
+    accountLedgerRepository.insert({
+      id: uuidv4(),
+      sourceType: 'TRANSFER_OUT',
+      sourceId: input.transferId,
+      entryDate: input.transferDate,
+      accountId: input.fromAccountId,
+      metalType: 'Silver',
+      fineNave: input.silverFine,
+      narration,
+      createdAt: input.createdAt
+    })
+    accountLedgerRepository.insert({
+      id: uuidv4(),
+      sourceType: 'TRANSFER_IN',
+      sourceId: input.transferId,
+      entryDate: input.transferDate,
+      accountId: input.toAccountId,
+      metalType: 'Silver',
+      fineJama: input.silverFine,
+      narration,
+      createdAt: input.createdAt
+    })
   }
 
   if (input.cash > 0) {
-    db.prepare(
-      `INSERT INTO account_ledger (id, source_type, source_id, entry_date, account_id, cash_nave, narration, created_at)
-       VALUES (?, 'TRANSFER_OUT', ?, ?, ?, ?, ?, ?)`
-    ).run(uuidv4(), input.transferId, input.transferDate, input.fromAccountId, input.cash, narration, input.createdAt)
-
-    db.prepare(
-      `INSERT INTO account_ledger (id, source_type, source_id, entry_date, account_id, cash_jama, narration, created_at)
-       VALUES (?, 'TRANSFER_IN', ?, ?, ?, ?, ?, ?)`
-    ).run(uuidv4(), input.transferId, input.transferDate, input.toAccountId, input.cash, narration, input.createdAt)
+    accountLedgerRepository.insert({
+      id: uuidv4(),
+      sourceType: 'TRANSFER_OUT',
+      sourceId: input.transferId,
+      entryDate: input.transferDate,
+      accountId: input.fromAccountId,
+      cashNave: input.cash,
+      narration,
+      createdAt: input.createdAt
+    })
+    accountLedgerRepository.insert({
+      id: uuidv4(),
+      sourceType: 'TRANSFER_IN',
+      sourceId: input.transferId,
+      entryDate: input.transferDate,
+      accountId: input.toAccountId,
+      cashJama: input.cash,
+      narration,
+      createdAt: input.createdAt
+    })
   }
 
   if (input.bank > 0) {
-    db.prepare(
-      `INSERT INTO account_ledger (id, source_type, source_id, entry_date, account_id, bank_nave, narration, created_at)
-       VALUES (?, 'TRANSFER_OUT', ?, ?, ?, ?, ?, ?)`
-    ).run(uuidv4(), input.transferId, input.transferDate, input.fromAccountId, input.bank, narration, input.createdAt)
-
-    db.prepare(
-      `INSERT INTO account_ledger (id, source_type, source_id, entry_date, account_id, bank_jama, narration, created_at)
-       VALUES (?, 'TRANSFER_IN', ?, ?, ?, ?, ?, ?)`
-    ).run(uuidv4(), input.transferId, input.transferDate, input.toAccountId, input.bank, narration, input.createdAt)
+    accountLedgerRepository.insert({
+      id: uuidv4(),
+      sourceType: 'TRANSFER_OUT',
+      sourceId: input.transferId,
+      entryDate: input.transferDate,
+      accountId: input.fromAccountId,
+      bankNave: input.bank,
+      narration,
+      createdAt: input.createdAt
+    })
+    accountLedgerRepository.insert({
+      id: uuidv4(),
+      sourceType: 'TRANSFER_IN',
+      sourceId: input.transferId,
+      entryDate: input.transferDate,
+      accountId: input.toAccountId,
+      bankJama: input.bank,
+      narration,
+      createdAt: input.createdAt
+    })
   }
 
   if (input.anamat > 0) {
-    db.prepare(
-      `INSERT INTO account_ledger (id, source_type, source_id, entry_date, account_id, anamat_nave, narration, created_at)
-       VALUES (?, 'TRANSFER_OUT', ?, ?, ?, ?, ?, ?)`
-    ).run(uuidv4(), input.transferId, input.transferDate, input.fromAccountId, input.anamat, narration, input.createdAt)
-
-    db.prepare(
-      `INSERT INTO account_ledger (id, source_type, source_id, entry_date, account_id, anamat_jama, narration, created_at)
-       VALUES (?, 'TRANSFER_IN', ?, ?, ?, ?, ?, ?)`
-    ).run(uuidv4(), input.transferId, input.transferDate, input.toAccountId, input.anamat, narration, input.createdAt)
+    accountLedgerRepository.insert({
+      id: uuidv4(),
+      sourceType: 'TRANSFER_OUT',
+      sourceId: input.transferId,
+      entryDate: input.transferDate,
+      accountId: input.fromAccountId,
+      anamatNave: input.anamat,
+      narration,
+      createdAt: input.createdAt
+    })
+    accountLedgerRepository.insert({
+      id: uuidv4(),
+      sourceType: 'TRANSFER_IN',
+      sourceId: input.transferId,
+      entryDate: input.transferDate,
+      accountId: input.toAccountId,
+      anamatJama: input.anamat,
+      narration,
+      createdAt: input.createdAt
+    })
   }
 }
 
@@ -127,31 +184,41 @@ export const transferService = {
   },
 
   create(payload: TransferPayload) {
-    const data = transferSchema.parse(payload)
+    const parseResult = transferSchema.safeParse(payload)
+    if (!parseResult.success) {
+      throw new ValidationError(parseResult.error.issues[0]?.message || 'Invalid transfer payload')
+    }
+    const data = parseResult.data
 
     if (data.fromAccountId === data.toAccountId) {
-      throw new Error('From and To accounts must be different')
+      throw new ValidationError('From and To accounts must be different')
     }
 
     const total =
       data.goldFine + data.silverFine + data.cash + data.bank + data.anamat
-
     if (total <= 0) {
-      throw new Error('Enter at least one transfer amount')
+      throw new ValidationError('Enter at least one transfer amount')
     }
 
-    assertAccountExists(data.fromAccountId)
-    assertAccountExists(data.toAccountId)
+    const fromAcc = accountRepository.findById(data.fromAccountId)
+    if (!fromAcc) throw new NotFoundError('From account not found')
+
+    const toAcc = accountRepository.findById(data.toAccountId)
+    if (!toAcc) throw new NotFoundError('To account not found')
 
     const db = getDatabase()
     const id = uuidv4()
     const transferNo = getNextTransferNo()
     const now = dayjs().format('YYYY-MM-DD HH:mm:ss')
 
-    db.transaction(() => {
+    transactionRepository.executeAtomic(() => {
       db.prepare(
-        `INSERT INTO transfers (id, transfer_no, transfer_date, from_account_id, to_account_id, metal_type, gold_fine, silver_fine, cash, bank, anamat, narration, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        `INSERT INTO transfers (
+          id, transfer_no, transfer_date, from_account_id, to_account_id,
+          metal_type, gold_fine, silver_fine, cash, bank, anamat, narration,
+          created_at, updated_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       ).run(
         id,
         transferNo,
@@ -169,7 +236,7 @@ export const transferService = {
         now
       )
 
-      insertLedgerPair({
+      postLedgerPair({
         transferId: id,
         transferNo,
         transferDate: data.transferDate,
@@ -184,7 +251,7 @@ export const transferService = {
         narration: data.narration,
         createdAt: now
       })
-    })()
+    })
 
     return this.getById(id)
   },
@@ -194,7 +261,8 @@ export const transferService = {
     return db
       .prepare(
         `SELECT t.id, t.transfer_no AS transferNo, t.transfer_date AS transferDate,
-                fa.account_name AS fromAccountName, ta.account_name AS toAccountName,
+                t.from_account_id AS fromAccountId, fa.account_name AS fromAccountName,
+                t.to_account_id AS toAccountId, ta.account_name AS toAccountName,
                 t.metal_type AS metalType, t.gold_fine AS goldFine, t.silver_fine AS silverFine,
                 t.cash, t.bank, t.anamat, t.narration, t.created_at AS createdAt
          FROM transfers t
@@ -222,24 +290,19 @@ export const transferService = {
       )
       .get(id)
 
-    if (!row) throw new Error('Transfer not found')
+    if (!row) throw new NotFoundError('Transfer not found')
     return row
   },
 
   delete(id: string) {
+    this.getById(id)
     const db = getDatabase()
-    const existing = db
-      .prepare(`SELECT id FROM transfers WHERE id = ? AND deleted_at IS NULL`)
-      .get(id)
-
-    if (!existing) throw new Error('Transfer not found')
-
     const now = dayjs().format('YYYY-MM-DD HH:mm:ss')
 
-    db.transaction(() => {
+    transactionRepository.executeAtomic(() => {
       db.prepare(`UPDATE transfers SET deleted_at = ?, updated_at = ? WHERE id = ?`).run(now, now, id)
-      db.prepare(`DELETE FROM account_ledger WHERE source_id = ? AND source_type IN ('TRANSFER_IN', 'TRANSFER_OUT')`).run(id)
-    })()
+      accountLedgerRepository.deleteBySource(['TRANSFER_IN', 'TRANSFER_OUT'], id)
+    })
 
     return { success: true }
   }

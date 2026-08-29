@@ -17,7 +17,7 @@ export type ItemStatus = (typeof ITEM_STATUSES)[keyof typeof ITEM_STATUSES]
 // Allowed state transitions
 const ALLOWED_TRANSITIONS: Record<ItemStatus, ItemStatus[]> = {
   IN_STOCK: ['RESERVED', 'SOLD', 'REPAIR', 'JOB_WORK', 'MELTING', 'TRANSFERRED', 'LOST', 'DAMAGED'],
-  RESERVED: ['IN_STOCK', 'SOLD', 'CANCELLED' as any],
+  RESERVED: ['IN_STOCK', 'SOLD'],
   SOLD: ['RETURNED', 'EXCHANGE'],
   RETURNED: ['IN_STOCK', 'REPAIR', 'MELTING'],
   EXCHANGE: ['IN_STOCK', 'MELTING'],

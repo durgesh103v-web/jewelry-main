@@ -10,6 +10,9 @@ import {
 } from './jewelleryFormula.service'
 import { saleReturnNumberService } from './saleReturnNumber.service'
 import { inventoryMovementService } from './inventoryMovement.service'
+import { AccountLedgerRepository } from '../database/repositories/AccountLedgerRepository'
+
+const accountLedgerRepository = new AccountLedgerRepository()
 
 const saleReturnItemLineSchema = z.object({
   itemId: z.string().trim().min(1, 'Item is required'),
@@ -419,37 +422,19 @@ export const saleReturnService = {
         })
       }
 
-      // Reverse of Sale's Nave (debit): Sale Return posts a Jama (credit)
-      // entry tied to the returned fine/majuri totals.
-      db.prepare(
-        `
-        INSERT INTO account_ledger (
-          id,
-          source_type,
-          source_id,
-          entry_date,
-          account_id,
-          metal_type,
-          fine_jama,
-          cash_jama,
-          narration,
-          created_at
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `
-      ).run(
-        uuidv4(),
-        'SALE_RETURN',
-        saleReturnId,
-        returnDate,
-        data.accountId,
-        data.metalType,
-        itemFineTotal,
-        itemMajuriTotal,
-        `Sale Return ${returnNo}`,
-        now
-      )
-    })
+        accountLedgerRepository.insert({
+          id: uuidv4(),
+          sourceType: 'SALE_RETURN',
+          sourceId: saleReturnId,
+          entryDate: returnDate,
+          accountId: data.accountId,
+          metalType: data.metalType,
+          fineJama: itemFineTotal,
+          cashJama: itemMajuriTotal,
+          narration: `Sale Return ${returnNo}`,
+          createdAt: now
+        })
+      })
 
     transaction()
 
@@ -497,14 +482,7 @@ export const saleReturnService = {
 
     const transaction = db.transaction(() => {
       inventoryMovementService.revertMovement('SALE_RETURN', id)
-
-      db.prepare(
-        `
-        DELETE FROM account_ledger
-        WHERE source_type = 'SALE_RETURN'
-        AND source_id = ?
-      `
-      ).run(id)
+      accountLedgerRepository.deleteBySource('SALE_RETURN', id)
 
       db.prepare(
         `
@@ -656,34 +634,18 @@ export const saleReturnService = {
         })
       }
 
-      db.prepare(
-        `
-        INSERT INTO account_ledger (
-          id,
-          source_type,
-          source_id,
-          entry_date,
-          account_id,
-          metal_type,
-          fine_jama,
-          cash_jama,
-          narration,
-          created_at
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `
-      ).run(
-        uuidv4(),
-        'SALE_RETURN',
-        id,
-        returnDate,
-        data.accountId,
-        data.metalType,
-        itemFineTotal,
-        itemMajuriTotal,
-        `Sale Return ${returnNo}`,
-        now
-      )
+      accountLedgerRepository.insert({
+        id: uuidv4(),
+        sourceType: 'SALE_RETURN',
+        sourceId: id,
+        entryDate: returnDate,
+        accountId: data.accountId,
+        metalType: data.metalType,
+        fineJama: itemFineTotal,
+        cashJama: itemMajuriTotal,
+        narration: `Sale Return ${returnNo}`,
+        createdAt: now
+      })
     })
 
     transaction()
@@ -723,14 +685,7 @@ export const saleReturnService = {
       ).run(now, now, ` Voided on ${now}`, id)
 
       inventoryMovementService.revertMovement('SALE_RETURN', id)
-
-      db.prepare(
-        `
-        DELETE FROM account_ledger
-        WHERE source_type = 'SALE_RETURN'
-        AND source_id = ?
-      `
-      ).run(id)
+      accountLedgerRepository.deleteBySource('SALE_RETURN', id)
     })
 
     transaction()

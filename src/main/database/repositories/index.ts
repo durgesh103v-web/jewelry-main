@@ -1,5 +1,6 @@
 export * from './BaseRepository'
 export * from './AccountRepository'
+export * from './AccountLedgerRepository'
 export * from './ItemRepository'
 export * from './TransactionRepository'
 export * from './CategoryRepository'

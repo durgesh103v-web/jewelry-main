@@ -1,12 +1,12 @@
-import { ipcMain } from 'electron'
+import { createIpcHandler } from './wrapper'
 import { firmService } from '../services/firm.service'
 
 export function registerFirmIpc(): void {
-  ipcMain.handle('firm:get', () => {
+  createIpcHandler('firm:get', () => {
     return firmService.get()
   })
 
-  ipcMain.handle('firm:save', (_event, payload) => {
+  createIpcHandler('firm:save', (_event, payload: any) => {
     return firmService.save(payload)
   })
 }

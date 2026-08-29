@@ -10,6 +10,9 @@ import {
 } from './jewelleryFormula.service'
 import { purchaseReturnNumberService } from './purchaseReturnNumber.service'
 import { inventoryMovementService } from './inventoryMovement.service'
+import { AccountLedgerRepository } from '../database/repositories/AccountLedgerRepository'
+
+const accountLedgerRepository = new AccountLedgerRepository()
 
 const purchaseReturnItemLineSchema = z.object({
   itemId: z.string().trim().min(1, 'Item is required'),
@@ -419,37 +422,19 @@ export const purchaseReturnService = {
         })
       }
 
-      // Reverse of Purchase's Jama (credit): Purchase Return posts a Nave
-      // (debit) entry tied to the returned fine/majuri totals.
-      db.prepare(
-        `
-        INSERT INTO account_ledger (
-          id,
-          source_type,
-          source_id,
-          entry_date,
-          account_id,
-          metal_type,
-          fine_nave,
-          cash_nave,
-          narration,
-          created_at
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `
-      ).run(
-        uuidv4(),
-        'PURCHASE_RETURN',
-        purchaseReturnId,
-        returnDate,
-        data.accountId,
-        data.metalType,
-        itemFineTotal,
-        itemMajuriTotal,
-        `Purchase Return ${returnNo}`,
-        now
-      )
-    })
+        accountLedgerRepository.insert({
+          id: uuidv4(),
+          sourceType: 'PURCHASE_RETURN',
+          sourceId: purchaseReturnId,
+          entryDate: returnDate,
+          accountId: data.accountId,
+          metalType: data.metalType,
+          fineNave: itemFineTotal,
+          cashNave: itemMajuriTotal,
+          narration: `Purchase Return ${returnNo}`,
+          createdAt: now
+        })
+      })
 
     transaction()
 
@@ -497,14 +482,7 @@ export const purchaseReturnService = {
 
     const transaction = db.transaction(() => {
       inventoryMovementService.revertMovement('PURCHASE_RETURN', id)
-
-      db.prepare(
-        `
-        DELETE FROM account_ledger
-        WHERE source_type = 'PURCHASE_RETURN'
-        AND source_id = ?
-      `
-      ).run(id)
+      accountLedgerRepository.deleteBySource('PURCHASE_RETURN', id)
 
       db.prepare(
         `
@@ -524,6 +502,8 @@ export const purchaseReturnService = {
           ? roundNumber(oldBalance.silverFine + itemFineTotal)
           : oldBalance.silverFine
       const closingCash = roundNumber(oldBalance.cash + itemMajuriTotal, 0)
+      const closingAnamat = oldBalance.anamat
+      const closingBank = oldBalance.bank
 
       db.prepare(
         `
@@ -567,46 +547,48 @@ export const purchaseReturnService = {
         closingGoldFine,
         closingSilverFine,
         closingCash,
-        oldBalance.anamat,
-        oldBalance.bank,
+        closingAnamat,
+        closingBank,
         now,
         id
       )
 
-      for (const line of preparedItemLines) {
-        db.prepare(
-          `
-          INSERT INTO purchase_return_item_lines (
-            id,
-            purchase_return_id,
-            line_no,
-            line_type,
-            item_id,
-            stamp_id,
-            design_id,
-            item_name_snapshot,
-            barcode,
-            remark,
-            pcs,
-            gross_weight,
-            pack_weight,
-            less_weight,
-            add_weight,
-            net_weight,
-            tunch,
-            wastage,
-            hishob,
-            unit,
-            labour_rate,
-            labour_rate_type,
-            fine,
-            majuri,
-            created_at,
-            updated_at
-          )
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      const insertPurchaseReturnItemLine = db.prepare(
         `
-        ).run(
+        INSERT INTO purchase_return_item_lines (
+          id,
+          purchase_return_id,
+          line_no,
+          line_type,
+          item_id,
+          stamp_id,
+          design_id,
+          item_name_snapshot,
+          barcode,
+          remark,
+          pcs,
+          gross_weight,
+          pack_weight,
+          less_weight,
+          add_weight,
+          net_weight,
+          tunch,
+          wastage,
+          hishob,
+          unit,
+          labour_rate,
+          labour_rate_type,
+          fine,
+          majuri,
+          created_at,
+          updated_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `
+      )
+
+      for (const line of preparedItemLines) {
+        insertPurchaseReturnItemLine.run(
           line.id,
           id,
           line.lineNo,
@@ -652,34 +634,18 @@ export const purchaseReturnService = {
         })
       }
 
-      db.prepare(
-        `
-        INSERT INTO account_ledger (
-          id,
-          source_type,
-          source_id,
-          entry_date,
-          account_id,
-          metal_type,
-          fine_nave,
-          cash_nave,
-          narration,
-          created_at
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `
-      ).run(
-        uuidv4(),
-        'PURCHASE_RETURN',
-        id,
-        returnDate,
-        data.accountId,
-        data.metalType,
-        itemFineTotal,
-        itemMajuriTotal,
-        `Purchase Return ${returnNo}`,
-        now
-      )
+      accountLedgerRepository.insert({
+        id: uuidv4(),
+        sourceType: 'PURCHASE_RETURN',
+        sourceId: id,
+        entryDate: returnDate,
+        accountId: data.accountId,
+        metalType: data.metalType,
+        fineNave: itemFineTotal,
+        cashNave: itemMajuriTotal,
+        narration: `Purchase Return ${returnNo}`,
+        createdAt: now
+      })
     })
 
     transaction()
@@ -719,14 +685,7 @@ export const purchaseReturnService = {
       ).run(now, now, ` Voided on ${now}`, id)
 
       inventoryMovementService.revertMovement('PURCHASE_RETURN', id)
-
-      db.prepare(
-        `
-        DELETE FROM account_ledger
-        WHERE source_type = 'PURCHASE_RETURN'
-        AND source_id = ?
-      `
-      ).run(id)
+      accountLedgerRepository.deleteBySource('PURCHASE_RETURN', id)
     })
 
     transaction()

@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron'
+import { createIpcHandler } from './wrapper'
 import { accountBalanceService } from '../services/accountBalance.service'
 import { stockReportService } from '../services/stockReport.service'
 import { salePurchaseReportService } from '../services/salePurchaseReport.service'
@@ -11,69 +11,69 @@ import { itemSalePurchaseCityWiseReportService } from '../services/itemSalePurch
 import { getPaymentReceiptReport } from '../services/paymentReceiptReport.service'
 
 export function registerReportIpc(): void {
-  ipcMain.handle('reports:account-balance', () => {
+  createIpcHandler('reports:account-balance', () => {
     return accountBalanceService.listAccountBalances()
   })
 
-  ipcMain.handle(
+  createIpcHandler(
     'reports:account-ledger-details',
     (_event, accountId: string, filter?: { fromDate?: string; toDate?: string }) => {
       return accountBalanceService.getAccountLedgerDetails(accountId, filter)
     }
   )
 
-  ipcMain.handle('reports:outstanding', () => {
+  createIpcHandler('reports:outstanding', () => {
     return accountBalanceService.getOutstandingBalances()
   })
 
-  ipcMain.handle('reports:item-stock', () => {
+  createIpcHandler('reports:item-stock', () => {
     return stockReportService.listItemStock()
   })
 
-  ipcMain.handle('reports:item-transactions', () => {
+  createIpcHandler('reports:item-transactions', () => {
     return stockReportService.listItemTransactions()
   })
 
-  ipcMain.handle(
+  createIpcHandler(
     'reports:item-stock-ledger',
     (_event, itemId: string, filter?: { fromDate?: string; toDate?: string }) => {
       return stockReportService.getItemStockLedger(itemId, filter)
     }
   )
 
-  ipcMain.handle('reports:account-wise-sale-purchase', () => {
+  createIpcHandler('reports:account-wise-sale-purchase', () => {
     return salePurchaseReportService.listAccountWiseSalePurchase()
   })
 
-  ipcMain.handle('cashBookReport:get', (_event, filter) => {
+  createIpcHandler('cashBookReport:get', (_event, filter: any) => {
     return getCashBookReport(filter)
   })
 
-  ipcMain.handle('reports:cash-book', (_event, filter) => {
+  createIpcHandler('reports:cash-book', (_event, filter: any) => {
     return getCashBookReport(filter)
   })
 
-  ipcMain.handle('reports:bank-transactions', (_event, filter) => {
+  createIpcHandler('reports:bank-transactions', (_event, filter: any) => {
     return getBankTransactionsReport(filter)
   })
 
-  ipcMain.handle('reports:dar-rojmel', (_event, filter) => {
+  createIpcHandler('reports:dar-rojmel', (_event, filter: any) => {
     return getDarRojmelReport(filter)
   })
 
-  ipcMain.handle('reports:accountwise-summary', () => {
+  createIpcHandler('reports:accountwise-summary', () => {
     return accountwiseSummaryReportService.listAccountwiseSummary()
   })
 
-  ipcMain.handle('reports:itemwise-sale-purchase', () => {
+  createIpcHandler('reports:itemwise-sale-purchase', () => {
     return itemwiseSalePurchaseReportService.listItemwiseSalePurchase()
   })
 
-  ipcMain.handle('reports:item-sale-purchase-city-wise', () => {
+  createIpcHandler('reports:item-sale-purchase-city-wise', () => {
     return itemSalePurchaseCityWiseReportService.listItemSalePurchaseCityWise()
   })
 
-  ipcMain.handle('reports:payment-receipt', (_event, filter) => {
+  createIpcHandler('reports:payment-receipt', (_event, filter: any) => {
     return getPaymentReceiptReport(filter)
   })
 }

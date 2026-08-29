@@ -2,6 +2,14 @@ import dayjs from 'dayjs'
 import { v4 as uuidv4 } from 'uuid'
 import { z } from 'zod'
 import { getDatabase } from '../database/connection'
+import { AccountRepository } from '../database/repositories/AccountRepository'
+import { AccountLedgerRepository } from '../database/repositories/AccountLedgerRepository'
+import { TransactionRepository } from '../database/repositories/TransactionRepository'
+import { ValidationError, NotFoundError } from '../ipc/errors'
+
+const accountRepository = new AccountRepository()
+const accountLedgerRepository = new AccountLedgerRepository()
+const transactionRepository = new TransactionRepository()
 
 const settlementSchema = z.object({
   settlementDate: z.string().trim().min(1, 'Settlement date is required'),
@@ -15,7 +23,7 @@ const settlementSchema = z.object({
   narration: z.string().trim().optional().default('')
 })
 
-type SettlementPayload = z.infer<typeof settlementSchema>
+export type SettlementPayload = z.infer<typeof settlementSchema>
 
 type SettlementRow = {
   id: string
@@ -53,15 +61,6 @@ function mapRow(row: SettlementRow) {
   }
 }
 
-function assertAccountExists(accountId: string): void {
-  const db = getDatabase()
-  const account = db
-    .prepare(`SELECT id FROM accounts WHERE id = ? AND deleted_at IS NULL`)
-    .get(accountId)
-
-  if (!account) throw new Error('Account not found')
-}
-
 function getNextSettlementNo(): string {
   const db = getDatabase()
   const rows = db
@@ -77,11 +76,7 @@ function getNextSettlementNo(): string {
   return `ST-${String(maxNumber + 1).padStart(4, '0')}`
 }
 
-// A Settlement is a manual, single-account adjustment that always reduces
-// what the party owes the firm - it posts a Jama (credit) entry, mirroring
-// how cashVoucher's RECEIPT type posts *_jama for whichever components are
-// non-zero.
-function insertSettlementLedger(input: {
+function postSettlementLedger(input: {
   settlementId: string
   settlementNo: string
   settlementDate: string
@@ -94,82 +89,73 @@ function insertSettlementLedger(input: {
   narration: string
   createdAt: string
 }): void {
-  const db = getDatabase()
   const narration = input.narration || `Settlement ${input.settlementNo}`
 
   if (input.goldFine > 0) {
-    db.prepare(
-      `INSERT INTO account_ledger (id, source_type, source_id, entry_date, account_id, metal_type, fine_jama, narration, created_at)
-       VALUES (?, 'SETTLEMENT', ?, ?, ?, 'Gold', ?, ?, ?)`
-    ).run(
-      uuidv4(),
-      input.settlementId,
-      input.settlementDate,
-      input.accountId,
-      input.goldFine,
+    accountLedgerRepository.insert({
+      id: uuidv4(),
+      sourceType: 'SETTLEMENT',
+      sourceId: input.settlementId,
+      entryDate: input.settlementDate,
+      accountId: input.accountId,
+      metalType: 'Gold',
+      fineJama: input.goldFine,
       narration,
-      input.createdAt
-    )
+      createdAt: input.createdAt
+    })
   }
 
   if (input.silverFine > 0) {
-    db.prepare(
-      `INSERT INTO account_ledger (id, source_type, source_id, entry_date, account_id, metal_type, fine_jama, narration, created_at)
-       VALUES (?, 'SETTLEMENT', ?, ?, ?, 'Silver', ?, ?, ?)`
-    ).run(
-      uuidv4(),
-      input.settlementId,
-      input.settlementDate,
-      input.accountId,
-      input.silverFine,
+    accountLedgerRepository.insert({
+      id: uuidv4(),
+      sourceType: 'SETTLEMENT',
+      sourceId: input.settlementId,
+      entryDate: input.settlementDate,
+      accountId: input.accountId,
+      metalType: 'Silver',
+      fineJama: input.silverFine,
       narration,
-      input.createdAt
-    )
+      createdAt: input.createdAt
+    })
   }
 
   if (input.cash > 0) {
-    db.prepare(
-      `INSERT INTO account_ledger (id, source_type, source_id, entry_date, account_id, cash_jama, narration, created_at)
-       VALUES (?, 'SETTLEMENT', ?, ?, ?, ?, ?, ?)`
-    ).run(
-      uuidv4(),
-      input.settlementId,
-      input.settlementDate,
-      input.accountId,
-      input.cash,
+    accountLedgerRepository.insert({
+      id: uuidv4(),
+      sourceType: 'SETTLEMENT',
+      sourceId: input.settlementId,
+      entryDate: input.settlementDate,
+      accountId: input.accountId,
+      cashJama: input.cash,
       narration,
-      input.createdAt
-    )
+      createdAt: input.createdAt
+    })
   }
 
   if (input.bank > 0) {
-    db.prepare(
-      `INSERT INTO account_ledger (id, source_type, source_id, entry_date, account_id, bank_jama, narration, created_at)
-       VALUES (?, 'SETTLEMENT', ?, ?, ?, ?, ?, ?)`
-    ).run(
-      uuidv4(),
-      input.settlementId,
-      input.settlementDate,
-      input.accountId,
-      input.bank,
+    accountLedgerRepository.insert({
+      id: uuidv4(),
+      sourceType: 'SETTLEMENT',
+      sourceId: input.settlementId,
+      entryDate: input.settlementDate,
+      accountId: input.accountId,
+      bankJama: input.bank,
       narration,
-      input.createdAt
-    )
+      createdAt: input.createdAt
+    })
   }
 
   if (input.anamat > 0) {
-    db.prepare(
-      `INSERT INTO account_ledger (id, source_type, source_id, entry_date, account_id, anamat_jama, narration, created_at)
-       VALUES (?, 'SETTLEMENT', ?, ?, ?, ?, ?, ?)`
-    ).run(
-      uuidv4(),
-      input.settlementId,
-      input.settlementDate,
-      input.accountId,
-      input.anamat,
+    accountLedgerRepository.insert({
+      id: uuidv4(),
+      sourceType: 'SETTLEMENT',
+      sourceId: input.settlementId,
+      entryDate: input.settlementDate,
+      accountId: input.accountId,
+      anamatJama: input.anamat,
       narration,
-      input.createdAt
-    )
+      createdAt: input.createdAt
+    })
   }
 }
 
@@ -179,25 +165,34 @@ export const settlementService = {
   },
 
   create(payload: SettlementPayload) {
-    const data = settlementSchema.parse(payload)
+    const parseResult = settlementSchema.safeParse(payload)
+    if (!parseResult.success) {
+      throw new ValidationError(parseResult.error.issues[0]?.message || 'Invalid settlement payload')
+    }
+    const data = parseResult.data
 
     const total = data.goldFine + data.silverFine + data.cash + data.bank + data.anamat
-
     if (total <= 0) {
-      throw new Error('Enter at least one settlement amount')
+      throw new ValidationError('Enter at least one settlement amount')
     }
 
-    assertAccountExists(data.accountId)
+    const account = accountRepository.findById(data.accountId)
+    if (!account) {
+      throw new NotFoundError('Account not found')
+    }
 
     const db = getDatabase()
     const id = uuidv4()
     const settlementNo = getNextSettlementNo()
     const now = dayjs().format('YYYY-MM-DD HH:mm:ss')
 
-    db.transaction(() => {
+    transactionRepository.executeAtomic(() => {
       db.prepare(
-        `INSERT INTO settlements (id, settlement_no, settlement_date, account_id, metal_type, gold_fine, silver_fine, cash, bank, anamat, narration, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        `INSERT INTO settlements (
+          id, settlement_no, settlement_date, account_id, metal_type,
+          gold_fine, silver_fine, cash, bank, anamat, narration, created_at, updated_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       ).run(
         id,
         settlementNo,
@@ -214,7 +209,7 @@ export const settlementService = {
         now
       )
 
-      insertSettlementLedger({
+      postSettlementLedger({
         settlementId: id,
         settlementNo,
         settlementDate: data.settlementDate,
@@ -227,7 +222,7 @@ export const settlementService = {
         narration: data.narration,
         createdAt: now
       })
-    })()
+    })
 
     return this.getById(id)
   },
@@ -236,12 +231,14 @@ export const settlementService = {
     const db = getDatabase()
     const rows = db
       .prepare(
-        `SELECT s.id, s.settlement_no, s.settlement_date, s.account_id, a.account_name, s.metal_type,
-                s.gold_fine, s.silver_fine, s.cash, s.bank, s.anamat, s.narration, s.created_at, s.updated_at
-         FROM settlements s
-         INNER JOIN accounts a ON a.id = s.account_id
-         WHERE s.deleted_at IS NULL
-         ORDER BY s.settlement_date DESC, s.created_at DESC`
+        `SELECT
+          s.id, s.settlement_no, s.settlement_date, s.account_id,
+          a.account_name, s.metal_type, s.gold_fine, s.silver_fine,
+          s.cash, s.bank, s.anamat, s.narration, s.created_at, s.updated_at
+        FROM settlements s
+        INNER JOIN accounts a ON a.id = s.account_id
+        WHERE s.deleted_at IS NULL
+        ORDER BY s.settlement_date DESC, s.created_at DESC`
       )
       .all() as SettlementRow[]
 
@@ -252,39 +249,36 @@ export const settlementService = {
     const db = getDatabase()
     const row = db
       .prepare(
-        `SELECT s.id, s.settlement_no, s.settlement_date, s.account_id, a.account_name, s.metal_type,
-                s.gold_fine, s.silver_fine, s.cash, s.bank, s.anamat, s.narration, s.created_at, s.updated_at
-         FROM settlements s
-         INNER JOIN accounts a ON a.id = s.account_id
-         WHERE s.id = ? AND s.deleted_at IS NULL`
+        `SELECT
+          s.id, s.settlement_no, s.settlement_date, s.account_id,
+          a.account_name, s.metal_type, s.gold_fine, s.silver_fine,
+          s.cash, s.bank, s.anamat, s.narration, s.created_at, s.updated_at
+        FROM settlements s
+        INNER JOIN accounts a ON a.id = s.account_id
+        WHERE s.id = ? AND s.deleted_at IS NULL`
       )
       .get(id) as SettlementRow | undefined
 
-    if (!row) throw new Error('Settlement not found')
+    if (!row) throw new NotFoundError('Settlement not found')
 
     return mapRow(row)
   },
 
   delete(id: string) {
     const db = getDatabase()
-    const existing = db
-      .prepare(`SELECT id FROM settlements WHERE id = ? AND deleted_at IS NULL`)
-      .get(id)
-
-    if (!existing) throw new Error('Settlement not found')
-
     const now = dayjs().format('YYYY-MM-DD HH:mm:ss')
 
-    db.transaction(() => {
-      db.prepare(`UPDATE settlements SET deleted_at = ?, updated_at = ? WHERE id = ?`).run(
+    this.getById(id)
+
+    transactionRepository.executeAtomic(() => {
+      db.prepare(`UPDATE settlements SET deleted_at = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL`).run(
         now,
         now,
         id
       )
-      db.prepare(`DELETE FROM account_ledger WHERE source_id = ? AND source_type = 'SETTLEMENT'`).run(
-        id
-      )
-    })()
+
+      accountLedgerRepository.deleteBySource('SETTLEMENT', id)
+    })
 
     return { success: true }
   }

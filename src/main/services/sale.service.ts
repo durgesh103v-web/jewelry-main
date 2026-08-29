@@ -12,6 +12,9 @@ import {
 } from './jewelleryFormula.service'
 import { saleNumberService } from './saleNumber.service'
 import { inventoryMovementService } from './inventoryMovement.service'
+import { AccountLedgerRepository } from '../database/repositories/AccountLedgerRepository'
+
+const accountLedgerRepository = new AccountLedgerRepository()
 
 const saleItemLineSchema = z.object({
   lineType: z.string().trim().optional().default('NAVE'),
@@ -448,34 +451,18 @@ export const saleService = {
         )
       }
 
-      db.prepare(
-        `
-        INSERT INTO account_ledger (
-          id,
-          source_type,
-          source_id,
-          entry_date,
-          account_id,
-          metal_type,
-          fine_nave,
-          cash_nave,
-          narration,
-          created_at
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `
-      ).run(
-        uuidv4(),
-        'SALE',
-        saleId,
-        saleDate,
-        data.accountId,
-        data.metalType,
-        itemFineTotal,
-        itemMajuriTotal,
-        `Sale ${saleNo}`,
-        now
-      )
+      accountLedgerRepository.insert({
+        id: uuidv4(),
+        sourceType: 'SALE',
+        sourceId: saleId,
+        entryDate: saleDate,
+        accountId: data.accountId,
+        metalType: data.metalType,
+        fineNave: itemFineTotal,
+        cashNave: itemMajuriTotal,
+        narration: `Sale ${saleNo}`,
+        createdAt: now
+      })
 
       if (
         paymentFineJamaTotal > 0 ||
@@ -483,38 +470,20 @@ export const saleService = {
         paymentBankJamaTotal > 0 ||
         paymentAnamatJamaTotal > 0
       ) {
-        db.prepare(
-          `
-          INSERT INTO account_ledger (
-            id,
-            source_type,
-            source_id,
-            entry_date,
-            account_id,
-            metal_type,
-            fine_jama,
-            cash_jama,
-            bank_jama,
-            anamat_jama,
-            narration,
-            created_at
-          )
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `
-        ).run(
-          uuidv4(),
-          'SALE_PAYMENT',
-          saleId,
-          saleDate,
-          data.accountId,
-          data.metalType,
-          paymentFineJamaTotal,
-          paymentCashJamaTotal,
-          paymentBankJamaTotal,
-          paymentAnamatJamaTotal,
-          `Sale payment ${saleNo}`,
-          now
-        )
+        accountLedgerRepository.insert({
+          id: uuidv4(),
+          sourceType: 'SALE_PAYMENT',
+          sourceId: saleId,
+          entryDate: saleDate,
+          accountId: data.accountId,
+          metalType: data.metalType,
+          fineJama: paymentFineJamaTotal,
+          cashJama: paymentCashJamaTotal,
+          bankJama: paymentBankJamaTotal,
+          anamatJama: paymentAnamatJamaTotal,
+          narration: `Sale payment ${saleNo}`,
+          createdAt: now
+        })
       }
     })
 
@@ -579,14 +548,7 @@ export const saleService = {
       )
 
       inventoryMovementService.revertMovement('SALE', id)
-
-      db.prepare(
-        `
-        DELETE FROM account_ledger
-        WHERE source_type IN ('SALE', 'SALE_PAYMENT')
-        AND source_id = ?
-      `
-      ).run(id)
+      accountLedgerRepository.deleteBySource(['SALE', 'SALE_PAYMENT'], id)
     })
 
     transaction()

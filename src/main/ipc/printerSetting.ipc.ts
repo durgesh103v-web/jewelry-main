@@ -1,12 +1,12 @@
-import { ipcMain } from 'electron'
+import { createIpcHandler } from './wrapper'
 import { printerSettingService } from '../services/printerSetting.service'
 
 export function registerPrinterSettingIpc(): void {
-  ipcMain.handle('printer-setting:get', () => {
+  createIpcHandler('printer-setting:get', () => {
     return printerSettingService.get()
   })
 
-  ipcMain.handle('printer-setting:save', (_event, payload) => {
+  createIpcHandler('printer-setting:save', (_event, payload: any) => {
     return printerSettingService.save(payload)
   })
 }

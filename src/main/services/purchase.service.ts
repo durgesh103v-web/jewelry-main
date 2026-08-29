@@ -12,6 +12,9 @@ import {
 } from './jewelleryFormula.service'
 import { purchaseNumberService } from './purchaseNumber.service'
 import { inventoryMovementService } from './inventoryMovement.service'
+import { AccountLedgerRepository } from '../database/repositories/AccountLedgerRepository'
+
+const accountLedgerRepository = new AccountLedgerRepository()
 
 const purchaseItemLineSchema = z.object({
   itemId: z.string().trim().min(1, 'Item is required'),
@@ -458,34 +461,18 @@ export const purchaseService = {
         )
       }
 
-      db.prepare(
-        `
-        INSERT INTO account_ledger (
-          id,
-          source_type,
-          source_id,
-          entry_date,
-          account_id,
-          metal_type,
-          fine_jama,
-          cash_jama,
-          narration,
-          created_at
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `
-      ).run(
-        uuidv4(),
-        'PURCHASE',
-        purchaseId,
-        purchaseDate,
-        data.accountId,
-        data.metalType,
-        itemFineTotal,
-        itemMajuriTotal,
-        `Purchase ${purchaseNo}`,
-        now
-      )
+      accountLedgerRepository.insert({
+        id: uuidv4(),
+        sourceType: 'PURCHASE',
+        sourceId: purchaseId,
+        entryDate: purchaseDate,
+        accountId: data.accountId,
+        metalType: data.metalType,
+        fineJama: itemFineTotal,
+        cashJama: itemMajuriTotal,
+        narration: `Purchase ${purchaseNo}`,
+        createdAt: now
+      })
 
       if (
         paymentFineNaveTotal > 0 ||
@@ -493,38 +480,20 @@ export const purchaseService = {
         paymentBankNaveTotal > 0 ||
         paymentAnamatNaveTotal > 0
       ) {
-        db.prepare(
-          `
-          INSERT INTO account_ledger (
-            id,
-            source_type,
-            source_id,
-            entry_date,
-            account_id,
-            metal_type,
-            fine_nave,
-            cash_nave,
-            bank_nave,
-            anamat_nave,
-            narration,
-            created_at
-          )
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `
-        ).run(
-          uuidv4(),
-          'PURCHASE_PAYMENT',
-          purchaseId,
-          purchaseDate,
-          data.accountId,
-          data.metalType,
-          paymentFineNaveTotal,
-          paymentCashNaveTotal,
-          paymentBankNaveTotal,
-          paymentAnamatNaveTotal,
-          `Purchase payment ${purchaseNo}`,
-          now
-        )
+        accountLedgerRepository.insert({
+          id: uuidv4(),
+          sourceType: 'PURCHASE_PAYMENT',
+          sourceId: purchaseId,
+          entryDate: purchaseDate,
+          accountId: data.accountId,
+          metalType: data.metalType,
+          fineNave: paymentFineNaveTotal,
+          cashNave: paymentCashNaveTotal,
+          bankNave: paymentBankNaveTotal,
+          anamatNave: paymentAnamatNaveTotal,
+          narration: `Purchase payment ${purchaseNo}`,
+          createdAt: now
+        })
       }
     })
 
@@ -647,14 +616,7 @@ export const purchaseService = {
       ).run(now, now, ` Cancelled on ${now}`, id)
 
       inventoryMovementService.revertMovement('PURCHASE', id)
-
-      db.prepare(
-        `
-        DELETE FROM account_ledger
-        WHERE source_type IN ('PURCHASE', 'PURCHASE_PAYMENT')
-        AND source_id = ?
-      `
-      ).run(id)
+      accountLedgerRepository.deleteBySource(['PURCHASE', 'PURCHASE_PAYMENT'], id)
     })
 
     transaction()

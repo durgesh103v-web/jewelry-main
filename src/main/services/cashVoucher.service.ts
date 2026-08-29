@@ -2,12 +2,20 @@ import dayjs from 'dayjs'
 import { v4 as uuidv4 } from 'uuid'
 import { z } from 'zod'
 import { getDatabase } from '../database/connection'
+import { AccountRepository } from '../database/repositories/AccountRepository'
+import { AccountLedgerRepository } from '../database/repositories/AccountLedgerRepository'
+import { TransactionRepository } from '../database/repositories/TransactionRepository'
+import { ValidationError, NotFoundError } from '../ipc/errors'
 import type {
   CashVoucher,
   CashVoucherFilter,
   CashVoucherPayload,
   CashVoucherType
 } from '../../shared/types/cashVoucher'
+
+const accountRepository = new AccountRepository()
+const accountLedgerRepository = new AccountLedgerRepository()
+const transactionRepository = new TransactionRepository()
 
 type RawCashVoucherPayload = CashVoucherPayload & {
   id?: string
@@ -76,24 +84,6 @@ function mapRow(row: CashVoucherRow): CashVoucher {
   }
 }
 
-function assertAccountExists(accountId: string): void {
-  const db = getDatabase()
-  const account = db
-    .prepare(
-      `
-      SELECT id
-      FROM accounts
-      WHERE id = ?
-      AND deleted_at IS NULL
-    `
-    )
-    .get(accountId)
-
-  if (!account) {
-    throw new Error('Account not found')
-  }
-}
-
 function getNextVoucherNo(voucherType: CashVoucherType): string {
   const db = getDatabase()
   const prefix = voucherType === 'RECEIPT' ? 'CR' : 'CP'
@@ -122,7 +112,7 @@ function getNextVoucherNo(voucherType: CashVoucherType): string {
   return `${prefix}-${String(maxNumber + 1).padStart(4, '0')}`
 }
 
-function insertLedgerEntry(input: {
+function postLedgerEntry(input: {
   voucherId: string
   voucherType: CashVoucherType
   voucherNo: string
@@ -132,39 +122,23 @@ function insertLedgerEntry(input: {
   narration: string
   createdAt: string
 }): void {
-  const db = getDatabase()
   const sourceType = input.voucherType === 'RECEIPT' ? 'CASH_RECEIPT' : 'CASH_PAYMENT'
   const cashJama = input.voucherType === 'RECEIPT' ? input.amount : 0
   const cashNave = input.voucherType === 'PAYMENT' ? input.amount : 0
   const label = input.voucherType === 'RECEIPT' ? 'Cash Receipt' : 'Cash Payment'
   const narration = input.narration || `${label} ${input.voucherNo}`
 
-  db.prepare(
-    `
-    INSERT INTO account_ledger (
-      id,
-      source_type,
-      source_id,
-      entry_date,
-      account_id,
-      cash_jama,
-      cash_nave,
-      narration,
-      created_at
-    )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `
-  ).run(
-    uuidv4(),
+  accountLedgerRepository.insert({
+    id: uuidv4(),
     sourceType,
-    input.voucherId,
-    input.voucherDate,
-    input.accountId,
+    sourceId: input.voucherId,
+    entryDate: input.voucherDate,
+    accountId: input.accountId,
     cashJama,
     cashNave,
     narration,
-    input.createdAt
-  )
+    createdAt: input.createdAt
+  })
 }
 
 export const cashVoucherService = {
@@ -173,28 +147,28 @@ export const cashVoucherService = {
   },
 
   create(payload: RawCashVoucherPayload) {
-    const data = cashVoucherSchema.parse(normalizePayload(payload))
+    const parseResult = cashVoucherSchema.safeParse(normalizePayload(payload))
+    if (!parseResult.success) {
+      throw new ValidationError(parseResult.error.issues[0]?.message || 'Invalid cash voucher payload')
+    }
+    const data = parseResult.data
+
+    const account = accountRepository.findById(data.accountId)
+    if (!account) {
+      throw new NotFoundError('Account not found')
+    }
+
     const db = getDatabase()
-
-    assertAccountExists(data.accountId)
-
     const id = uuidv4()
     const voucherNo = getNextVoucherNo(data.voucherType)
     const now = dayjs().format('YYYY-MM-DD HH:mm:ss')
 
-    const transaction = db.transaction(() => {
+    transactionRepository.executeAtomic(() => {
       db.prepare(
         `
         INSERT INTO cash_vouchers (
-          id,
-          voucher_type,
-          voucher_no,
-          voucher_date,
-          account_id,
-          amount,
-          narration,
-          created_at,
-          updated_at
+          id, voucher_type, voucher_no, voucher_date, account_id,
+          amount, narration, created_at, updated_at
         )
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `
@@ -210,7 +184,7 @@ export const cashVoucherService = {
         now
       )
 
-      insertLedgerEntry({
+      postLedgerEntry({
         voucherId: id,
         voucherType: data.voucherType,
         voucherNo,
@@ -222,16 +196,20 @@ export const cashVoucherService = {
       })
     })
 
-    transaction()
-
     return this.getById(id)
   },
 
   update(id: string, payload: RawCashVoucherPayload) {
-    const data = cashVoucherSchema.parse(normalizePayload(payload))
-    const db = getDatabase()
+    const parseResult = cashVoucherSchema.safeParse(normalizePayload(payload))
+    if (!parseResult.success) {
+      throw new ValidationError(parseResult.error.issues[0]?.message || 'Invalid cash voucher payload')
+    }
+    const data = parseResult.data
 
-    assertAccountExists(data.accountId)
+    const account = accountRepository.findById(data.accountId)
+    if (!account) {
+      throw new NotFoundError('Account not found')
+    }
 
     const existing = this.getById(id)
     const voucherNo =
@@ -239,19 +217,15 @@ export const cashVoucherService = {
         ? existing.voucherNo
         : getNextVoucherNo(data.voucherType)
     const now = dayjs().format('YYYY-MM-DD HH:mm:ss')
+    const db = getDatabase()
 
-    const transaction = db.transaction(() => {
+    transactionRepository.executeAtomic(() => {
       db.prepare(
         `
         UPDATE cash_vouchers
         SET
-          voucher_type = ?,
-          voucher_no = ?,
-          voucher_date = ?,
-          account_id = ?,
-          amount = ?,
-          narration = ?,
-          updated_at = ?
+          voucher_type = ?, voucher_no = ?, voucher_date = ?,
+          account_id = ?, amount = ?, narration = ?, updated_at = ?
         WHERE id = ?
         AND deleted_at IS NULL
       `
@@ -266,15 +240,9 @@ export const cashVoucherService = {
         id
       )
 
-      db.prepare(
-        `
-        DELETE FROM account_ledger
-        WHERE source_type IN ('CASH_RECEIPT', 'CASH_PAYMENT')
-        AND source_id = ?
-      `
-      ).run(id)
+      accountLedgerRepository.deleteBySource(['CASH_RECEIPT', 'CASH_PAYMENT'], id)
 
-      insertLedgerEntry({
+      postLedgerEntry({
         voucherId: id,
         voucherType: data.voucherType,
         voucherNo,
@@ -286,8 +254,6 @@ export const cashVoucherService = {
       })
     })
 
-    transaction()
-
     return this.getById(id)
   },
 
@@ -297,7 +263,7 @@ export const cashVoucherService = {
 
     this.getById(id)
 
-    const transaction = db.transaction(() => {
+    transactionRepository.executeAtomic(() => {
       db.prepare(
         `
         UPDATE cash_vouchers
@@ -307,37 +273,22 @@ export const cashVoucherService = {
       `
       ).run(now, now, id)
 
-      db.prepare(
-        `
-        DELETE FROM account_ledger
-        WHERE source_type IN ('CASH_RECEIPT', 'CASH_PAYMENT')
-        AND source_id = ?
-      `
-      ).run(id)
+      accountLedgerRepository.deleteBySource(['CASH_RECEIPT', 'CASH_PAYMENT'], id)
     })
-
-    transaction()
 
     return { success: true }
   },
 
-  getById(id: string) {
+  getById(id: string): CashVoucher {
     const db = getDatabase()
 
     const row = db
       .prepare(
         `
         SELECT
-          cv.id,
-          cv.voucher_type,
-          cv.voucher_no,
-          cv.voucher_date,
-          cv.account_id,
-          a.account_name,
-          cv.amount,
-          cv.narration,
-          cv.created_at,
-          cv.updated_at
+          cv.id, cv.voucher_type, cv.voucher_no, cv.voucher_date,
+          cv.account_id, a.account_name, cv.amount, cv.narration,
+          cv.created_at, cv.updated_at
         FROM cash_vouchers cv
         INNER JOIN accounts a ON a.id = cv.account_id
         WHERE cv.id = ?
@@ -347,13 +298,13 @@ export const cashVoucherService = {
       .get(id) as CashVoucherRow | undefined
 
     if (!row) {
-      throw new Error('Cash voucher not found')
+      throw new NotFoundError('Cash voucher not found')
     }
 
     return mapRow(row)
   },
 
-  list(filterPayload: RawCashVoucherFilter = {}) {
+  list(filterPayload: RawCashVoucherFilter = {}): CashVoucher[] {
     const db = getDatabase()
     const filter = normalizeFilter(filterPayload)
     const conditions = ['cv.deleted_at IS NULL']
@@ -383,16 +334,9 @@ export const cashVoucherService = {
       .prepare(
         `
         SELECT
-          cv.id,
-          cv.voucher_type,
-          cv.voucher_no,
-          cv.voucher_date,
-          cv.account_id,
-          a.account_name,
-          cv.amount,
-          cv.narration,
-          cv.created_at,
-          cv.updated_at
+          cv.id, cv.voucher_type, cv.voucher_no, cv.voucher_date,
+          cv.account_id, a.account_name, cv.amount, cv.narration,
+          cv.created_at, cv.updated_at
         FROM cash_vouchers cv
         INNER JOIN accounts a ON a.id = cv.account_id
         WHERE ${conditions.join(' AND ')}

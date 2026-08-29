@@ -2,6 +2,10 @@ import dayjs from 'dayjs'
 import { v4 as uuidv4 } from 'uuid'
 import { z } from 'zod'
 import { getDatabase } from '../database/connection'
+import { TransactionRepository } from '../database/repositories/TransactionRepository'
+import { ValidationError, NotFoundError, ConflictError } from '../ipc/errors'
+
+const transactionRepository = new TransactionRepository()
 
 const financialYearSchema = z
   .object({
@@ -15,9 +19,9 @@ const financialYearSchema = z
     path: ['endDate']
   })
 
-type FinancialYearPayload = z.infer<typeof financialYearSchema>
+export type FinancialYearPayload = z.infer<typeof financialYearSchema>
 
-type FinancialYearRecord = {
+export type FinancialYearRecord = {
   id: string
   yearLabel: string
   startDate: string
@@ -56,7 +60,7 @@ function mapRow(row: FinancialYearRow): FinancialYearRecord {
 }
 
 export const financialYearService = {
-  list() {
+  list(): FinancialYearRecord[] {
     const db = getDatabase()
 
     const rows = db
@@ -72,7 +76,7 @@ export const financialYearService = {
     return rows.map(mapRow)
   },
 
-  getCurrent() {
+  getCurrent(): FinancialYearRecord | null {
     const db = getDatabase()
 
     const row = db
@@ -88,8 +92,12 @@ export const financialYearService = {
     return row ? mapRow(row) : null
   },
 
-  create(payload: FinancialYearPayload) {
-    const data = financialYearSchema.parse(payload)
+  create(payload: FinancialYearPayload): FinancialYearRecord {
+    const parseResult = financialYearSchema.safeParse(payload)
+    if (!parseResult.success) {
+      throw new ValidationError(parseResult.error.issues[0]?.message || 'Invalid financial year payload')
+    }
+    const data = parseResult.data
     const db = getDatabase()
 
     const duplicate = db
@@ -97,7 +105,7 @@ export const financialYearService = {
       .get(data.yearLabel)
 
     if (duplicate) {
-      throw new Error('This financial year already exists')
+      throw new ConflictError('This financial year already exists')
     }
 
     const now = dayjs().format('YYYY-MM-DD HH:mm:ss')
@@ -118,14 +126,17 @@ export const financialYearService = {
     return this.getById(id)
   },
 
-  update(id: string, payload: FinancialYearPayload) {
-    const data = financialYearSchema.parse(payload)
+  update(id: string, payload: FinancialYearPayload): FinancialYearRecord {
+    const parseResult = financialYearSchema.safeParse(payload)
+    if (!parseResult.success) {
+      throw new ValidationError(parseResult.error.issues[0]?.message || 'Invalid financial year payload')
+    }
+    const data = parseResult.data
     const db = getDatabase()
 
     const existing = db.prepare(`SELECT id FROM financial_years WHERE id = ?`).get(id)
-
     if (!existing) {
-      throw new Error('Financial year not found')
+      throw new NotFoundError('Financial year not found')
     }
 
     const duplicate = db
@@ -133,7 +144,7 @@ export const financialYearService = {
       .get(data.yearLabel, id)
 
     if (duplicate) {
-      throw new Error('Another financial year with this label already exists')
+      throw new ConflictError('Another financial year with this label already exists')
     }
 
     const now = dayjs().format('YYYY-MM-DD HH:mm:ss')
@@ -149,7 +160,7 @@ export const financialYearService = {
     return this.getById(id)
   },
 
-  setCurrent(id: string) {
+  setCurrent(id: string): FinancialYearRecord {
     const db = getDatabase()
     const now = dayjs().format('YYYY-MM-DD HH:mm:ss')
 
@@ -158,25 +169,25 @@ export const financialYearService = {
       | undefined
 
     if (!existing) {
-      throw new Error('Financial year not found')
+      throw new NotFoundError('Financial year not found')
     }
 
     if (existing.is_closed) {
-      throw new Error('Cannot set a closed financial year as current')
+      throw new ValidationError('Cannot set a closed financial year as current')
     }
 
-    db.transaction(() => {
+    transactionRepository.executeAtomic(() => {
       db.prepare(`UPDATE financial_years SET is_current = 0, updated_at = ?`).run(now)
       db.prepare(`UPDATE financial_years SET is_current = 1, updated_at = ? WHERE id = ?`).run(
         now,
         id
       )
-    })()
+    })
 
     return this.getById(id)
   },
 
-  toggleClosed(id: string, isClosed: boolean) {
+  toggleClosed(id: string, isClosed: boolean): FinancialYearRecord {
     const db = getDatabase()
     const now = dayjs().format('YYYY-MM-DD HH:mm:ss')
 
@@ -185,11 +196,11 @@ export const financialYearService = {
       | undefined
 
     if (!existing) {
-      throw new Error('Financial year not found')
+      throw new NotFoundError('Financial year not found')
     }
 
     if (isClosed && existing.is_current) {
-      throw new Error('Cannot close the current financial year. Set another year as current first.')
+      throw new ValidationError('Cannot close the current financial year. Set another year as current first.')
     }
 
     db.prepare(`UPDATE financial_years SET is_closed = ?, updated_at = ? WHERE id = ?`).run(
@@ -201,7 +212,7 @@ export const financialYearService = {
     return this.getById(id)
   },
 
-  delete(id: string) {
+  delete(id: string): { success: boolean } {
     const db = getDatabase()
 
     const existing = db.prepare(`SELECT id, is_current FROM financial_years WHERE id = ?`).get(
@@ -209,11 +220,11 @@ export const financialYearService = {
     ) as { id: string; is_current: number } | undefined
 
     if (!existing) {
-      throw new Error('Financial year not found')
+      throw new NotFoundError('Financial year not found')
     }
 
     if (existing.is_current) {
-      throw new Error('Cannot delete the current financial year')
+      throw new ValidationError('Cannot delete the current financial year')
     }
 
     db.prepare(`DELETE FROM financial_years WHERE id = ?`).run(id)
@@ -221,7 +232,7 @@ export const financialYearService = {
     return { success: true }
   },
 
-  getById(id: string) {
+  getById(id: string): FinancialYearRecord {
     const db = getDatabase()
 
     const row = db
@@ -235,7 +246,7 @@ export const financialYearService = {
       .get(id) as FinancialYearRow | undefined
 
     if (!row) {
-      throw new Error('Financial year not found')
+      throw new NotFoundError('Financial year not found')
     }
 
     return mapRow(row)

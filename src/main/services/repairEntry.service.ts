@@ -3,6 +3,9 @@ import { v4 as uuidv4 } from 'uuid'
 import { z } from 'zod'
 import { getDatabase } from '../database/connection'
 import { repairEntryNumberService } from './repairEntryNumber.service'
+import { AccountLedgerRepository } from '../database/repositories/AccountLedgerRepository'
+
+const accountLedgerRepository = new AccountLedgerRepository()
 
 const repairEntrySchema = z.object({
   repairNo: z.string().trim().optional().default(''),
@@ -339,32 +342,17 @@ export const repairEntryService = {
       // posting to NAVE raises the customer's running balance, correctly
       // reflecting a receivable (the customer owes the firm). There is no
       // fine/weight component here since the repair charge is cash-only.
-      db.prepare(
-        `
-        INSERT INTO account_ledger (
-          id,
-          source_type,
-          source_id,
-          entry_date,
-          account_id,
-          metal_type,
-          cash_nave,
-          narration,
-          created_at
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `
-      ).run(
-        uuidv4(),
-        'REPAIR_CHARGE',
-        id,
-        completedDate,
-        entry.account_id,
-        entry.metal_type,
-        data.actualCharge,
-        `Repair Charge ${entry.repair_no}`,
-        now
-      )
+      accountLedgerRepository.insert({
+        id: uuidv4(),
+        sourceType: 'REPAIR_CHARGE',
+        sourceId: id,
+        entryDate: completedDate,
+        accountId: entry.account_id,
+        metalType: entry.metal_type,
+        cashNave: data.actualCharge,
+        narration: `Repair Charge ${entry.repair_no}`,
+        createdAt: now
+      })
     })
 
     transaction()

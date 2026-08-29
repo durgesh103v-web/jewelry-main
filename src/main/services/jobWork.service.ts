@@ -11,6 +11,9 @@ import {
 } from './jewelleryFormula.service'
 import { jobWorkNumberService } from './jobWorkNumber.service'
 import { inventoryMovementService } from './inventoryMovement.service'
+import { AccountLedgerRepository } from '../database/repositories/AccountLedgerRepository'
+
+const accountLedgerRepository = new AccountLedgerRepository()
 
 // A job work order is closed out ("received") once the cumulative net weight
 // received back across all receipts reaches this fraction of the net weight
@@ -452,32 +455,17 @@ export const jobWorkService = {
       // firm, which is backwards for a labour charge - so JAMA is used here
       // instead of NAVE.
       if (majuri !== 0) {
-        db.prepare(
-          `
-          INSERT INTO account_ledger (
-            id,
-            source_type,
-            source_id,
-            entry_date,
-            account_id,
-            metal_type,
-            cash_jama,
-            narration,
-            created_at
-          )
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `
-        ).run(
-          uuidv4(),
-          'JOB_WORK_RECEIPT',
-          orderId,
-          receiptDate,
-          order.karigar_account_id,
-          order.metal_type,
-          majuri,
-          `Job Work Receipt against ${order.order_no} - Majuri`,
-          now
-        )
+        accountLedgerRepository.insert({
+          id: uuidv4(),
+          sourceType: 'JOB_WORK_RECEIPT',
+          sourceId: orderId,
+          entryDate: receiptDate,
+          accountId: order.karigar_account_id,
+          metalType: order.metal_type,
+          cashJama: majuri,
+          narration: `Job Work Receipt against ${order.order_no} - Majuri`,
+          createdAt: now
+        })
       }
 
       const totalReceivedRow = db
