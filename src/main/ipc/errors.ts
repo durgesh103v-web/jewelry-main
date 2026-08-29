@@ -28,6 +28,12 @@ export class ConflictError extends AppError {
   }
 }
 
+export class BusinessRuleError extends AppError {
+  constructor(message: string) {
+    super(message, 'BUSINESS_RULE_ERROR', 400)
+  }
+}
+
 export class DatabaseError extends AppError {
   constructor(message = 'A database error occurred.') {
     super(message, 'DATABASE_ERROR', 500)

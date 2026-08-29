@@ -60,6 +60,7 @@ const AccountBalanceReportScreen = lazy(() => import('../../modules/reports/acco
 const OutstandingReportScreen = lazy(() => import('../../modules/reports/outstanding/OutstandingReportScreen'))
 const CashBookReportScreen = lazy(() => import('../../modules/reports/cash-book/CashBookReportScreen'))
 const PosBillingScreen = lazy(() => import('../../features/sales/screens/PosBillingScreen'))
+const PurchaseInvoiceScreen = lazy(() => import('../../features/purchases/screens/PurchaseInvoiceScreen'))
 
 export type ScreenComponentProps = {
   onClose: () => void
@@ -90,6 +91,7 @@ export const screenRegistry: Record<string, ScreenMapValue> = {
   sale: { component: SaleScreen },
   'sale-return': { component: SaleReturnScreen },
   approval: { component: ApprovalScreen },
+  'purchase-invoice': { component: PurchaseInvoiceScreen },
   purchase: { component: PurchaseScreen },
   'purchase-return': { component: PurchaseReturnScreen },
   'job-work': { component: JobWorkScreen },
