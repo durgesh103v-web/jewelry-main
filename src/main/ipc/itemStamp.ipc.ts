@@ -1,20 +1,27 @@
-import { ipcMain } from 'electron'
+import { createIpcHandler } from './wrapper'
 import { itemStampService } from '../services/itemStamp.service'
 
 export function registerItemStampIpc(): void {
-  ipcMain.handle('item-stamps:list', () => {
+  createIpcHandler('itemStamps:list', () => {
     return itemStampService.list()
   })
 
-  ipcMain.handle('item-stamps:create', (_event, payload) => {
+  createIpcHandler('itemStamps:create', (_event, payload: any) => {
     return itemStampService.create(payload)
   })
 
-  ipcMain.handle('item-stamps:update', (_event, id: string, payload) => {
-    return itemStampService.update(id, payload)
+  createIpcHandler('itemStamps:update', (_event, payload: any) => {
+    if (payload && typeof payload === 'object' && 'id' in payload && 'payload' in payload) {
+      return itemStampService.update(payload.id, payload.payload)
+    }
+    return itemStampService.update(payload?.id, payload)
   })
 
-  ipcMain.handle('item-stamps:delete', (_event, id: string) => {
+  createIpcHandler('itemStamps:remove', (_event, id: any) => {
+    return itemStampService.delete(id)
+  })
+
+  createIpcHandler('itemStamps:delete', (_event, id: any) => {
     return itemStampService.delete(id)
   })
 }

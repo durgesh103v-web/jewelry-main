@@ -1,24 +1,24 @@
-import { ipcMain } from 'electron'
+import { createIpcHandler } from './wrapper'
 import { settlementService } from '../services/settlement.service'
 
 export function registerSettlementIpc(): void {
-  ipcMain.handle('settlements:next-number', () => {
+  createIpcHandler('settlements:next-number', () => {
     return settlementService.getNextNumber()
   })
 
-  ipcMain.handle('settlements:create', (_event, payload) => {
+  createIpcHandler('settlements:create', (_event, payload: any) => {
     return settlementService.create(payload)
   })
 
-  ipcMain.handle('settlements:list', () => {
+  createIpcHandler('settlements:list', () => {
     return settlementService.list()
   })
 
-  ipcMain.handle('settlements:get-by-id', (_event, id: string) => {
+  createIpcHandler('settlements:get-by-id', (_event, id: string) => {
     return settlementService.getById(id)
   })
 
-  ipcMain.handle('settlements:delete', (_event, id: string) => {
+  createIpcHandler('settlements:delete', (_event, id: string) => {
     return settlementService.delete(id)
   })
 }

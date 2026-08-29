@@ -11,6 +11,7 @@ import {
   type LabourRateType
 } from './jewelleryFormula.service'
 import { purchaseNumberService } from './purchaseNumber.service'
+import { inventoryMovementService } from './inventoryMovement.service'
 
 const purchaseItemLineSchema = z.object({
   itemId: z.string().trim().min(1, 'Item is required'),
@@ -357,28 +358,6 @@ export const purchaseService = {
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `
       )
-      const insertPurchaseStockLedger = db.prepare(
-        `
-          INSERT INTO stock_ledger (
-            id,
-            source_type,
-            source_id,
-            entry_date,
-            item_id,
-            stamp_id,
-            design_id,
-            metal_type,
-            pcs_delta,
-            gross_weight_delta,
-            net_weight_delta,
-            fine_delta,
-            narration,
-            created_at
-          )
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `
-      )
-
       for (const line of preparedItemLines) {
         insertPurchaseItemLine.run(
           line.id,
@@ -409,22 +388,21 @@ export const purchaseService = {
           now
         )
 
-        insertPurchaseStockLedger.run(
-          uuidv4(),
-          'PURCHASE',
-          purchaseId,
-          purchaseDate,
-          line.itemId,
-          emptyToNull(line.stampId),
-          emptyToNull(line.designId),
-          data.metalType,
-          line.pcs,
-          line.grossWeight,
-          line.netWeight,
-          line.fine,
-          `Purchase ${purchaseNo} - ${line.item.item_name}`,
-          now
-        )
+        inventoryMovementService.postMovement({
+          sourceType: 'PURCHASE',
+          sourceId: purchaseId,
+          movementType: 'PURCHASE',
+          entryDate: purchaseDate,
+          itemId: line.itemId,
+          stampId: emptyToNull(line.stampId),
+          designId: emptyToNull(line.designId),
+          metalType: data.metalType,
+          pcsDelta: line.pcs,
+          grossWeightDelta: line.grossWeight,
+          netWeightDelta: line.netWeight,
+          fineDelta: line.fine,
+          narration: `Purchase ${purchaseNo} - ${line.item.item_name}`
+        })
       }
 
       const insertPurchasePaymentLine = db.prepare(
@@ -668,13 +646,7 @@ export const purchaseService = {
       `
       ).run(now, now, ` Cancelled on ${now}`, id)
 
-      db.prepare(
-        `
-        DELETE FROM stock_ledger
-        WHERE source_type = 'PURCHASE'
-        AND source_id = ?
-      `
-      ).run(id)
+      inventoryMovementService.revertMovement('PURCHASE', id)
 
       db.prepare(
         `

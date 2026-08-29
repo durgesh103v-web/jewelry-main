@@ -1,20 +1,27 @@
-import { ipcMain } from 'electron'
+import { createIpcHandler } from './wrapper'
 import { itemOpeningStockService } from '../services/itemOpeningStock.service'
 
 export function registerItemOpeningStockIpc(): void {
-  ipcMain.handle('item-opening-stock:list', () => {
+  createIpcHandler('itemOpeningStock:list', () => {
     return itemOpeningStockService.list()
   })
 
-  ipcMain.handle('item-opening-stock:create', (_event, payload) => {
+  createIpcHandler('itemOpeningStock:create', (_event, payload: any) => {
     return itemOpeningStockService.create(payload)
   })
 
-  ipcMain.handle('item-opening-stock:update', (_event, id: string, payload) => {
-    return itemOpeningStockService.update(id, payload)
+  createIpcHandler('itemOpeningStock:update', (_event, payload: any) => {
+    if (payload && typeof payload === 'object' && 'id' in payload && 'payload' in payload) {
+      return itemOpeningStockService.update(payload.id, payload.payload)
+    }
+    return itemOpeningStockService.update(payload?.id, payload)
   })
 
-  ipcMain.handle('item-opening-stock:delete', (_event, id: string) => {
+  createIpcHandler('itemOpeningStock:remove', (_event, id: any) => {
+    return itemOpeningStockService.delete(id)
+  })
+
+  createIpcHandler('itemOpeningStock:delete', (_event, id: any) => {
     return itemOpeningStockService.delete(id)
   })
 }

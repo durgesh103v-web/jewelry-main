@@ -9,6 +9,7 @@ import {
   type LabourRateType
 } from './jewelleryFormula.service'
 import { purchaseReturnNumberService } from './purchaseReturnNumber.service'
+import { inventoryMovementService } from './inventoryMovement.service'
 
 const purchaseReturnItemLineSchema = z.object({
   itemId: z.string().trim().min(1, 'Item is required'),
@@ -401,44 +402,21 @@ export const purchaseReturnService = {
           now
         )
 
-        // Reverse of Purchase's Stock+: Purchase Return removes stock that
-        // was previously added (negative deltas).
-        db.prepare(
-          `
-          INSERT INTO stock_ledger (
-            id,
-            source_type,
-            source_id,
-            entry_date,
-            item_id,
-            stamp_id,
-            design_id,
-            metal_type,
-            pcs_delta,
-            gross_weight_delta,
-            net_weight_delta,
-            fine_delta,
-            narration,
-            created_at
-          )
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `
-        ).run(
-          uuidv4(),
-          'PURCHASE_RETURN',
-          purchaseReturnId,
-          returnDate,
-          line.itemId,
-          emptyToNull(line.stampId),
-          emptyToNull(line.designId),
-          data.metalType,
-          -line.pcs,
-          -line.grossWeight,
-          -line.netWeight,
-          -line.fine,
-          `Purchase Return ${returnNo} - ${line.item.item_name}`,
-          now
-        )
+        inventoryMovementService.postMovement({
+          sourceType: 'PURCHASE_RETURN',
+          sourceId: purchaseReturnId,
+          movementType: 'PURCHASE_RETURN',
+          entryDate: returnDate,
+          itemId: line.itemId,
+          stampId: emptyToNull(line.stampId),
+          designId: emptyToNull(line.designId),
+          metalType: data.metalType,
+          pcsDelta: -line.pcs,
+          grossWeightDelta: -line.grossWeight,
+          netWeightDelta: -line.netWeight,
+          fineDelta: -line.fine,
+          narration: `Purchase Return ${returnNo} - ${line.item.item_name}`
+        })
       }
 
       // Reverse of Purchase's Jama (credit): Purchase Return posts a Nave
@@ -518,13 +496,7 @@ export const purchaseReturnService = {
     )
 
     const transaction = db.transaction(() => {
-      db.prepare(
-        `
-        DELETE FROM stock_ledger
-        WHERE source_type = 'PURCHASE_RETURN'
-        AND source_id = ?
-      `
-      ).run(id)
+      inventoryMovementService.revertMovement('PURCHASE_RETURN', id)
 
       db.prepare(
         `
@@ -663,42 +635,21 @@ export const purchaseReturnService = {
           now
         )
 
-        db.prepare(
-          `
-          INSERT INTO stock_ledger (
-            id,
-            source_type,
-            source_id,
-            entry_date,
-            item_id,
-            stamp_id,
-            design_id,
-            metal_type,
-            pcs_delta,
-            gross_weight_delta,
-            net_weight_delta,
-            fine_delta,
-            narration,
-            created_at
-          )
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `
-        ).run(
-          uuidv4(),
-          'PURCHASE_RETURN',
-          id,
-          returnDate,
-          line.itemId,
-          emptyToNull(line.stampId),
-          emptyToNull(line.designId),
-          data.metalType,
-          -line.pcs,
-          -line.grossWeight,
-          -line.netWeight,
-          -line.fine,
-          `Purchase Return ${returnNo} - ${line.item.item_name}`,
-          now
-        )
+        inventoryMovementService.postMovement({
+          sourceType: 'PURCHASE_RETURN',
+          sourceId: id,
+          movementType: 'PURCHASE_RETURN',
+          entryDate: returnDate,
+          itemId: line.itemId,
+          stampId: emptyToNull(line.stampId),
+          designId: emptyToNull(line.designId),
+          metalType: data.metalType,
+          pcsDelta: -line.pcs,
+          grossWeightDelta: -line.grossWeight,
+          netWeightDelta: -line.netWeight,
+          fineDelta: -line.fine,
+          narration: `Purchase Return ${returnNo} - ${line.item.item_name}`
+        })
       }
 
       db.prepare(
@@ -767,13 +718,7 @@ export const purchaseReturnService = {
       `
       ).run(now, now, ` Voided on ${now}`, id)
 
-      db.prepare(
-        `
-        DELETE FROM stock_ledger
-        WHERE source_type = 'PURCHASE_RETURN'
-        AND source_id = ?
-      `
-      ).run(id)
+      inventoryMovementService.revertMovement('PURCHASE_RETURN', id)
 
       db.prepare(
         `

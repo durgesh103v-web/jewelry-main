@@ -1,18 +1,21 @@
 import dayjs from 'dayjs'
 import { v4 as uuidv4 } from 'uuid'
 import { z } from 'zod'
-import { getDatabase } from '../database/connection'
+import { ItemGroupRepository, ItemGroupRow } from '../database/repositories/ItemGroupRepository'
+import { ValidationError, NotFoundError, ConflictError } from '../ipc/errors'
+
+const itemGroupRepository = new ItemGroupRepository()
 
 const itemGroupSchema = z.object({
   groupName: z.string().trim().min(1, 'Item group name is required').max(80),
-  metalType: z.enum(['Gold', 'Silver', 'Diamond', 'Other']),
+  metalType: z.enum(['Gold', 'Silver', 'Diamond', 'Platinum', 'Other']).default('Silver'),
   description: z.string().trim().max(255).optional().default(''),
   active: z.boolean().default(true)
 })
 
-type ItemGroupPayload = z.infer<typeof itemGroupSchema>
+export type ItemGroupPayload = z.infer<typeof itemGroupSchema>
 
-type ItemGroupRecord = {
+export interface ItemGroupRecord {
   id: string
   groupName: string
   metalType: string
@@ -20,16 +23,6 @@ type ItemGroupRecord = {
   active: boolean
   createdAt: string
   updatedAt: string
-}
-
-type ItemGroupRow = {
-  id: string
-  group_name: string
-  metal_type: string
-  description: string | null
-  active: number
-  created_at: string
-  updated_at: string
 }
 
 function mapRow(row: ItemGroupRow): ItemGroupRecord {
@@ -45,152 +38,76 @@ function mapRow(row: ItemGroupRow): ItemGroupRecord {
 }
 
 export const itemGroupService = {
-  list() {
-    const db = getDatabase()
-
-    const rows = db
-      .prepare(
-        `
-        SELECT id, group_name, metal_type, description, active, created_at, updated_at
-        FROM item_groups
-        WHERE deleted_at IS NULL
-        ORDER BY metal_type ASC, group_name ASC
-      `
-      )
-      .all() as ItemGroupRow[]
-
-    return rows.map(mapRow)
+  list(): ItemGroupRecord[] {
+    return itemGroupRepository.findAll().map(mapRow)
   },
 
-  create(payload: ItemGroupPayload) {
-    const data = itemGroupSchema.parse(payload)
-    const db = getDatabase()
+  create(payload: ItemGroupPayload): ItemGroupRecord {
+    const parseResult = itemGroupSchema.safeParse(payload)
+    if (!parseResult.success) {
+      throw new ValidationError(parseResult.error.issues[0]?.message || 'Invalid item group payload')
+    }
+    const data = parseResult.data
 
-    const duplicate = db
-      .prepare(
-        `
-        SELECT id
-        FROM item_groups
-        WHERE LOWER(group_name) = LOWER(?)
-        AND metal_type = ?
-        AND deleted_at IS NULL
-      `
-      )
-      .get(data.groupName, data.metalType)
-
-    if (duplicate) {
-      throw new Error('Item group already exists')
+    if (itemGroupRepository.findDuplicate(data.groupName, data.metalType)) {
+      throw new ConflictError('Item group already exists')
     }
 
     const now = dayjs().format('YYYY-MM-DD HH:mm:ss')
     const id = uuidv4()
 
-    db.prepare(
-      `
-      INSERT INTO item_groups (
-        id,
-        group_name,
-        metal_type,
-        description,
-        active,
-        created_at,
-        updated_at
-      )
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `
-    ).run(id, data.groupName, data.metalType, data.description, data.active ? 1 : 0, now, now)
+    itemGroupRepository.insert({
+      id,
+      groupName: data.groupName,
+      metalType: data.metalType,
+      description: data.description,
+      active: data.active,
+      createdAt: now,
+      updatedAt: now
+    })
 
     return this.getById(id)
   },
 
-  update(id: string, payload: ItemGroupPayload) {
-    const data = itemGroupSchema.parse(payload)
-    const db = getDatabase()
+  update(id: string, payload: ItemGroupPayload): ItemGroupRecord {
+    const parseResult = itemGroupSchema.safeParse(payload)
+    if (!parseResult.success) {
+      throw new ValidationError(parseResult.error.issues[0]?.message || 'Invalid item group payload')
+    }
+    const data = parseResult.data
 
-    const existing = db
-      .prepare(
-        `
-        SELECT id
-        FROM item_groups
-        WHERE id = ?
-        AND deleted_at IS NULL
-      `
-      )
-      .get(id)
-
+    const existing = itemGroupRepository.findById(id)
     if (!existing) {
-      throw new Error('Item group not found')
+      throw new NotFoundError('Item group not found')
     }
 
-    const duplicate = db
-      .prepare(
-        `
-        SELECT id
-        FROM item_groups
-        WHERE LOWER(group_name) = LOWER(?)
-        AND metal_type = ?
-        AND id != ?
-        AND deleted_at IS NULL
-      `
-      )
-      .get(data.groupName, data.metalType, id)
-
-    if (duplicate) {
-      throw new Error('Another item group with this name already exists')
+    if (itemGroupRepository.findDuplicate(data.groupName, data.metalType, id)) {
+      throw new ConflictError('Another item group with this name already exists')
     }
 
     const now = dayjs().format('YYYY-MM-DD HH:mm:ss')
-
-    db.prepare(
-      `
-      UPDATE item_groups
-      SET
-        group_name = ?,
-        metal_type = ?,
-        description = ?,
-        active = ?,
-        updated_at = ?
-      WHERE id = ?
-    `
-    ).run(data.groupName, data.metalType, data.description, data.active ? 1 : 0, now, id)
+    itemGroupRepository.update(id, {
+      groupName: data.groupName,
+      metalType: data.metalType,
+      description: data.description,
+      active: data.active,
+      updatedAt: now
+    })
 
     return this.getById(id)
   },
 
-  delete(id: string) {
-    const db = getDatabase()
+  delete(id: string): { success: boolean } {
     const now = dayjs().format('YYYY-MM-DD HH:mm:ss')
-
-    db.prepare(
-      `
-      UPDATE item_groups
-      SET deleted_at = ?, updated_at = ?
-      WHERE id = ?
-      AND deleted_at IS NULL
-    `
-    ).run(now, now, id)
-
+    itemGroupRepository.delete(id, now)
     return { success: true }
   },
 
-  getById(id: string) {
-    const db = getDatabase()
-
-    const row = db
-      .prepare(
-        `
-        SELECT id, group_name, metal_type, description, active, created_at, updated_at
-        FROM item_groups
-        WHERE id = ?
-        AND deleted_at IS NULL
-      `
-      )
-      .get(id) as ItemGroupRow | undefined
-
+  getById(id: string): ItemGroupRecord {
+    const row = itemGroupRepository.findById(id)
     if (!row) {
-      throw new Error('Item group not found')
+      throw new NotFoundError('Item group not found')
     }
-
     return mapRow(row)
   }
 }

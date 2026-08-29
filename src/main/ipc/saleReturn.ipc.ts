@@ -1,32 +1,35 @@
-import { ipcMain } from 'electron'
+import { createIpcHandler } from './wrapper'
 import { saleReturnService } from '../services/saleReturn.service'
 
 export function registerSaleReturnIpc(): void {
-  ipcMain.handle('sale-returns:next-number', () => {
+  createIpcHandler('sale-returns:next-number', () => {
     return saleReturnService.getNextSaleReturnNo()
   })
 
-  ipcMain.handle('sale-returns:account-balance', (_event, accountId: string) => {
+  createIpcHandler('sale-returns:account-balance', (_event, accountId: string) => {
     return saleReturnService.getAccountBalance(accountId)
   })
 
-  ipcMain.handle('sale-returns:create', (_event, payload) => {
+  createIpcHandler('sale-returns:create', (_event, payload: any) => {
     return saleReturnService.create(payload)
   })
 
-  ipcMain.handle('sale-returns:update', (_event, id: string, payload) => {
+  createIpcHandler('sale-returns:update', (_event, id: string, payload?: any) => {
+    if (payload && typeof payload === 'object' && 'id' in payload && 'payload' in payload) {
+      return saleReturnService.update(payload.id, payload.payload)
+    }
     return saleReturnService.update(id, payload)
   })
 
-  ipcMain.handle('sale-returns:list', () => {
+  createIpcHandler('sale-returns:list', () => {
     return saleReturnService.list()
   })
 
-  ipcMain.handle('sale-returns:get-by-id', (_event, id: string) => {
+  createIpcHandler('sale-returns:get-by-id', (_event, id: string) => {
     return saleReturnService.getById(id)
   })
 
-  ipcMain.handle('sale-returns:delete', (_event, id: string) => {
+  createIpcHandler('sale-returns:delete', (_event, id: string) => {
     return saleReturnService.delete(id)
   })
 }

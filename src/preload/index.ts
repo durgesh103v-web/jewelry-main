@@ -2321,6 +2321,28 @@ const api = {
 
     getImage: (fileName: string): Promise<string> =>
       ipcRenderer.invoke('screenshot:getImage', fileName)
+  },
+
+  categories: {
+    list: (): Promise<any[]> => ipcRenderer.invoke('categories:list'),
+    tree: (): Promise<any[]> => ipcRenderer.invoke('categories:tree'),
+    create: (payload: any): Promise<any> => ipcRenderer.invoke('categories:create', payload),
+    update: (id: string, payload: any): Promise<any> => ipcRenderer.invoke('categories:update', { id, payload }),
+    remove: (id: string): Promise<{ success: boolean }> => ipcRenderer.invoke('categories:delete', id)
+  },
+
+  purities: {
+    list: (metalType?: string): Promise<any[]> => ipcRenderer.invoke('purities:list', metalType),
+    getById: (id: string): Promise<any> => ipcRenderer.invoke('purities:get-by-id', id)
+  },
+
+  inventory: {
+    findByBarcode: (barcode: string): Promise<any> => ipcRenderer.invoke('inventory:findByBarcode', barcode),
+    findBySku: (sku: string): Promise<any> => ipcRenderer.invoke('inventory:findBySku', sku),
+    getItemStock: (itemId: string): Promise<any> => ipcRenderer.invoke('inventory:getItemStock', itemId),
+    getMovementHistory: (itemId: string): Promise<any[]> => ipcRenderer.invoke('inventory:getMovementHistory', itemId),
+    getLocations: (): Promise<any[]> => ipcRenderer.invoke('inventory:getLocations'),
+    postMovement: (params: any): Promise<{ id: string }> => ipcRenderer.invoke('inventory:postMovement', params)
   }
 }
 

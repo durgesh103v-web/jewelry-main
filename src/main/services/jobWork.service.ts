@@ -10,6 +10,7 @@ import {
   type LabourRateType
 } from './jewelleryFormula.service'
 import { jobWorkNumberService } from './jobWorkNumber.service'
+import { inventoryMovementService } from './inventoryMovement.service'
 
 // A job work order is closed out ("received") once the cumulative net weight
 // received back across all receipts reaches this fraction of the net weight
@@ -426,46 +427,19 @@ export const jobWorkService = {
         now
       )
 
-      // Finished goods are now physically back in the firm's stock - post a
-      // Stock+ entry for the received item. The raw material sent out on
-      // the OUT order was never removed from stock_ledger (see create()
-      // above), so this is a pure addition, not a reversal.
-      db.prepare(
-        `
-        INSERT INTO stock_ledger (
-          id,
-          source_type,
-          source_id,
-          entry_date,
-          item_id,
-          stamp_id,
-          design_id,
-          metal_type,
-          pcs_delta,
-          gross_weight_delta,
-          net_weight_delta,
-          fine_delta,
-          narration,
-          created_at
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `
-      ).run(
-        uuidv4(),
-        'JOB_WORK_RECEIPT',
-        orderId,
-        receiptDate,
-        order.item_id,
-        null,
-        null,
-        order.metal_type,
-        data.pcs,
-        data.grossWeightReceived,
-        data.netWeightReceived,
-        fineReceived,
-        `Job Work Receipt ${order.order_no} - ${item.item_name}`,
-        now
-      )
+      inventoryMovementService.postMovement({
+        sourceType: 'JOB_WORK_RECEIPT',
+        sourceId: orderId,
+        movementType: 'JOB_WORK_IN',
+        entryDate: receiptDate,
+        itemId: order.item_id,
+        metalType: order.metal_type,
+        pcsDelta: data.pcs,
+        grossWeightDelta: data.grossWeightReceived,
+        netWeightDelta: data.netWeightReceived,
+        fineDelta: fineReceived,
+        narration: `Job Work Receipt ${order.order_no} - ${item.item_name}`
+      })
 
       // Majuri is cash the firm now owes the karigar for the crafting work,
       // exactly like the majuri component of a Purchase bill (see

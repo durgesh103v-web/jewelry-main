@@ -1,36 +1,45 @@
-import { ipcMain } from 'electron'
+import { createIpcHandler } from './wrapper'
 import { repairEntryService } from '../services/repairEntry.service'
 
 export function registerRepairEntryIpc(): void {
-  ipcMain.handle('repair-entries:next-number', () => {
+  createIpcHandler('repair-entries:next-number', () => {
     return repairEntryService.getNextRepairNo()
   })
 
-  ipcMain.handle('repair-entries:create', (_event, payload) => {
+  createIpcHandler('repair-entries:create', (_event, payload: any) => {
     return repairEntryService.create(payload)
   })
 
-  ipcMain.handle('repair-entries:update', (_event, id: string, payload) => {
+  createIpcHandler('repair-entries:update', (_event, id: string, payload?: any) => {
+    if (payload && typeof payload === 'object' && 'id' in payload && 'payload' in payload) {
+      return repairEntryService.update(payload.id, payload.payload)
+    }
     return repairEntryService.update(id, payload)
   })
 
-  ipcMain.handle('repair-entries:list', () => {
+  createIpcHandler('repair-entries:list', () => {
     return repairEntryService.list()
   })
 
-  ipcMain.handle('repair-entries:get-by-id', (_event, id: string) => {
+  createIpcHandler('repair-entries:get-by-id', (_event, id: string) => {
     return repairEntryService.getById(id)
   })
 
-  ipcMain.handle('repair-entries:delete', (_event, id: string) => {
+  createIpcHandler('repair-entries:delete', (_event, id: string) => {
     return repairEntryService.delete(id)
   })
 
-  ipcMain.handle('repair-entries:complete-repair', (_event, id: string, payload) => {
+  createIpcHandler('repair-entries:complete-repair', (_event, id: string, payload?: any) => {
+    if (payload && typeof payload === 'object' && 'id' in payload && 'payload' in payload) {
+      return repairEntryService.completeRepair(payload.id, payload.payload)
+    }
     return repairEntryService.completeRepair(id, payload)
   })
 
-  ipcMain.handle('repair-entries:mark-delivered', (_event, id: string, payload) => {
+  createIpcHandler('repair-entries:mark-delivered', (_event, id: string, payload?: any) => {
+    if (payload && typeof payload === 'object' && 'id' in payload && 'payload' in payload) {
+      return repairEntryService.markDelivered(payload.id, payload.payload)
+    }
     return repairEntryService.markDelivered(id, payload)
   })
 }

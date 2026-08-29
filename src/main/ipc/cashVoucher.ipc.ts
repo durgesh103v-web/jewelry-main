@@ -1,49 +1,55 @@
-import { ipcMain } from 'electron'
+import { createIpcHandler } from './wrapper'
 import { cashVoucherService } from '../services/cashVoucher.service'
 import type { CashVoucherType } from '../../shared/types/cashVoucher'
 
 export function registerCashVoucherIpc(): void {
-  ipcMain.handle('cash-vouchers:next-number', (_event, voucherType: CashVoucherType) => {
+  createIpcHandler('cash-vouchers:next-number', (_event, voucherType: CashVoucherType) => {
     return cashVoucherService.getNextVoucherNo(voucherType)
   })
 
-  ipcMain.handle('cash-vouchers:create', (_event, payload) => {
+  createIpcHandler('cash-vouchers:create', (_event, payload: any) => {
     return cashVoucherService.create(payload)
   })
 
-  ipcMain.handle('cash-vouchers:update', (_event, id: string, payload) => {
+  createIpcHandler('cash-vouchers:update', (_event, id: string, payload?: any) => {
+    if (payload && typeof payload === 'object' && 'id' in payload && 'payload' in payload) {
+      return cashVoucherService.update(payload.id, payload.payload)
+    }
     return cashVoucherService.update(id, payload)
   })
 
-  ipcMain.handle('cash-vouchers:delete', (_event, id: string) => {
+  createIpcHandler('cash-vouchers:delete', (_event, id: string) => {
     return cashVoucherService.delete(id)
   })
 
-  ipcMain.handle('cash-vouchers:get-by-id', (_event, id: string) => {
+  createIpcHandler('cash-vouchers:get-by-id', (_event, id: string) => {
     return cashVoucherService.getById(id)
   })
 
-  ipcMain.handle('cash-vouchers:list', (_event, filter) => {
+  createIpcHandler('cash-vouchers:list', (_event, filter?: any) => {
     return cashVoucherService.list(filter)
   })
 
-  ipcMain.handle('cashVoucher:create', (_event, payload) => {
+  createIpcHandler('cashVoucher:create', (_event, payload: any) => {
     return cashVoucherService.create(payload)
   })
 
-  ipcMain.handle('cashVoucher:update', (_event, payload) => {
-    return cashVoucherService.update(payload.id, payload)
+  createIpcHandler('cashVoucher:update', (_event, payload: any) => {
+    if (payload && typeof payload === 'object' && 'id' in payload && 'payload' in payload) {
+      return cashVoucherService.update(payload.id, payload.payload)
+    }
+    return cashVoucherService.update(payload?.id, payload)
   })
 
-  ipcMain.handle('cashVoucher:delete', (_event, id: string) => {
+  createIpcHandler('cashVoucher:delete', (_event, id: string) => {
     return cashVoucherService.delete(id)
   })
 
-  ipcMain.handle('cashVoucher:getById', (_event, id: string) => {
+  createIpcHandler('cashVoucher:getById', (_event, id: string) => {
     return cashVoucherService.getById(id)
   })
 
-  ipcMain.handle('cashVoucher:list', (_event, filter) => {
+  createIpcHandler('cashVoucher:list', (_event, filter?: any) => {
     return cashVoucherService.list(filter)
   })
 }

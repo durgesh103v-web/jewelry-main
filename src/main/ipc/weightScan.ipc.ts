@@ -1,20 +1,20 @@
-import { ipcMain } from 'electron'
+import { createIpcHandler } from './wrapper'
 import { weightScanService } from '../services/weightScan.service'
 
 export function registerWeightScanIpc(): void {
-  ipcMain.handle('weight-scans:create', (_event, payload) => {
+  createIpcHandler('weight-scans:create', (_event, payload: any) => {
     return weightScanService.create(payload)
   })
 
-  ipcMain.handle('weight-scans:list', () => {
+  createIpcHandler('weight-scans:list', () => {
     return weightScanService.list()
   })
 
-  ipcMain.handle('weight-scans:get-by-id', (_event, id: string) => {
+  createIpcHandler('weight-scans:get-by-id', (_event, id: string) => {
     return weightScanService.getById(id)
   })
 
-  ipcMain.handle('weight-scans:delete', (_event, id: string) => {
+  createIpcHandler('weight-scans:delete', (_event, id: string) => {
     return weightScanService.delete(id)
   })
 }

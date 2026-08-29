@@ -1,32 +1,35 @@
-import { ipcMain } from 'electron'
+import { createIpcHandler } from './wrapper'
 import { saudaService } from '../services/sauda.service'
 
 export function registerSaudaIpc(): void {
-  ipcMain.handle('sauda:next-number', () => {
+  createIpcHandler('sauda:next-number', () => {
     return saudaService.getNextNumber()
   })
 
-  ipcMain.handle('sauda:create', (_event, payload) => {
+  createIpcHandler('sauda:create', (_event, payload: any) => {
     return saudaService.create(payload)
   })
 
-  ipcMain.handle('sauda:update', (_event, id: string, payload) => {
+  createIpcHandler('sauda:update', (_event, id: string, payload?: any) => {
+    if (payload && typeof payload === 'object' && 'id' in payload && 'payload' in payload) {
+      return saudaService.update(payload.id, payload.payload)
+    }
     return saudaService.update(id, payload)
   })
 
-  ipcMain.handle('sauda:list', () => {
+  createIpcHandler('sauda:list', () => {
     return saudaService.list()
   })
 
-  ipcMain.handle('sauda:get-by-id', (_event, id: string) => {
+  createIpcHandler('sauda:get-by-id', (_event, id: string) => {
     return saudaService.getById(id)
   })
 
-  ipcMain.handle('sauda:close', (_event, id: string) => {
+  createIpcHandler('sauda:close', (_event, id: string) => {
     return saudaService.closeSauda(id)
   })
 
-  ipcMain.handle('sauda:delete', (_event, id: string) => {
+  createIpcHandler('sauda:delete', (_event, id: string) => {
     return saudaService.delete(id)
   })
 }

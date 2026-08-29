@@ -37,6 +37,9 @@ import { registerReminderIpc } from './ipc/reminder.ipc'
 import { registerWhatsAppIpc } from './ipc/whatsapp.ipc'
 import { registerScreenshotIpc } from './ipc/screenshot.ipc'
 import { registerAuthIpc } from './ipc/auth.ipc'
+import { registerCategoryIpc } from './ipc/category.ipc'
+import { registerPurityIpc } from './ipc/purity.ipc'
+import { registerInventoryIpc } from './ipc/inventory.ipc'
 
 // Only these URL schemes may be handed to the OS browser. Blocks file:// and
 // custom-scheme links that could otherwise be launched via window.open.
@@ -156,6 +159,9 @@ app.whenReady().then(() => {
   registerReminderIpc()
   registerWhatsAppIpc()
   registerScreenshotIpc()
+  registerCategoryIpc()
+  registerPurityIpc()
+  registerInventoryIpc()
 
   createWindow()
 

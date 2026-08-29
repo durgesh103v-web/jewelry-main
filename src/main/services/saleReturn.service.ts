@@ -9,6 +9,7 @@ import {
   type LabourRateType
 } from './jewelleryFormula.service'
 import { saleReturnNumberService } from './saleReturnNumber.service'
+import { inventoryMovementService } from './inventoryMovement.service'
 
 const saleReturnItemLineSchema = z.object({
   itemId: z.string().trim().min(1, 'Item is required'),
@@ -401,44 +402,21 @@ export const saleReturnService = {
           now
         )
 
-        // Reverse of Sale's Stock-: Sale Return adds back stock that was
-        // previously removed (positive deltas).
-        db.prepare(
-          `
-          INSERT INTO stock_ledger (
-            id,
-            source_type,
-            source_id,
-            entry_date,
-            item_id,
-            stamp_id,
-            design_id,
-            metal_type,
-            pcs_delta,
-            gross_weight_delta,
-            net_weight_delta,
-            fine_delta,
-            narration,
-            created_at
-          )
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `
-        ).run(
-          uuidv4(),
-          'SALE_RETURN',
-          saleReturnId,
-          returnDate,
-          line.itemId,
-          emptyToNull(line.stampId),
-          emptyToNull(line.designId),
-          data.metalType,
-          line.pcs,
-          line.grossWeight,
-          line.netWeight,
-          line.fine,
-          `Sale Return ${returnNo} - ${line.item.item_name}`,
-          now
-        )
+        inventoryMovementService.postMovement({
+          sourceType: 'SALE_RETURN',
+          sourceId: saleReturnId,
+          movementType: 'SALE_RETURN',
+          entryDate: returnDate,
+          itemId: line.itemId,
+          stampId: emptyToNull(line.stampId),
+          designId: emptyToNull(line.designId),
+          metalType: data.metalType,
+          pcsDelta: line.pcs,
+          grossWeightDelta: line.grossWeight,
+          netWeightDelta: line.netWeight,
+          fineDelta: line.fine,
+          narration: `Sale Return ${returnNo} - ${line.item.item_name}`
+        })
       }
 
       // Reverse of Sale's Nave (debit): Sale Return posts a Jama (credit)
@@ -518,13 +496,7 @@ export const saleReturnService = {
     )
 
     const transaction = db.transaction(() => {
-      db.prepare(
-        `
-        DELETE FROM stock_ledger
-        WHERE source_type = 'SALE_RETURN'
-        AND source_id = ?
-      `
-      ).run(id)
+      inventoryMovementService.revertMovement('SALE_RETURN', id)
 
       db.prepare(
         `
@@ -552,6 +524,8 @@ export const saleReturnService = {
           ? roundNumber(oldBalance.silverFine - itemFineTotal)
           : oldBalance.silverFine
       const closingCash = roundNumber(oldBalance.cash - itemMajuriTotal, 0)
+      const closingAnamat = oldBalance.anamat
+      const closingBank = oldBalance.bank
 
       db.prepare(
         `
@@ -595,46 +569,48 @@ export const saleReturnService = {
         closingGoldFine,
         closingSilverFine,
         closingCash,
-        oldBalance.anamat,
-        oldBalance.bank,
+        closingAnamat,
+        closingBank,
         now,
         id
       )
 
-      for (const line of preparedItemLines) {
-        db.prepare(
-          `
-          INSERT INTO sale_return_item_lines (
-            id,
-            sale_return_id,
-            line_no,
-            line_type,
-            item_id,
-            stamp_id,
-            design_id,
-            item_name_snapshot,
-            barcode,
-            remark,
-            pcs,
-            gross_weight,
-            pack_weight,
-            less_weight,
-            add_weight,
-            net_weight,
-            tunch,
-            wastage,
-            hishob,
-            unit,
-            labour_rate,
-            labour_rate_type,
-            fine,
-            majuri,
-            created_at,
-            updated_at
-          )
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      const insertSaleReturnItemLine = db.prepare(
         `
-        ).run(
+        INSERT INTO sale_return_item_lines (
+          id,
+          sale_return_id,
+          line_no,
+          line_type,
+          item_id,
+          stamp_id,
+          design_id,
+          item_name_snapshot,
+          barcode,
+          remark,
+          pcs,
+          gross_weight,
+          pack_weight,
+          less_weight,
+          add_weight,
+          net_weight,
+          tunch,
+          wastage,
+          hishob,
+          unit,
+          labour_rate,
+          labour_rate_type,
+          fine,
+          majuri,
+          created_at,
+          updated_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `
+      )
+
+      for (const line of preparedItemLines) {
+        insertSaleReturnItemLine.run(
           line.id,
           id,
           line.lineNo,
@@ -663,42 +639,21 @@ export const saleReturnService = {
           now
         )
 
-        db.prepare(
-          `
-          INSERT INTO stock_ledger (
-            id,
-            source_type,
-            source_id,
-            entry_date,
-            item_id,
-            stamp_id,
-            design_id,
-            metal_type,
-            pcs_delta,
-            gross_weight_delta,
-            net_weight_delta,
-            fine_delta,
-            narration,
-            created_at
-          )
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `
-        ).run(
-          uuidv4(),
-          'SALE_RETURN',
-          id,
-          returnDate,
-          line.itemId,
-          emptyToNull(line.stampId),
-          emptyToNull(line.designId),
-          data.metalType,
-          line.pcs,
-          line.grossWeight,
-          line.netWeight,
-          line.fine,
-          `Sale Return ${returnNo} - ${line.item.item_name}`,
-          now
-        )
+        inventoryMovementService.postMovement({
+          sourceType: 'SALE_RETURN',
+          sourceId: id,
+          movementType: 'SALE_RETURN',
+          entryDate: returnDate,
+          itemId: line.itemId,
+          stampId: emptyToNull(line.stampId),
+          designId: emptyToNull(line.designId),
+          metalType: data.metalType,
+          pcsDelta: line.pcs,
+          grossWeightDelta: line.grossWeight,
+          netWeightDelta: line.netWeight,
+          fineDelta: line.fine,
+          narration: `Sale Return ${returnNo} - ${line.item.item_name}`
+        })
       }
 
       db.prepare(
@@ -767,13 +722,7 @@ export const saleReturnService = {
       `
       ).run(now, now, ` Voided on ${now}`, id)
 
-      db.prepare(
-        `
-        DELETE FROM stock_ledger
-        WHERE source_type = 'SALE_RETURN'
-        AND source_id = ?
-      `
-      ).run(id)
+      inventoryMovementService.revertMovement('SALE_RETURN', id)
 
       db.prepare(
         `

@@ -1,32 +1,35 @@
-import { ipcMain } from 'electron'
+import { createIpcHandler } from './wrapper'
 import { estimateService } from '../services/estimate.service'
 
 export function registerEstimateIpc(): void {
-  ipcMain.handle('estimates:next-number', () => {
+  createIpcHandler('estimates:next-number', () => {
     return estimateService.getNextEstimateNo()
   })
 
-  ipcMain.handle('estimates:create', (_event, payload) => {
+  createIpcHandler('estimates:create', (_event, payload: any) => {
     return estimateService.create(payload)
   })
 
-  ipcMain.handle('estimates:update', (_event, id: string, payload) => {
+  createIpcHandler('estimates:update', (_event, id: string, payload?: any) => {
+    if (payload && typeof payload === 'object' && 'id' in payload && 'payload' in payload) {
+      return estimateService.update(payload.id, payload.payload)
+    }
     return estimateService.update(id, payload)
   })
 
-  ipcMain.handle('estimates:list', () => {
+  createIpcHandler('estimates:list', () => {
     return estimateService.list()
   })
 
-  ipcMain.handle('estimates:get-by-id', (_event, id: string) => {
+  createIpcHandler('estimates:get-by-id', (_event, id: string) => {
     return estimateService.getById(id)
   })
 
-  ipcMain.handle('estimates:delete', (_event, id: string) => {
+  createIpcHandler('estimates:delete', (_event, id: string) => {
     return estimateService.delete(id)
   })
 
-  ipcMain.handle('estimates:convert-to-sale', (_event, id: string) => {
+  createIpcHandler('estimates:convert-to-sale', (_event, id: string) => {
     return estimateService.convertToSale(id)
   })
 }

@@ -1,24 +1,24 @@
-import { ipcMain } from 'electron'
+import { createIpcHandler } from './wrapper'
 import { transferService } from '../services/transfer.service'
 
 export function registerTransferIpc(): void {
-  ipcMain.handle('transfers:next-number', () => {
+  createIpcHandler('transfers:next-number', () => {
     return transferService.getNextNumber()
   })
 
-  ipcMain.handle('transfers:create', (_event, payload) => {
+  createIpcHandler('transfers:create', (_event, payload: any) => {
     return transferService.create(payload)
   })
 
-  ipcMain.handle('transfers:list', () => {
+  createIpcHandler('transfers:list', () => {
     return transferService.list()
   })
 
-  ipcMain.handle('transfers:get-by-id', (_event, id: string) => {
+  createIpcHandler('transfers:get-by-id', (_event, id: string) => {
     return transferService.getById(id)
   })
 
-  ipcMain.handle('transfers:delete', (_event, id: string) => {
+  createIpcHandler('transfers:delete', (_event, id: string) => {
     return transferService.delete(id)
   })
 }

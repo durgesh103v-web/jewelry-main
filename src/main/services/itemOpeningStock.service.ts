@@ -8,6 +8,8 @@ import {
   calculateMajuri,
   calculateNetWeight
 } from './jewelleryFormula.service'
+import { inventoryMovementService } from './inventoryMovement.service'
+import { ValidationError, NotFoundError } from '../ipc/errors'
 
 const openingStockUnitSchema = z.preprocess(
   (value) => {
@@ -43,7 +45,7 @@ const openingStockSchema = z.object({
   active: z.boolean().default(true)
 })
 
-type OpeningStockPayload = z.infer<typeof openingStockSchema>
+export type OpeningStockPayload = z.infer<typeof openingStockSchema>
 
 type ItemMetaRow = {
   id: string
@@ -79,7 +81,7 @@ type OpeningStockRow = {
   updated_at: string
 }
 
-type OpeningStockRecord = {
+export type OpeningStockRecord = {
   id: string
   stockDate: string
   itemId: string
@@ -99,7 +101,7 @@ type OpeningStockRecord = {
   tanch: number
   wastage: number
   hishob: number
-  unit: 'Kg' | 'Gm' | 'Pcs'
+  unit: string
   fine: number
   majuriRate: number
   majuri: number
@@ -110,17 +112,6 @@ type OpeningStockRecord = {
 
 function emptyToNull(value: string): string | null {
   return value.trim() ? value.trim() : null
-}
-
-function normalizeOpeningStockUnit(unit: string | null): 'Kg' | 'Gm' | 'Pcs' {
-  const normalized = String(unit || 'Kg')
-    .trim()
-    .toUpperCase()
-
-  if (normalized === 'GM') return 'Gm'
-  if (normalized === 'PCS') return 'Pcs'
-
-  return 'Kg'
 }
 
 function mapRow(row: OpeningStockRow): OpeningStockRecord {
@@ -144,7 +135,7 @@ function mapRow(row: OpeningStockRow): OpeningStockRecord {
     tanch: Number(row.tanch ?? 0),
     wastage: Number(row.wastage ?? 0),
     hishob: Number(row.hishob ?? 0),
-    unit: normalizeOpeningStockUnit(row.unit),
+    unit: row.unit ?? 'Kg',
     fine: Number(row.fine ?? 0),
     majuriRate: Number(row.majuri_rate ?? 0),
     majuri: Number(row.majuri ?? 0),
@@ -156,7 +147,6 @@ function mapRow(row: OpeningStockRow): OpeningStockRecord {
 
 function getItemMeta(itemId: string): ItemMetaRow {
   const db = getDatabase()
-
   const item = db
     .prepare(
       `
@@ -169,14 +159,14 @@ function getItemMeta(itemId: string): ItemMetaRow {
     .get(itemId) as ItemMetaRow | undefined
 
   if (!item) {
-    throw new Error('Item not found')
+    throw new NotFoundError('Item not found')
   }
 
   return item
 }
 
 export const itemOpeningStockService = {
-  list() {
+  list(): OpeningStockRecord[] {
     const db = getDatabase()
 
     const rows = db
@@ -222,8 +212,12 @@ export const itemOpeningStockService = {
     return rows.map(mapRow)
   },
 
-  create(payload: OpeningStockPayload) {
-    const data = openingStockSchema.parse(payload)
+  create(payload: OpeningStockPayload): OpeningStockRecord {
+    const parseResult = openingStockSchema.safeParse(payload)
+    if (!parseResult.success) {
+      throw new ValidationError(parseResult.error.issues[0]?.message || 'Invalid opening stock payload')
+    }
+    const data = parseResult.data
     const db = getDatabase()
     const item = getItemMeta(data.itemId)
 
@@ -240,34 +234,15 @@ export const itemOpeningStockService = {
     const now = dayjs().format('YYYY-MM-DD HH:mm:ss')
     const stockDate = data.stockDate || dayjs().format('YYYY-MM-DD')
     const id = uuidv4()
-    const ledgerId = uuidv4()
 
     const transaction = db.transaction(() => {
       db.prepare(
         `
         INSERT INTO item_opening_stock (
-          id,
-          stock_date,
-          item_id,
-          stamp_id,
-          design_id,
-          barcode,
-          remark,
-          pcs,
-          gross_weight,
-          less_weight,
-          add_weight,
-          net_weight,
-          tanch,
-          wastage,
-          hishob,
-          unit,
-          fine,
-          majuri_rate,
-          majuri,
-          active,
-          created_at,
-          updated_at
+          id, stock_date, item_id, stamp_id, design_id, barcode, remark,
+          pcs, gross_weight, less_weight, add_weight, net_weight, tanch,
+          wastage, hishob, unit, fine, majuri_rate, majuri, active,
+          created_at, updated_at
         )
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `
@@ -296,42 +271,21 @@ export const itemOpeningStockService = {
         now
       )
 
-      db.prepare(
-        `
-        INSERT INTO stock_ledger (
-          id,
-          source_type,
-          source_id,
-          entry_date,
-          item_id,
-          stamp_id,
-          design_id,
-          metal_type,
-          pcs_delta,
-          gross_weight_delta,
-          net_weight_delta,
-          fine_delta,
-          narration,
-          created_at
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `
-      ).run(
-        ledgerId,
-        'OPENING_STOCK',
-        id,
-        stockDate,
-        data.itemId,
-        emptyToNull(data.stampId),
-        emptyToNull(data.designId),
-        item.metal_type,
-        data.pcs,
-        data.grossWeight,
-        netWeight,
-        fine,
-        'Item opening stock',
-        now
-      )
+      inventoryMovementService.postMovement({
+        sourceType: 'OPENING_STOCK',
+        sourceId: id,
+        movementType: 'OPENING_STOCK',
+        entryDate: stockDate,
+        itemId: data.itemId,
+        stampId: emptyToNull(data.stampId),
+        designId: emptyToNull(data.designId),
+        metalType: item.metal_type,
+        pcsDelta: data.pcs,
+        grossWeightDelta: data.grossWeight,
+        netWeightDelta: netWeight,
+        fineDelta: fine,
+        narration: 'Item opening stock'
+      })
     })
 
     transaction()
@@ -339,24 +293,21 @@ export const itemOpeningStockService = {
     return this.getById(id)
   },
 
-  update(id: string, payload: OpeningStockPayload) {
-    const data = openingStockSchema.parse(payload)
+  update(id: string, payload: OpeningStockPayload): OpeningStockRecord {
+    const parseResult = openingStockSchema.safeParse(payload)
+    if (!parseResult.success) {
+      throw new ValidationError(parseResult.error.issues[0]?.message || 'Invalid opening stock payload')
+    }
+    const data = parseResult.data
     const db = getDatabase()
     const item = getItemMeta(data.itemId)
 
     const existing = db
-      .prepare(
-        `
-        SELECT id
-        FROM item_opening_stock
-        WHERE id = ?
-        AND deleted_at IS NULL
-      `
-      )
+      .prepare(`SELECT id FROM item_opening_stock WHERE id = ? AND deleted_at IS NULL`)
       .get(id)
 
     if (!existing) {
-      throw new Error('Opening stock not found')
+      throw new NotFoundError('Opening stock not found')
     }
 
     const netWeight = calculateNetWeight(data.grossWeight, data.lessWeight, data.addWeight)
@@ -371,33 +322,16 @@ export const itemOpeningStockService = {
 
     const now = dayjs().format('YYYY-MM-DD HH:mm:ss')
     const stockDate = data.stockDate || dayjs().format('YYYY-MM-DD')
-    const ledgerId = uuidv4()
 
     const transaction = db.transaction(() => {
       db.prepare(
         `
         UPDATE item_opening_stock
         SET
-          stock_date = ?,
-          item_id = ?,
-          stamp_id = ?,
-          design_id = ?,
-          barcode = ?,
-          remark = ?,
-          pcs = ?,
-          gross_weight = ?,
-          less_weight = ?,
-          add_weight = ?,
-          net_weight = ?,
-          tanch = ?,
-          wastage = ?,
-          hishob = ?,
-          unit = ?,
-          fine = ?,
-          majuri_rate = ?,
-          majuri = ?,
-          active = ?,
-          updated_at = ?
+          stock_date = ?, item_id = ?, stamp_id = ?, design_id = ?, barcode = ?,
+          remark = ?, pcs = ?, gross_weight = ?, less_weight = ?, add_weight = ?,
+          net_weight = ?, tanch = ?, wastage = ?, hishob = ?, unit = ?, fine = ?,
+          majuri_rate = ?, majuri = ?, active = ?, updated_at = ?
         WHERE id = ?
       `
       ).run(
@@ -424,50 +358,23 @@ export const itemOpeningStockService = {
         id
       )
 
-      db.prepare(
-        `
-        DELETE FROM stock_ledger
-        WHERE source_type = 'OPENING_STOCK'
-        AND source_id = ?
-      `
-      ).run(id)
+      inventoryMovementService.revertMovement('OPENING_STOCK', id)
 
-      db.prepare(
-        `
-        INSERT INTO stock_ledger (
-          id,
-          source_type,
-          source_id,
-          entry_date,
-          item_id,
-          stamp_id,
-          design_id,
-          metal_type,
-          pcs_delta,
-          gross_weight_delta,
-          net_weight_delta,
-          fine_delta,
-          narration,
-          created_at
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `
-      ).run(
-        ledgerId,
-        'OPENING_STOCK',
-        id,
-        stockDate,
-        data.itemId,
-        emptyToNull(data.stampId),
-        emptyToNull(data.designId),
-        item.metal_type,
-        data.pcs,
-        data.grossWeight,
-        netWeight,
-        fine,
-        'Item opening stock updated',
-        now
-      )
+      inventoryMovementService.postMovement({
+        sourceType: 'OPENING_STOCK',
+        sourceId: id,
+        movementType: 'OPENING_STOCK',
+        entryDate: stockDate,
+        itemId: data.itemId,
+        stampId: emptyToNull(data.stampId),
+        designId: emptyToNull(data.designId),
+        metalType: item.metal_type,
+        pcsDelta: data.pcs,
+        grossWeightDelta: data.grossWeight,
+        netWeightDelta: netWeight,
+        fineDelta: fine,
+        narration: 'Item opening stock (updated)'
+      })
     })
 
     transaction()
@@ -475,7 +382,7 @@ export const itemOpeningStockService = {
     return this.getById(id)
   },
 
-  delete(id: string) {
+  delete(id: string): { success: boolean } {
     const db = getDatabase()
     const now = dayjs().format('YYYY-MM-DD HH:mm:ss')
 
@@ -489,13 +396,7 @@ export const itemOpeningStockService = {
       `
       ).run(now, now, id)
 
-      db.prepare(
-        `
-        DELETE FROM stock_ledger
-        WHERE source_type = 'OPENING_STOCK'
-        AND source_id = ?
-      `
-      ).run(id)
+      inventoryMovementService.revertMovement('OPENING_STOCK', id)
     })
 
     transaction()
@@ -503,7 +404,7 @@ export const itemOpeningStockService = {
     return { success: true }
   },
 
-  getById(id: string) {
+  getById(id: string): OpeningStockRecord {
     const db = getDatabase()
 
     const row = db
@@ -547,7 +448,7 @@ export const itemOpeningStockService = {
       .get(id) as OpeningStockRow | undefined
 
     if (!row) {
-      throw new Error('Opening stock not found')
+      throw new NotFoundError('Opening stock not found')
     }
 
     return mapRow(row)

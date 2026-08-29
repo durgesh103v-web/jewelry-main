@@ -1,36 +1,42 @@
-import { ipcMain } from 'electron'
+import { createIpcHandler } from './wrapper'
 import { approvalService } from '../services/approval.service'
 
 export function registerApprovalIpc(): void {
-  ipcMain.handle('approvals:next-number', () => {
+  createIpcHandler('approvals:next-number', () => {
     return approvalService.getNextApprovalNo()
   })
 
-  ipcMain.handle('approvals:create', (_event, payload) => {
+  createIpcHandler('approvals:create', (_event, payload: any) => {
     return approvalService.create(payload)
   })
 
-  ipcMain.handle('approvals:update', (_event, id: string, payload) => {
+  createIpcHandler('approvals:update', (_event, id: string, payload?: any) => {
+    if (payload && typeof payload === 'object' && 'id' in payload && 'payload' in payload) {
+      return approvalService.update(payload.id, payload.payload)
+    }
     return approvalService.update(id, payload)
   })
 
-  ipcMain.handle('approvals:list', () => {
+  createIpcHandler('approvals:list', () => {
     return approvalService.list()
   })
 
-  ipcMain.handle('approvals:get-by-id', (_event, id: string) => {
+  createIpcHandler('approvals:get-by-id', (_event, id: string) => {
     return approvalService.getById(id)
   })
 
-  ipcMain.handle('approvals:delete', (_event, id: string) => {
+  createIpcHandler('approvals:delete', (_event, id: string) => {
     return approvalService.delete(id)
   })
 
-  ipcMain.handle('approvals:convert-to-sale', (_event, id: string) => {
+  createIpcHandler('approvals:convert-to-sale', (_event, id: string) => {
     return approvalService.convertToSale(id)
   })
 
-  ipcMain.handle('approvals:return', (_event, id: string, payload) => {
+  createIpcHandler('approvals:return', (_event, id: string, payload?: any) => {
+    if (payload && typeof payload === 'object' && 'id' in payload && 'payload' in payload) {
+      return approvalService.returnApproval(payload.id, payload.payload)
+    }
     return approvalService.returnApproval(id, payload)
   })
 }
