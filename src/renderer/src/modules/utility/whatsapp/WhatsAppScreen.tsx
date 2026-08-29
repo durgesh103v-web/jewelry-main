@@ -1,12 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import AppAlert from '../../../components/ui/AppAlert'
 import { getFriendlyErrorMessage } from '../../../utils/getFriendlyErrorMessage'
+import { formatNumber } from '@utils/formatters'
+import { Button, Input, Textarea, Select, FormField, FormSection } from '@components/ui'
 
 type AlertType = 'success' | 'error' | 'warning'
-
 type TemplateId = 'PAYMENT_REMINDER' | 'BILL_COPY' | 'GENERAL'
-
-import { formatNumber } from '@utils/formatters'
 
 function buildTemplateMessage(
   templateId: TemplateId,
@@ -50,8 +49,6 @@ function WhatsAppScreen({ onClose }: { onClose: () => void }): React.JSX.Element
   const [message, setMessage] = useState('')
   const [balance, setBalance] = useState<AccountBalanceRecord | null>(null)
 
-  // Loading starts true (rather than being set inside an effect) so the
-  // initial fetch never needs a synchronous setState call in the effect body.
   const [loadingAccounts, setLoadingAccounts] = useState(true)
   const [sending, setSending] = useState(false)
 
@@ -59,9 +56,6 @@ function WhatsAppScreen({ onClose }: { onClose: () => void }): React.JSX.Element
   const [alertType, setAlertType] = useState<AlertType>('success')
 
   const alertTimerRef = useRef<number | null>(null)
-  // Mirrors `template` so the account-balance effect (scoped to
-  // [selectedAccountId] only, to avoid re-fetching on every template change)
-  // can read the latest template choice without a stale closure.
   const templateRef = useRef(template)
 
   useEffect(() => {
@@ -115,11 +109,6 @@ function WhatsAppScreen({ onClose }: { onClose: () => void }): React.JSX.Element
     }
   }, [showAlert])
 
-  // Loads the balance for the selected account and pre-fills the message
-  // template from it. Every state update here happens inside a .then()/
-  // .catch() callback (a microtask), never synchronously in the effect body,
-  // so switching accounts never overwrites in-progress typing outside of
-  // this account-change moment.
   useEffect(() => {
     let cancelled = false
 
@@ -176,12 +165,22 @@ function WhatsAppScreen({ onClose }: { onClose: () => void }): React.JSX.Element
     }
   }
 
+  const accountOptions = useMemo(
+    () => [
+      { label: '-- Select account (optional) --', value: '' },
+      ...accounts.map((a) => ({
+        label: `${a.accountName} ${a.mobileNumber ? `(${a.mobileNumber})` : ''}`,
+        value: a.id
+      }))
+    ],
+    [accounts]
+  )
+
   return (
     <div className="account-group-screen whatsapp-screen">
       <div className="account-group-window">
         <div className="form-title-bar">
           <span>WhatsApp Quick Send</span>
-
           <button className="module-close-btn" type="button" onClick={onClose}>
             &times;
           </button>
@@ -190,95 +189,66 @@ function WhatsAppScreen({ onClose }: { onClose: () => void }): React.JSX.Element
         <div className="account-group-body">
           <AppAlert type={alertType} message={alertMessage} onClose={() => setAlertMessage('')} />
 
-          <div className="form-panel">
-            <div className="form-row">
-              <label htmlFor="wa-account">Account</label>
-              <select
-                id="wa-account"
-                value={selectedAccountId}
-                onChange={(event) => setSelectedAccountId(event.target.value)}
-                disabled={loadingAccounts}
-              >
-                <option value="">-- Select account (optional) --</option>
-                {accounts.map((account) => (
-                  <option key={account.id} value={account.id}>
-                    {account.accountName} {account.mobileNumber ? `(${account.mobileNumber})` : ''}
-                  </option>
-                ))}
-              </select>
-            </div>
+          <FormSection>
+            <Select
+              label="Account"
+              value={selectedAccountId}
+              onChange={(e) => setSelectedAccountId(e.target.value)}
+              disabled={loadingAccounts}
+              options={accountOptions}
+            />
 
-            <div className="form-row">
-              <label htmlFor="wa-phone">Phone Number</label>
-              <input
-                id="wa-phone"
-                value={manualPhone}
-                onChange={(event) => setManualPhone(event.target.value)}
-                placeholder={
-                  selectedAccount
-                    ? `Leave blank to use ${selectedAccount.whatsappNumber || selectedAccount.mobileNumber || 'account number'}`
-                    : 'e.g. 9876543210'
-                }
-              />
-            </div>
+            <Input
+              label="Phone Number"
+              value={manualPhone}
+              onChange={(e) => setManualPhone(e.target.value)}
+              placeholder={
+                selectedAccount
+                  ? `Leave blank to use ${selectedAccount.whatsappNumber || selectedAccount.mobileNumber || 'account number'}`
+                  : 'e.g. 9876543210'
+              }
+            />
 
-            <div className="form-row">
-              <label htmlFor="wa-template">Message Template</label>
-              <select
-                id="wa-template"
-                value={template}
-                onChange={(event) => applyTemplate(event.target.value as TemplateId)}
-              >
-                <option value="GENERAL">General</option>
-                <option value="PAYMENT_REMINDER">Payment Reminder</option>
-                <option value="BILL_COPY">Bill Copy Ready</option>
-              </select>
-            </div>
+            <Select
+              label="Message Template"
+              value={template}
+              onChange={(e) => applyTemplate(e.target.value as TemplateId)}
+              options={[
+                { label: 'General', value: 'GENERAL' },
+                { label: 'Payment Reminder', value: 'PAYMENT_REMINDER' },
+                { label: 'Bill Copy Ready', value: 'BILL_COPY' }
+              ]}
+            />
 
             {selectedAccount && (
-              <div className="form-row">
-                <label>Outstanding Balance</label>
-                <div className="whatsapp-balance-preview">
+              <FormField label="Outstanding Balance">
+                <div className="p-2 text-xs bg-background-muted border border-border rounded-xs font-mono">
                   {balance
                     ? `Gold Fine: ${formatNumber(balance.goldFine)} gm | Silver Fine: ${formatNumber(balance.silverFine)} gm | Cash: Rs. ${formatNumber(balance.cash)}`
                     : 'Loading balance...'}
                 </div>
-              </div>
+              </FormField>
             )}
 
-            <div className="form-row">
-              <label htmlFor="wa-message">Message</label>
-              <textarea
-                id="wa-message"
-                rows={5}
-                value={message}
-                onChange={(event) => setMessage(event.target.value)}
-                placeholder="Type your message..."
-              />
-            </div>
+            <Textarea
+              label="Message"
+              rows={5}
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="Type your message..."
+            />
 
-            <div className="button-row">
-              <button
-                className="btn-new"
-                type="button"
-                onClick={() => applyTemplate(template)}
-                disabled={sending}
-              >
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <Button variant="secondary" onClick={() => applyTemplate(template)} disabled={sending}>
                 Reset to Template
-              </button>
-
-              <button
-                className="btn-save"
-                type="button"
-                onClick={() => void handleSend()}
-                disabled={sending}
-              >
+              </Button>
+              <Button variant="success" onClick={() => void handleSend()} loading={sending}>
                 {sending ? 'Opening WhatsApp...' : 'Send via WhatsApp'}
-              </button>
+              </Button>
             </div>
-          </div>
+          </FormSection>
 
-          <div className="screen-help-text">
+          <div className="screen-help-text mt-3">
             This app has no WhatsApp Business API integration. Send opens WhatsApp Web/Desktop (via
             your browser) with the phone number and message pre-filled - you confirm and press send
             there. 10-digit numbers are assumed to be Indian mobile numbers and get a +91 prefix

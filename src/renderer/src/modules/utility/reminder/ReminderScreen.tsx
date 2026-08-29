@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import AppAlert from '../../../components/ui/AppAlert'
 import { getFriendlyErrorMessage } from '../../../utils/getFriendlyErrorMessage'
+import { formatDate, formatNumber } from '@utils/formatters'
+import { Button, SearchInput, Select, Badge, DataTable, Column } from '@components/ui'
 
 type AlertType = 'success' | 'error' | 'warning'
-
-import { formatDate, formatNumber } from '@utils/formatters'
 
 function daysLabel(reminder: ReminderRecord): string {
   if (reminder.daysUntil === 0) return 'Due today'
@@ -83,12 +83,33 @@ function ReminderScreen({ onClose }: { onClose: () => void }): React.JSX.Element
     [reminders]
   )
 
+  const columns: Column<ReminderRecord>[] = [
+    { key: 'sr', header: 'Sr', render: (_, index) => index + 1, width: '50px' },
+    { key: 'type', header: 'Type', render: (r) => r.type },
+    { key: 'billNo', header: 'Bill No', render: (r) => r.billNo },
+    { key: 'billDate', header: 'Bill Date', render: (r) => formatDate(r.billDate) },
+    { key: 'accountName', header: 'Account', render: (r) => r.accountName },
+    { key: 'mobileNumber', header: 'Phone', render: (r) => r.mobileNumber || '-' },
+    { key: 'reminderDate', header: 'Reminder Date', render: (r) => formatDate(r.reminderDate) },
+    {
+      key: 'status',
+      header: 'Status',
+      render: (r) => (
+        <Badge variant={r.isOverdue ? 'error' : 'warning'} size="small">
+          {daysLabel(r)}
+        </Badge>
+      )
+    },
+    { key: 'metalType', header: 'Metal', render: (r) => r.metalType },
+    { key: 'fineAmount', header: 'Fine Due', align: 'right', render: (r) => formatNumber(r.fineAmount) },
+    { key: 'majuriAmount', header: 'Majuri Due', align: 'right', render: (r) => formatNumber(r.majuriAmount) }
+  ]
+
   return (
     <div className="sale-register-screen">
       <div className="sale-register-window">
         <div className="form-title-bar">
           <span>Reminder</span>
-
           <button className="module-close-btn" type="button" onClick={onClose}>
             &times;
           </button>
@@ -97,118 +118,54 @@ function ReminderScreen({ onClose }: { onClose: () => void }): React.JSX.Element
         <div className="sale-register-body">
           <AppAlert type={alertType} message={alertMessage} onClose={() => setAlertMessage('')} />
 
-          <div className="sale-register-toolbar">
-            <div className="list-search">
-              <label htmlFor="reminder-search">Search</label>
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-3 bg-background-muted p-2.5 rounded-sm border border-border">
+            <div className="flex items-center gap-3 flex-1 min-w-[280px]">
+              <div className="w-64">
+                <SearchInput
+                  value={searchText}
+                  onChange={setSearchText}
+                  onClear={() => setSearchText('')}
+                  placeholder="Search bill no, account, mobile"
+                />
+              </div>
 
-              <input
-                id="reminder-search"
-                value={searchText}
-                onChange={(event) => setSearchText(event.target.value)}
-                placeholder="Search bill no, account, mobile"
-              />
+              <div className="w-40">
+                <Select
+                  value={typeFilter}
+                  onChange={(e) => setTypeFilter(e.target.value as 'ALL' | 'Sale' | 'Approval')}
+                  options={[
+                    { label: 'All Types', value: 'ALL' },
+                    { label: 'Sale', value: 'Sale' },
+                    { label: 'Approval', value: 'Approval' }
+                  ]}
+                />
+              </div>
 
-              {searchText && (
-                <button
-                  className="search-clear-btn"
-                  type="button"
-                  onClick={() => setSearchText('')}
-                >
-                  &times;
-                </button>
-              )}
+              <Button size="small" variant="secondary" onClick={() => void loadReminders()} loading={loading}>
+                Refresh
+              </Button>
             </div>
 
-            <label htmlFor="reminder-type">Type</label>
-            <select
-              id="reminder-type"
-              value={typeFilter}
-              onChange={(event) => setTypeFilter(event.target.value as 'ALL' | 'Sale' | 'Approval')}
-            >
-              <option value="ALL">All</option>
-              <option value="Sale">Sale</option>
-              <option value="Approval">Approval</option>
-            </select>
-
-            <button
-              className="btn-new"
-              type="button"
-              onClick={() => void loadReminders()}
-              disabled={loading}
-            >
-              Refresh
-            </button>
-
-            <div className="record-summary">
-              Total: <strong>{reminders.length}</strong> | Overdue:{' '}
-              <strong className="overdue-count">{overdueCount}</strong> | Showing:{' '}
-              <strong>{filteredReminders.length}</strong>
+            <div className="text-xs text-foreground-muted select-none">
+              Total: <strong className="text-foreground">{reminders.length}</strong> | Overdue:{' '}
+              <strong className="text-error font-bold">{overdueCount}</strong> | Showing:{' '}
+              <strong className="text-foreground">{filteredReminders.length}</strong>
             </div>
           </div>
 
-          <div className="table-panel sale-register-table-panel">
-            <table>
-              <thead>
-                <tr>
-                  <th>Sr</th>
-                  <th>Type</th>
-                  <th>Bill No</th>
-                  <th>Bill Date</th>
-                  <th>Account</th>
-                  <th>Phone</th>
-                  <th>Reminder Date</th>
-                  <th>Status</th>
-                  <th>Metal</th>
-                  <th>Fine Due</th>
-                  <th>Majuri Due</th>
-                </tr>
-              </thead>
+          <DataTable
+            columns={columns}
+            data={filteredReminders}
+            keyExtractor={(r) => `${r.type}-${r.id}`}
+            loading={loading}
+            emptyMessage={
+              searchText || typeFilter !== 'ALL'
+                ? 'No matching reminder found.'
+                : 'No pending reminders. Set a reminder date on a Sale or Approval bill to see it here.'
+            }
+          />
 
-              <tbody>
-                {loading ? (
-                  <tr>
-                    <td colSpan={11} className="empty-row">
-                      Loading reminders...
-                    </td>
-                  </tr>
-                ) : filteredReminders.length === 0 ? (
-                  <tr>
-                    <td colSpan={11} className="empty-row">
-                      {searchText || typeFilter !== 'ALL'
-                        ? 'No matching reminder found.'
-                        : 'No pending reminders. Set a reminder date on a Sale or Approval bill to see it here.'}
-                    </td>
-                  </tr>
-                ) : (
-                  filteredReminders.map((reminder, index) => (
-                    <tr key={`${reminder.type}-${reminder.id}`}>
-                      <td>{index + 1}</td>
-                      <td>{reminder.type}</td>
-                      <td>{reminder.billNo}</td>
-                      <td>{formatDate(reminder.billDate)}</td>
-                      <td>{reminder.accountName}</td>
-                      <td>{reminder.mobileNumber || '-'}</td>
-                      <td>{formatDate(reminder.reminderDate)}</td>
-                      <td>
-                        <span
-                          className={`approval-badge ${
-                            reminder.isOverdue ? 'cancelled' : 'pending'
-                          }`}
-                        >
-                          {daysLabel(reminder)}
-                        </span>
-                      </td>
-                      <td>{reminder.metalType}</td>
-                      <td>{formatNumber(reminder.fineAmount)}</td>
-                      <td>{formatNumber(reminder.majuriAmount)}</td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="screen-help-text">
+          <div className="screen-help-text mt-3">
             Sorted by reminder date, soonest first. Overdue reminders are highlighted in red.
           </div>
         </div>

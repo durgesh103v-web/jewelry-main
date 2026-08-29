@@ -1,8 +1,19 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
 import AppAlert from '../../../components/ui/AppAlert'
-import AppConfirmDialog from '../../../components/ui/AppConfirmDialog'
 import { getFriendlyErrorMessage } from '../../../utils/getFriendlyErrorMessage'
+import { formatDate } from '@utils/formatters'
+import {
+  Button,
+  Input,
+  SearchInput,
+  Badge,
+  DataTable,
+  Column,
+  ConfirmDialog,
+  FormSection,
+  FormActions
+} from '@components/ui'
 
 type AlertType = 'success' | 'error' | 'warning'
 
@@ -19,8 +30,6 @@ const initialForm: FinancialYearForm = {
   endDate: '',
   narration: ''
 }
-
-import { formatDate } from '@utils/formatters'
 
 function FinancialYearScreen({ onClose }: { onClose: () => void }): React.JSX.Element {
   const [form, setForm] = useState<FinancialYearForm>(initialForm)
@@ -242,12 +251,54 @@ function FinancialYearScreen({ onClose }: { onClose: () => void }): React.JSX.El
     }
   }, [focusYearLabel, showAlert])
 
+  const columns: Column<FinancialYearRecord>[] = [
+    { key: 'srNo', header: 'Sr No', render: (_, i) => i + 1, width: '60px' },
+    { key: 'yearLabel', header: 'Year', render: (y) => y.yearLabel },
+    { key: 'startDate', header: 'Start Date', render: (y) => formatDate(y.startDate) },
+    { key: 'endDate', header: 'End Date', render: (y) => formatDate(y.endDate) },
+    {
+      key: 'status',
+      header: 'Status',
+      render: (y) => (
+        <div className="flex gap-1">
+          {y.isCurrent && <Badge variant="success" size="small">Current</Badge>}
+          {y.isClosed && <Badge variant="error" size="small">Closed</Badge>}
+          {!y.isCurrent && !y.isClosed && <Badge variant="neutral" size="small">Open</Badge>}
+        </div>
+      )
+    },
+    {
+      key: 'action',
+      header: 'Action',
+      align: 'right',
+      render: (y) => (
+        <div className="flex items-center justify-end gap-1">
+          <Button size="small" variant="ghost" onClick={() => handleEdit(y)}>
+            Edit
+          </Button>
+          {!y.isCurrent && !y.isClosed && (
+            <Button size="small" variant="outline" onClick={() => void handleSetCurrent(y)}>
+              Set Current
+            </Button>
+          )}
+          <Button size="small" variant="outline" onClick={() => void handleToggleClosed(y)}>
+            {y.isClosed ? 'Reopen' : 'Close'}
+          </Button>
+          {!y.isCurrent && (
+            <Button size="small" variant="danger" onClick={() => requestDelete(y)}>
+              Delete
+            </Button>
+          )}
+        </div>
+      )
+    }
+  ]
+
   return (
     <div className="account-group-screen financial-year-screen">
       <div className="account-group-window">
         <div className="form-title-bar">
           <span>Financial Year</span>
-
           <button className="module-close-btn" type="button" onClick={onClose}>
             &times;
           </button>
@@ -261,229 +312,115 @@ function FinancialYearScreen({ onClose }: { onClose: () => void }): React.JSX.El
             <strong>{currentYear ? currentYear.yearLabel : 'Not set'}</strong>
           </div>
 
-          <div className="form-panel">
-            <div className="form-row">
-              <label htmlFor="fy-label">Year Label</label>
-
-              <input
-                id="fy-label"
+          <FormSection title={editingId ? 'Edit Financial Year' : 'Add Financial Year'}>
+            <div className="grid grid-cols-3 gap-3">
+              <Input
+                label="Year Label"
                 ref={yearLabelInputRef}
                 value={form.yearLabel}
-                onChange={(event) =>
-                  setForm((current) => ({ ...current, yearLabel: event.target.value }))
-                }
-                onKeyDown={(event) => focusNextOnEnter(event, startDateInputRef.current)}
+                onChange={(e) => setForm((curr) => ({ ...curr, yearLabel: e.target.value }))}
+                onKeyDown={(e) => focusNextOnEnter(e, startDateInputRef.current)}
                 placeholder="e.g. 2025-26"
+                required
               />
-            </div>
-
-            <div className="form-row">
-              <label htmlFor="fy-start-date">Start Date</label>
-
-              <input
-                id="fy-start-date"
+              <Input
+                label="Start Date"
                 ref={startDateInputRef}
                 type="date"
                 value={form.startDate}
-                onChange={(event) =>
-                  setForm((current) => ({ ...current, startDate: event.target.value }))
-                }
-                onKeyDown={(event) => focusNextOnEnter(event, endDateInputRef.current)}
+                onChange={(e) => setForm((curr) => ({ ...curr, startDate: e.target.value }))}
+                onKeyDown={(e) => focusNextOnEnter(e, endDateInputRef.current)}
+                required
               />
-            </div>
-
-            <div className="form-row">
-              <label htmlFor="fy-end-date">End Date</label>
-
-              <input
-                id="fy-end-date"
+              <Input
+                label="End Date"
                 ref={endDateInputRef}
                 type="date"
                 value={form.endDate}
-                onChange={(event) =>
-                  setForm((current) => ({ ...current, endDate: event.target.value }))
-                }
-                onKeyDown={(event) => focusNextOnEnter(event, narrationInputRef.current)}
+                onChange={(e) => setForm((curr) => ({ ...curr, endDate: e.target.value }))}
+                onKeyDown={(e) => focusNextOnEnter(e, narrationInputRef.current)}
+                required
               />
             </div>
 
-            <div className="form-row">
-              <label htmlFor="fy-narration">Narration</label>
-
-              <input
-                id="fy-narration"
-                ref={narrationInputRef}
-                value={form.narration}
-                onChange={(event) =>
-                  setForm((current) => ({ ...current, narration: event.target.value }))
+            <Input
+              label="Narration"
+              ref={narrationInputRef}
+              value={form.narration}
+              onChange={(e) => setForm((curr) => ({ ...curr, narration: e.target.value }))}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  void handleSave()
                 }
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') {
-                    event.preventDefault()
-                    void handleSave()
-                  }
-                }}
-                placeholder="Optional note"
-              />
-            </div>
+              }}
+              placeholder="Optional note"
+            />
 
-            <div className="button-row">
-              <button className="btn-new" type="button" onClick={handleNew} disabled={saving}>
-                New
-              </button>
+            <FormActions
+              onSave={() => void handleSave()}
+              saveLabel={editingId ? 'Update' : 'Save'}
+              loading={saving}
+              customActions={
+                <>
+                  <Button variant="secondary" onClick={handleNew} disabled={saving}>
+                    New
+                  </Button>
+                  {editingId && (
+                    <Button variant="outline" onClick={handleNew} disabled={saving}>
+                      Cancel Edit
+                    </Button>
+                  )}
+                </>
+              }
+            />
+          </FormSection>
 
-              <button
-                className="btn-save"
-                type="button"
-                onClick={() => void handleSave()}
-                disabled={saving}
-              >
-                {saving ? 'Saving...' : editingId ? 'Update' : 'Save'}
-              </button>
-
-              {editingId && (
-                <button
-                  className="btn-cancel-edit"
-                  type="button"
-                  onClick={handleNew}
-                  disabled={saving}
-                >
-                  Cancel Edit
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div className="list-toolbar">
-            <div className="list-search">
-              <label htmlFor="fy-search">Search</label>
-              <input
-                id="fy-search"
+          <div className="flex items-center justify-between gap-3 my-3 bg-background-muted p-2.5 rounded-sm border border-border">
+            <div className="w-64">
+              <SearchInput
                 value={searchText}
-                onChange={(event) => setSearchText(event.target.value)}
+                onChange={setSearchText}
+                onClear={() => setSearchText('')}
                 placeholder="Search by year label"
               />
-              {searchText && (
-                <button
-                  className="search-clear-btn"
-                  type="button"
-                  onClick={() => setSearchText('')}
-                >
-                  &times;
-                </button>
-              )}
             </div>
 
-            <div className="record-summary">
-              Total: <strong>{years.length}</strong> | Showing:{' '}
-              <strong>{filteredYears.length}</strong>
+            <div className="text-xs text-foreground-muted select-none">
+              Total: <strong className="text-foreground">{years.length}</strong> | Showing:{' '}
+              <strong className="text-foreground">{filteredYears.length}</strong>
             </div>
           </div>
 
-          <div className="table-panel">
-            <table>
-              <thead>
-                <tr>
-                  <th>Sr No</th>
-                  <th>Year</th>
-                  <th>Start Date</th>
-                  <th>End Date</th>
-                  <th>Status</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
+          <DataTable
+            columns={columns}
+            data={filteredYears}
+            keyExtractor={(y) => y.id}
+            loading={loading}
+            emptyMessage={
+              searchText ? 'No matching financial year found.' : 'No financial year added yet.'
+            }
+            onRowClick={(y) => handleEdit(y)}
+          />
 
-              <tbody>
-                {loading ? (
-                  <tr>
-                    <td colSpan={6} className="empty-row">
-                      Loading financial years...
-                    </td>
-                  </tr>
-                ) : filteredYears.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="empty-row">
-                      {searchText
-                        ? 'No matching financial year found.'
-                        : 'No financial year added yet.'}
-                    </td>
-                  </tr>
-                ) : (
-                  filteredYears.map((year, index) => (
-                    <tr
-                      key={year.id}
-                      className={editingId === year.id ? 'selected-row' : ''}
-                      onDoubleClick={() => handleEdit(year)}
-                    >
-                      <td>{index + 1}</td>
-                      <td>{year.yearLabel}</td>
-                      <td>{formatDate(year.startDate)}</td>
-                      <td>{formatDate(year.endDate)}</td>
-                      <td>
-                        {year.isCurrent && <span className="approval-badge approved">Current</span>}{' '}
-                        {year.isClosed && <span className="approval-badge cancelled">Closed</span>}
-                        {!year.isCurrent && !year.isClosed && (
-                          <span className="approval-badge pending">Open</span>
-                        )}
-                      </td>
-                      <td>
-                        <button className="table-edit" type="button" onClick={() => handleEdit(year)}>
-                          Edit
-                        </button>
-
-                        {!year.isCurrent && !year.isClosed && (
-                          <button
-                            className="table-edit"
-                            type="button"
-                            onClick={() => void handleSetCurrent(year)}
-                          >
-                            Set Current
-                          </button>
-                        )}
-
-                        <button
-                          className="table-edit"
-                          type="button"
-                          onClick={() => void handleToggleClosed(year)}
-                        >
-                          {year.isClosed ? 'Reopen' : 'Close'}
-                        </button>
-
-                        {!year.isCurrent && (
-                          <button
-                            className="table-delete"
-                            type="button"
-                            onClick={() => requestDelete(year)}
-                          >
-                            Delete
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="screen-help-text">
+          <div className="screen-help-text mt-3">
             Tip: Only one financial year can be current at a time. The current year cannot be
             closed or deleted directly — set another year as current first.
           </div>
         </div>
       </div>
 
-      <AppConfirmDialog
+      <ConfirmDialog
         open={Boolean(deleteTarget)}
         title="Delete Financial Year?"
-        message={
+        description={
           deleteTarget
             ? `Are you sure you want to delete "${deleteTarget.yearLabel}"? This action cannot be undone.`
             : ''
         }
-        confirmText="Delete"
-        cancelText="Cancel"
-        type="danger"
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="danger"
         loading={deleting}
         onConfirm={() => void handleConfirmDelete()}
         onCancel={handleCancelDelete}
