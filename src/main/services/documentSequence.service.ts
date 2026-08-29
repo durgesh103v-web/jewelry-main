@@ -9,6 +9,8 @@ export type DocumentType =
   | 'ESTIMATE'
   | 'JOB_WORK'
   | 'REPAIR'
+  | 'QUOTATION'
+  | 'ORDER'
 
 interface DocumentConfig {
   table: string
@@ -24,7 +26,9 @@ const DOCUMENT_CONFIGS: Record<DocumentType, DocumentConfig> = {
   APPROVAL: { table: 'approval_headers', column: 'approval_no', defaultPrefix: 'AP' },
   ESTIMATE: { table: 'estimate_headers', column: 'estimate_no', defaultPrefix: 'EST' },
   JOB_WORK: { table: 'job_work_orders', column: 'order_no', defaultPrefix: 'JW' },
-  REPAIR: { table: 'repair_entries', column: 'repair_no', defaultPrefix: 'REP' }
+  REPAIR: { table: 'repair_entries', column: 'repair_no', defaultPrefix: 'REP' },
+  QUOTATION: { table: 'quotations', column: 'quotation_number', defaultPrefix: 'QT' },
+  ORDER: { table: 'customer_orders', column: 'order_number', defaultPrefix: 'ORD' }
 }
 
 function getSaleBillPrefix(): string {

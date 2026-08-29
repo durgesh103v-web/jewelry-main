@@ -2179,5 +2179,26 @@ interface Window {
     pricing: {
       calculate: (request: any) => Promise<any>
     }
+
+    quotations: {
+      list: (filter?: any) => Promise<any[]>
+      getById: (id: string) => Promise<any>
+      getByNumber: (number: string) => Promise<any>
+      getNextNumber: () => Promise<string>
+      create: (payload: any) => Promise<any>
+      updateStatus: (id: string, status: string) => Promise<any>
+      convertToOrder: (quotationId: string) => Promise<any>
+      remove: (id: string) => Promise<{ success: boolean }>
+    }
+
+    orders: {
+      list: (filter?: any) => Promise<any[]>
+      getById: (id: string) => Promise<any>
+      getByNumber: (number: string) => Promise<any>
+      getNextNumber: () => Promise<string>
+      create: (payload: any) => Promise<any>
+      updateStatus: (id: string, status: string) => Promise<any>
+      remove: (id: string) => Promise<{ success: boolean }>
+    }
   }
 }

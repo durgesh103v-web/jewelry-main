@@ -2381,6 +2381,27 @@ const api = {
 
   pricing: {
     calculate: (request: any): Promise<any> => ipcRenderer.invoke('pricing:calculate', request)
+  },
+
+  quotations: {
+    list: (filter?: any): Promise<any[]> => ipcRenderer.invoke('quotations:list', filter),
+    getById: (id: string): Promise<any> => ipcRenderer.invoke('quotations:get-by-id', id),
+    getByNumber: (number: string): Promise<any> => ipcRenderer.invoke('quotations:get-by-number', number),
+    getNextNumber: (): Promise<string> => ipcRenderer.invoke('quotations:next-number'),
+    create: (payload: any): Promise<any> => ipcRenderer.invoke('quotations:create', payload),
+    updateStatus: (id: string, status: string): Promise<any> => ipcRenderer.invoke('quotations:update-status', { id, status }),
+    convertToOrder: (quotationId: string): Promise<any> => ipcRenderer.invoke('quotations:convert-to-order', quotationId),
+    remove: (id: string): Promise<{ success: boolean }> => ipcRenderer.invoke('quotations:delete', id)
+  },
+
+  orders: {
+    list: (filter?: any): Promise<any[]> => ipcRenderer.invoke('orders:list', filter),
+    getById: (id: string): Promise<any> => ipcRenderer.invoke('orders:get-by-id', id),
+    getByNumber: (number: string): Promise<any> => ipcRenderer.invoke('orders:get-by-number', number),
+    getNextNumber: (): Promise<string> => ipcRenderer.invoke('orders:next-number'),
+    create: (payload: any): Promise<any> => ipcRenderer.invoke('orders:create', payload),
+    updateStatus: (id: string, status: string): Promise<any> => ipcRenderer.invoke('orders:update-status', { id, status }),
+    remove: (id: string): Promise<{ success: boolean }> => ipcRenderer.invoke('orders:delete', id)
   }
 }
 
