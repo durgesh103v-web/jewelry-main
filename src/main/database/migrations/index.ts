@@ -10,6 +10,7 @@ import { migration009 } from './009_old_gold_and_exchange'
 import { migration010 } from './010_sales_invoices'
 import { migration011 } from './011_purchase_invoices'
 import { migration012 } from './012_return_transactions'
+import { migration013 } from './013_gst_and_tax_engine'
 import { Migration } from './types'
 
 export const allMigrations: Migration[] = [
@@ -24,5 +25,6 @@ export const allMigrations: Migration[] = [
   migration009,
   migration010,
   migration011,
-  migration012
+  migration012,
+  migration013
 ]

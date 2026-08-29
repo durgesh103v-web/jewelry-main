@@ -2298,5 +2298,17 @@ interface Window {
       getProfitAndLoss: (filter?: any) => Promise<any>
       getBalanceSheet: (asOfDate?: string) => Promise<any>
     }
+
+    tax: {
+      getStates: () => Promise<any[]>
+      getHsnCodes: () => Promise<any[]>
+      getTaxRates: () => Promise<any[]>
+      calculateTax: (request: any) => Promise<any>
+      getGstr1Report: (payload?: { startDate?: string; endDate?: string }) => Promise<any>
+      getGstr3BReport: (payload?: { startDate?: string; endDate?: string }) => Promise<any>
+      getHsnSummaryReport: (payload?: { startDate?: string; endDate?: string }) => Promise<any>
+      getTaxRegister: (payload: { type: string; startDate?: string; endDate?: string }) => Promise<any>
+      getTaxDashboard: (payload?: { startDate?: string; endDate?: string }) => Promise<any>
+    }
   }
 }

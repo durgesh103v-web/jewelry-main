@@ -2496,6 +2496,23 @@ const api = {
     getTrialBalance: (filter?: any): Promise<any> => ipcRenderer.invoke('reports:trial-balance', filter),
     getProfitAndLoss: (filter?: any): Promise<any> => ipcRenderer.invoke('reports:profit-and-loss', filter),
     getBalanceSheet: (asOfDate?: string): Promise<any> => ipcRenderer.invoke('reports:balance-sheet', asOfDate)
+  },
+
+  tax: {
+    getStates: (): Promise<any[]> => ipcRenderer.invoke('tax:get-states'),
+    getHsnCodes: (): Promise<any[]> => ipcRenderer.invoke('tax:get-hsn-codes'),
+    getTaxRates: (): Promise<any[]> => ipcRenderer.invoke('tax:get-tax-rates'),
+    calculateTax: (request: any): Promise<any> => ipcRenderer.invoke('tax:calculate', request),
+    getGstr1Report: (payload?: { startDate?: string; endDate?: string }): Promise<any> =>
+      ipcRenderer.invoke('tax:gstr1-report', payload),
+    getGstr3BReport: (payload?: { startDate?: string; endDate?: string }): Promise<any> =>
+      ipcRenderer.invoke('tax:gstr3b-report', payload),
+    getHsnSummaryReport: (payload?: { startDate?: string; endDate?: string }): Promise<any> =>
+      ipcRenderer.invoke('tax:hsn-summary', payload),
+    getTaxRegister: (payload: { type: string; startDate?: string; endDate?: string }): Promise<any> =>
+      ipcRenderer.invoke('tax:tax-register', payload),
+    getTaxDashboard: (payload?: { startDate?: string; endDate?: string }): Promise<any> =>
+      ipcRenderer.invoke('tax:dashboard', payload)
   }
 }
 

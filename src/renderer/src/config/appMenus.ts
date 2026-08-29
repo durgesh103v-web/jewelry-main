@@ -57,6 +57,7 @@ export const appMenus: AppMenu[] = [
     id: 'gst-estimate',
     label: 'GST / Estimate',
     children: [
+      { id: 'tax-compliance-hub', label: 'GST & Tax Compliance Hub', module: 'gst-estimate' },
       { id: 'retail-sale-gst', label: 'Retail Sale GST', module: 'gst-estimate' },
       { id: 'retail-sale-estimate', label: 'Retail Sale Estimate', module: 'gst-estimate' },
       { id: 'gst-purchase', label: 'GST Purchase', module: 'gst-estimate' },

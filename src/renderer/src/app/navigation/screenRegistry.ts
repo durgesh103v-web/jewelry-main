@@ -64,6 +64,7 @@ const PurchaseInvoiceScreen = lazy(() => import('../../features/purchases/screen
 const ModernSalesReturnScreen = lazy(() => import('../../features/returns/screens/SalesReturnScreen'))
 const ModernPurchaseReturnScreen = lazy(() => import('../../features/returns/screens/PurchaseReturnScreen'))
 const FinancialReportsHubScreen = lazy(() => import('../../features/reports/screens/FinancialReportsHubScreen'))
+const TaxComplianceHubScreen = lazy(() => import('../../features/tax/screens/TaxComplianceHubScreen'))
 
 export type ScreenComponentProps = {
   onClose: () => void
@@ -135,6 +136,7 @@ export const screenRegistry: Record<string, ScreenMapValue> = {
   'item-stock': { component: ItemStockReportScreen },
   'item-transaction': { component: ItemTransactionReportScreen },
   'stock-ledger': { component: StockLedgerScreen },
+  'tax-compliance-hub': { component: TaxComplianceHubScreen },
   'gst-purchase': { component: GstPurchaseReportScreen },
   'retail-sale-gst': {
     component: GstSaleReportScreen,
