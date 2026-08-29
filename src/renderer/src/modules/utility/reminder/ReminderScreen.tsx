@@ -1,10 +1,8 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import AppAlert from '../../../components/ui/AppAlert'
-import { getFriendlyErrorMessage } from '../../../utils/getFriendlyErrorMessage'
 import { formatDate, formatNumber } from '@utils/formatters'
 import { Button, SearchInput, Select, Badge, DataTable, Column } from '@components/ui'
-
-type AlertType = 'success' | 'error' | 'warning'
+import { useAlert, useAsync } from '@renderer/hooks'
 
 function daysLabel(reminder: ReminderRecord): string {
   if (reminder.daysUntil === 0) return 'Due today'
@@ -13,59 +11,35 @@ function daysLabel(reminder: ReminderRecord): string {
 }
 
 function ReminderScreen({ onClose }: { onClose: () => void }): React.JSX.Element {
-  const [reminders, setReminders] = useState<ReminderRecord[]>([])
+  const { alert, showAlert, clearAlert } = useAlert()
   const [searchText, setSearchText] = useState('')
   const [typeFilter, setTypeFilter] = useState<'ALL' | 'Sale' | 'Approval'>('ALL')
-  const [loading, setLoading] = useState(false)
 
-  const [alertMessage, setAlertMessage] = useState('')
-  const [alertType, setAlertType] = useState<AlertType>('success')
+  const {
+    data: reminders,
+    loading,
+    execute: fetchReminders
+  } = useAsync(async () => {
+    return window.api.reminder.list()
+  })
 
-  const alertTimerRef = useRef<number | null>(null)
-
-  const showAlert = useCallback((type: AlertType, message: string): void => {
-    setAlertType(type)
-    setAlertMessage(message)
-
-    if (alertTimerRef.current) {
-      window.clearTimeout(alertTimerRef.current)
+  const loadReminders = async (): Promise<void> => {
+    const result = await fetchReminders()
+    if (result === null) {
+      showAlert('error', 'Failed to load reminders.')
     }
-
-    alertTimerRef.current = window.setTimeout(() => {
-      setAlertMessage('')
-    }, 3500)
-  }, [])
-
-  const loadReminders = useCallback(async (): Promise<void> => {
-    try {
-      setLoading(true)
-      const data = await window.api.reminder.list()
-      setReminders(data)
-    } catch (error) {
-      showAlert('error', getFriendlyErrorMessage(error))
-    } finally {
-      setLoading(false)
-    }
-  }, [showAlert])
+  }
 
   useEffect(() => {
-    const loadTimer = window.setTimeout(() => {
-      void loadReminders()
-    }, 0)
+    void loadReminders()
+  }, [])
 
-    return () => {
-      window.clearTimeout(loadTimer)
-
-      if (alertTimerRef.current) {
-        window.clearTimeout(alertTimerRef.current)
-      }
-    }
-  }, [loadReminders])
+  const reminderList = useMemo(() => reminders || [], [reminders])
 
   const filteredReminders = useMemo(() => {
     const keyword = searchText.trim().toLowerCase()
 
-    return reminders.filter((reminder) => {
+    return reminderList.filter((reminder) => {
       if (typeFilter !== 'ALL' && reminder.type !== typeFilter) return false
 
       if (!keyword) return true
@@ -76,11 +50,11 @@ function ReminderScreen({ onClose }: { onClose: () => void }): React.JSX.Element
         reminder.mobileNumber.toLowerCase().includes(keyword)
       )
     })
-  }, [reminders, searchText, typeFilter])
+  }, [reminderList, searchText, typeFilter])
 
   const overdueCount = useMemo(
-    () => reminders.filter((reminder) => reminder.isOverdue).length,
-    [reminders]
+    () => reminderList.filter((reminder) => reminder.isOverdue).length,
+    [reminderList]
   )
 
   const columns: Column<ReminderRecord>[] = [
@@ -116,7 +90,7 @@ function ReminderScreen({ onClose }: { onClose: () => void }): React.JSX.Element
         </div>
 
         <div className="sale-register-body">
-          <AppAlert type={alertType} message={alertMessage} onClose={() => setAlertMessage('')} />
+          {alert && <AppAlert type={alert.type} message={alert.message} onClose={clearAlert} />}
 
           <div className="flex flex-wrap items-center justify-between gap-3 mb-3 bg-background-muted p-2.5 rounded-sm border border-border">
             <div className="flex items-center gap-3 flex-1 min-w-[280px]">
@@ -147,7 +121,7 @@ function ReminderScreen({ onClose }: { onClose: () => void }): React.JSX.Element
             </div>
 
             <div className="text-xs text-foreground-muted select-none">
-              Total: <strong className="text-foreground">{reminders.length}</strong> | Overdue:{' '}
+              Total: <strong className="text-foreground">{reminderList.length}</strong> | Overdue:{' '}
               <strong className="text-error font-bold">{overdueCount}</strong> | Showing:{' '}
               <strong className="text-foreground">{filteredReminders.length}</strong>
             </div>

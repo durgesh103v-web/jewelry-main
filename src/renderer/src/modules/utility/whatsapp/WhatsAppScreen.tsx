@@ -3,8 +3,8 @@ import AppAlert from '../../../components/ui/AppAlert'
 import { getFriendlyErrorMessage } from '../../../utils/getFriendlyErrorMessage'
 import { formatNumber } from '@utils/formatters'
 import { Button, Input, Textarea, Select, FormField, FormSection } from '@components/ui'
+import { useAlert } from '@renderer/hooks'
 
-type AlertType = 'success' | 'error' | 'warning'
 type TemplateId = 'PAYMENT_REMINDER' | 'BILL_COPY' | 'GENERAL'
 
 function buildTemplateMessage(
@@ -42,6 +42,7 @@ function buildTemplateMessage(
 }
 
 function WhatsAppScreen({ onClose }: { onClose: () => void }): React.JSX.Element {
+  const { alert, showAlert, clearAlert } = useAlert()
   const [accounts, setAccounts] = useState<AccountRecord[]>([])
   const [selectedAccountId, setSelectedAccountId] = useState('')
   const [manualPhone, setManualPhone] = useState('')
@@ -52,28 +53,11 @@ function WhatsAppScreen({ onClose }: { onClose: () => void }): React.JSX.Element
   const [loadingAccounts, setLoadingAccounts] = useState(true)
   const [sending, setSending] = useState(false)
 
-  const [alertMessage, setAlertMessage] = useState('')
-  const [alertType, setAlertType] = useState<AlertType>('success')
-
-  const alertTimerRef = useRef<number | null>(null)
   const templateRef = useRef(template)
 
   useEffect(() => {
     templateRef.current = template
   }, [template])
-
-  const showAlert = useCallback((type: AlertType, message: string): void => {
-    setAlertType(type)
-    setAlertMessage(message)
-
-    if (alertTimerRef.current) {
-      window.clearTimeout(alertTimerRef.current)
-    }
-
-    alertTimerRef.current = window.setTimeout(() => {
-      setAlertMessage('')
-    }, 3500)
-  }, [])
 
   const selectedAccount = useMemo(
     () => accounts.find((account) => account.id === selectedAccountId) ?? null,
@@ -102,10 +86,6 @@ function WhatsAppScreen({ onClose }: { onClose: () => void }): React.JSX.Element
 
     return () => {
       cancelled = true
-
-      if (alertTimerRef.current) {
-        window.clearTimeout(alertTimerRef.current)
-      }
     }
   }, [showAlert])
 
@@ -187,7 +167,7 @@ function WhatsAppScreen({ onClose }: { onClose: () => void }): React.JSX.Element
         </div>
 
         <div className="account-group-body">
-          <AppAlert type={alertType} message={alertMessage} onClose={() => setAlertMessage('')} />
+          {alert && <AppAlert type={alert.type} message={alert.message} onClose={clearAlert} />}
 
           <FormSection>
             <Select

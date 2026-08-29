@@ -1,4 +1,4 @@
-type AlertType = 'success' | 'error' | 'warning'
+type AlertType = 'success' | 'error' | 'warning' | 'info'
 
 type AppAlertProps = {
   type: AlertType

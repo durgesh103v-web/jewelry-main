@@ -14,8 +14,7 @@ import {
   FormSection,
   FormActions
 } from '@components/ui'
-
-type AlertType = 'success' | 'error' | 'warning'
+import { useAlert, useConfirmModal, useFormState } from '@renderer/hooks'
 
 type FinancialYearForm = {
   yearLabel: string
@@ -32,18 +31,28 @@ const initialForm: FinancialYearForm = {
 }
 
 function FinancialYearScreen({ onClose }: { onClose: () => void }): React.JSX.Element {
-  const [form, setForm] = useState<FinancialYearForm>(initialForm)
+  const { alert, showAlert, clearAlert } = useAlert()
+  const {
+    target: deleteTarget,
+    loading: deleting,
+    requestConfirm: requestDelete,
+    handleConfirm: confirmDelete,
+    handleCancel: handleCancelDelete
+  } = useConfirmModal<FinancialYearRecord>()
+
+  const {
+    values: form,
+    setValues: setForm,
+    resetForm,
+    isSubmitting: saving,
+    setIsSubmitting: setSaving
+  } = useFormState<FinancialYearForm>(initialForm)
+
   const [years, setYears] = useState<FinancialYearRecord[]>([])
   const [editingId, setEditingId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [deleting, setDeleting] = useState(false)
-  const [deleteTarget, setDeleteTarget] = useState<FinancialYearRecord | null>(null)
-  const [alertMessage, setAlertMessage] = useState('')
-  const [alertType, setAlertType] = useState<AlertType>('success')
   const [searchText, setSearchText] = useState('')
 
-  const alertTimerRef = useRef<number | null>(null)
   const yearLabelInputRef = useRef<HTMLInputElement | null>(null)
   const startDateInputRef = useRef<HTMLInputElement | null>(null)
   const endDateInputRef = useRef<HTMLInputElement | null>(null)
@@ -70,19 +79,6 @@ function FinancialYearScreen({ onClose }: { onClose: () => void }): React.JSX.El
     }, 0)
   }, [])
 
-  const showAlert = useCallback((type: AlertType, message: string): void => {
-    setAlertType(type)
-    setAlertMessage(message)
-
-    if (alertTimerRef.current) {
-      window.clearTimeout(alertTimerRef.current)
-    }
-
-    alertTimerRef.current = window.setTimeout(() => {
-      setAlertMessage('')
-    }, 3000)
-  }, [])
-
   const loadYears = useCallback(async (): Promise<void> => {
     try {
       setLoading(true)
@@ -97,10 +93,9 @@ function FinancialYearScreen({ onClose }: { onClose: () => void }): React.JSX.El
 
   const handleNew = useCallback((): void => {
     setEditingId(null)
-    setAlertMessage('')
-    setForm(initialForm)
+    resetForm()
     focusYearLabel()
-  }, [focusYearLabel])
+  }, [focusYearLabel, resetForm])
 
   const focusNextOnEnter = (
     event: ReactKeyboardEvent<HTMLInputElement>,
@@ -147,7 +142,7 @@ function FinancialYearScreen({ onClose }: { onClose: () => void }): React.JSX.El
       }
 
       setEditingId(null)
-      setForm(initialForm)
+      resetForm()
       await loadYears()
       showAlert('success', successMessage)
       focusYearLabel()
@@ -156,11 +151,10 @@ function FinancialYearScreen({ onClose }: { onClose: () => void }): React.JSX.El
     } finally {
       setSaving(false)
     }
-  }, [editingId, focusYearLabel, form, loadYears, saving, showAlert])
+  }, [editingId, focusYearLabel, form, loadYears, resetForm, saving, showAlert])
 
   const handleEdit = (year: FinancialYearRecord): void => {
     setEditingId(year.id)
-    setAlertMessage('')
     setForm({
       yearLabel: year.yearLabel,
       startDate: year.startDate,
@@ -193,37 +187,21 @@ function FinancialYearScreen({ onClose }: { onClose: () => void }): React.JSX.El
     }
   }
 
-  const requestDelete = (year: FinancialYearRecord): void => {
-    setDeleteTarget(year)
-  }
-
   const handleConfirmDelete = async (): Promise<void> => {
-    if (!deleteTarget) return
-
-    try {
-      setDeleting(true)
-
-      await window.api.financialYears.remove(deleteTarget.id)
-
-      if (editingId === deleteTarget.id) {
-        setEditingId(null)
-        setForm(initialForm)
+    await confirmDelete(async (target) => {
+      try {
+        await window.api.financialYears.remove(target.id)
+        if (editingId === target.id) {
+          setEditingId(null)
+          resetForm()
+        }
+        await loadYears()
+        showAlert('success', 'Financial year deleted successfully.')
+      } catch (error) {
+        showAlert('error', getFriendlyErrorMessage(error))
       }
-
-      setDeleteTarget(null)
-      await loadYears()
-      showAlert('success', 'Financial year deleted successfully.')
-    } catch (error) {
-      showAlert('error', getFriendlyErrorMessage(error))
-    } finally {
-      setDeleting(false)
-    }
+    })
   }
-
-  const handleCancelDelete = useCallback((): void => {
-    if (deleting) return
-    setDeleteTarget(null)
-  }, [deleting])
 
   useEffect(() => {
     let cancelled = false
@@ -244,10 +222,6 @@ function FinancialYearScreen({ onClose }: { onClose: () => void }): React.JSX.El
 
     return () => {
       cancelled = true
-
-      if (alertTimerRef.current) {
-        window.clearTimeout(alertTimerRef.current)
-      }
     }
   }, [focusYearLabel, showAlert])
 
@@ -305,7 +279,7 @@ function FinancialYearScreen({ onClose }: { onClose: () => void }): React.JSX.El
         </div>
 
         <div className="account-group-body">
-          <AppAlert type={alertType} message={alertMessage} onClose={() => setAlertMessage('')} />
+          {alert && <AppAlert type={alert.type} message={alert.message} onClose={clearAlert} />}
 
           <div className="cash-voucher-no-box">
             <span>Current Financial Year</span>
@@ -318,7 +292,7 @@ function FinancialYearScreen({ onClose }: { onClose: () => void }): React.JSX.El
                 label="Year Label"
                 ref={yearLabelInputRef}
                 value={form.yearLabel}
-                onChange={(e) => setForm((curr) => ({ ...curr, yearLabel: e.target.value }))}
+                onChange={(e) => setForm({ yearLabel: e.target.value })}
                 onKeyDown={(e) => focusNextOnEnter(e, startDateInputRef.current)}
                 placeholder="e.g. 2025-26"
                 required
@@ -328,7 +302,7 @@ function FinancialYearScreen({ onClose }: { onClose: () => void }): React.JSX.El
                 ref={startDateInputRef}
                 type="date"
                 value={form.startDate}
-                onChange={(e) => setForm((curr) => ({ ...curr, startDate: e.target.value }))}
+                onChange={(e) => setForm({ startDate: e.target.value })}
                 onKeyDown={(e) => focusNextOnEnter(e, endDateInputRef.current)}
                 required
               />
@@ -337,7 +311,7 @@ function FinancialYearScreen({ onClose }: { onClose: () => void }): React.JSX.El
                 ref={endDateInputRef}
                 type="date"
                 value={form.endDate}
-                onChange={(e) => setForm((curr) => ({ ...curr, endDate: e.target.value }))}
+                onChange={(e) => setForm({ endDate: e.target.value })}
                 onKeyDown={(e) => focusNextOnEnter(e, narrationInputRef.current)}
                 required
               />
@@ -347,7 +321,7 @@ function FinancialYearScreen({ onClose }: { onClose: () => void }): React.JSX.El
               label="Narration"
               ref={narrationInputRef}
               value={form.narration}
-              onChange={(e) => setForm((curr) => ({ ...curr, narration: e.target.value }))}
+              onChange={(e) => setForm({ narration: e.target.value })}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault()
