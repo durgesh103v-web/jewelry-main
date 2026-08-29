@@ -2214,5 +2214,28 @@ interface Window {
       cancel: (id: string) => Promise<{ success: boolean }>
       remove: (id: string) => Promise<{ success: boolean }>
     }
+
+    oldGold: {
+      calculateValuation: (request: any) => Promise<any>
+      list: (filter?: any) => Promise<any[]>
+      getById: (id: string) => Promise<any>
+      getByNumber: (number: string) => Promise<any>
+      getByCustomer: (customerId: string) => Promise<any[]>
+      getNextNumber: () => Promise<string>
+      createReceipt: (payload: any) => Promise<any>
+      cancelReceipt: (id: string) => Promise<{ success: boolean }>
+      remove: (id: string) => Promise<{ success: boolean }>
+    }
+
+    metalExchange: {
+      list: (filter?: any) => Promise<any[]>
+      getById: (id: string) => Promise<any>
+      getByNumber: (number: string) => Promise<any>
+      getByOrder: (orderId: string) => Promise<any[]>
+      getNextNumber: () => Promise<string>
+      apply: (payload: any) => Promise<any>
+      cancel: (id: string) => Promise<{ success: boolean }>
+      remove: (id: string) => Promise<{ success: boolean }>
+    }
   }
 }

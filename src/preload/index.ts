@@ -2416,6 +2416,29 @@ const api = {
     getOrderBalance: (orderId: string): Promise<any> => ipcRenderer.invoke('advances:get-order-balance', orderId),
     cancel: (id: string): Promise<{ success: boolean }> => ipcRenderer.invoke('advances:cancel', id),
     remove: (id: string): Promise<{ success: boolean }> => ipcRenderer.invoke('advances:delete', id)
+  },
+
+  oldGold: {
+    calculateValuation: (request: any): Promise<any> => ipcRenderer.invoke('old-gold:calculate-valuation', request),
+    list: (filter?: any): Promise<any[]> => ipcRenderer.invoke('old-gold:list', filter),
+    getById: (id: string): Promise<any> => ipcRenderer.invoke('old-gold:get-by-id', id),
+    getByNumber: (number: string): Promise<any> => ipcRenderer.invoke('old-gold:get-by-number', number),
+    getByCustomer: (customerId: string): Promise<any[]> => ipcRenderer.invoke('old-gold:get-by-customer', customerId),
+    getNextNumber: (): Promise<string> => ipcRenderer.invoke('old-gold:next-number'),
+    createReceipt: (payload: any): Promise<any> => ipcRenderer.invoke('old-gold:create-receipt', payload),
+    cancelReceipt: (id: string): Promise<{ success: boolean }> => ipcRenderer.invoke('old-gold:cancel-receipt', id),
+    remove: (id: string): Promise<{ success: boolean }> => ipcRenderer.invoke('old-gold:delete', id)
+  },
+
+  metalExchange: {
+    list: (filter?: any): Promise<any[]> => ipcRenderer.invoke('exchanges:list', filter),
+    getById: (id: string): Promise<any> => ipcRenderer.invoke('exchanges:get-by-id', id),
+    getByNumber: (number: string): Promise<any> => ipcRenderer.invoke('exchanges:get-by-number', number),
+    getByOrder: (orderId: string): Promise<any[]> => ipcRenderer.invoke('exchanges:get-by-order', orderId),
+    getNextNumber: (): Promise<string> => ipcRenderer.invoke('exchanges:next-number'),
+    apply: (payload: any): Promise<any> => ipcRenderer.invoke('exchanges:apply', payload),
+    cancel: (id: string): Promise<{ success: boolean }> => ipcRenderer.invoke('exchanges:cancel', id),
+    remove: (id: string): Promise<{ success: boolean }> => ipcRenderer.invoke('exchanges:delete', id)
   }
 }
 

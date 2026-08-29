@@ -12,6 +12,8 @@ export type DocumentType =
   | 'QUOTATION'
   | 'ORDER'
   | 'ADVANCE'
+  | 'OLD_GOLD'
+  | 'EXCHANGE'
 
 interface DocumentConfig {
   table: string
@@ -30,7 +32,9 @@ const DOCUMENT_CONFIGS: Record<DocumentType, DocumentConfig> = {
   REPAIR: { table: 'repair_entries', column: 'repair_no', defaultPrefix: 'REP' },
   QUOTATION: { table: 'quotations', column: 'quotation_number', defaultPrefix: 'QT' },
   ORDER: { table: 'customer_orders', column: 'order_number', defaultPrefix: 'ORD' },
-  ADVANCE: { table: 'customer_advances', column: 'advance_number', defaultPrefix: 'ADV' }
+  ADVANCE: { table: 'customer_advances', column: 'advance_number', defaultPrefix: 'ADV' },
+  OLD_GOLD: { table: 'old_gold_receipts', column: 'receipt_number', defaultPrefix: 'OG' },
+  EXCHANGE: { table: 'metal_exchanges', column: 'exchange_number', defaultPrefix: 'EX' }
 }
 
 function getSaleBillPrefix(): string {
