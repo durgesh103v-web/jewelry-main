@@ -1,7 +1,8 @@
-import React from 'react'
-import type { CustomerRecord } from '../../../../../shared/types/customer'
+import React, { useEffect, useRef } from 'react'
+import type { CustomerRecord } from '@shared/types/customer'
 import type { PosBillItem, PosPaymentLine } from '../types'
-import type { SalesInvoiceRecord } from '../../../../../shared/types/salesInvoice'
+import type { SalesInvoiceRecord } from '@shared/types/salesInvoice'
+import { invoicePrintService } from '../devices/invoicePrint.service'
 
 interface CompleteSaleDialogProps {
   isOpen: boolean
@@ -37,12 +38,37 @@ export const CompleteSaleDialog: React.FC<CompleteSaleDialogProps> = ({
   onConfirmSale,
   onNewSale
 }) => {
+  const confirmBtnRef = useRef<HTMLButtonElement>(null)
+  const nextSaleBtnRef = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    if (isOpen) {
+      if (completedInvoice) {
+        nextSaleBtnRef.current?.focus()
+      } else {
+        confirmBtnRef.current?.focus()
+      }
+    }
+  }, [isOpen, completedInvoice])
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      e.preventDefault()
+      if (!isSubmitting) {
+        onClose()
+      }
+    }
+  }
+
   if (!isOpen) return null
 
   // Post-sale success screen
   if (completedInvoice) {
     return (
-      <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+      <div
+        className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+        onKeyDown={handleKeyDown}
+      >
         <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-md p-6 text-center animate-in fade-in zoom-in-95 duration-150">
           <div className="w-14 h-14 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center text-2xl mx-auto mb-3">
             ✓
@@ -71,7 +97,7 @@ export const CompleteSaleDialog: React.FC<CompleteSaleDialogProps> = ({
             </div>
             {completedInvoice.balanceDue > 0 && (
               <div className="flex justify-between border-t border-border/60 pt-1.5 text-amber-600 dark:text-amber-400 font-bold">
-                <span>Balance Due:</span>
+                <span>Customer Ledger Receivable:</span>
                 <span className="font-mono">₹{completedInvoice.balanceDue.toLocaleString()}</span>
               </div>
             )}
@@ -80,13 +106,14 @@ export const CompleteSaleDialog: React.FC<CompleteSaleDialogProps> = ({
           <div className="flex gap-3">
             <button
               type="button"
-              onClick={() => window.print()}
+              onClick={() => invoicePrintService.print(completedInvoice.id)}
               className="flex-1 h-10 bg-secondary hover:bg-secondary/80 text-secondary-foreground text-xs font-semibold rounded-xl transition-colors flex items-center justify-center gap-1.5"
             >
               <span>🖨️</span>
               <span>Print Invoice</span>
             </button>
             <button
+              ref={nextSaleBtnRef}
               type="button"
               onClick={() => {
                 onNewSale()
@@ -95,7 +122,7 @@ export const CompleteSaleDialog: React.FC<CompleteSaleDialogProps> = ({
               className="flex-1 h-10 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold rounded-xl shadow-sm transition-colors flex items-center justify-center gap-1.5"
             >
               <span>✨</span>
-              <span>Next Sale</span>
+              <span>Next Sale (Enter)</span>
             </button>
           </div>
         </div>
@@ -105,7 +132,10 @@ export const CompleteSaleDialog: React.FC<CompleteSaleDialogProps> = ({
 
   // Pre-sale confirmation
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+      onKeyDown={handleKeyDown}
+    >
       <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         <div className="p-4 border-b border-border flex items-center justify-between">
           <h3 className="font-bold text-foreground text-sm flex items-center gap-2">
@@ -201,10 +231,11 @@ export const CompleteSaleDialog: React.FC<CompleteSaleDialogProps> = ({
             Cancel
           </button>
           <button
+            ref={confirmBtnRef}
             type="button"
             onClick={onConfirmSale}
             disabled={isSubmitting}
-            className="px-5 py-2 text-xs bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-xl shadow-sm flex items-center gap-2"
+            className="px-5 py-2 text-xs bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-foreground font-bold rounded-xl shadow-sm flex items-center gap-2"
           >
             {isSubmitting ? (
               <>
@@ -214,7 +245,7 @@ export const CompleteSaleDialog: React.FC<CompleteSaleDialogProps> = ({
             ) : (
               <>
                 <span>✓</span>
-                <span>Confirm & Post Sale</span>
+                <span>Confirm & Post Sale (Enter)</span>
               </>
             )}
           </button>

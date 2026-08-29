@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import { v4 as uuidv4 } from 'uuid'
-import type { PosBillItem, PosPaymentLine } from '../types'
+import type { PosBillItem, PosPaymentLine, PosLifecycleStage } from '../types'
 import type { CustomerRecord } from '@shared/types/customer'
 import type { CustomerOrderRecord } from '@shared/types/customerOrder'
 import type { CustomerAdvanceRecord } from '@shared/types/advance'
@@ -22,12 +22,12 @@ export function usePosBilling() {
   ])
   const [metalType, setMetalType] = useState<string>('Gold')
   const [notes, setNotes] = useState<string>('')
-  const [isCalculating, setIsCalculating] = useState<boolean>(false)
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
   const [completedInvoice, setCompletedInvoice] = useState<SalesInvoiceRecord | null>(null)
 
   const calculationReqId = useRef(0)
+  const isSubmittingRef = useRef(false)
 
   // 1. Fetch available advances & exchanges when customer changes
   useEffect(() => {
@@ -74,8 +74,8 @@ export function usePosBilling() {
   // 2. Pricing recalculation for an item via backend
   const recalculateItemPrice = useCallback(
     async (item: PosBillItem): Promise<PosBillItem> => {
+      const currentReq = ++calculationReqId.current
       try {
-        const currentReq = ++calculationReqId.current
         const res: PricingResult = await window.api.pricing.calculate({
           metalType: item.metalType || metalType,
           purityName: item.purityName,
@@ -107,63 +107,91 @@ export function usePosBilling() {
         return {
           ...item,
           goldRate: res.metal.ratePerGram,
-          pricingResult: res
+          pricingResult: res,
+          pricingStatus: 'READY',
+          pricingError: undefined
         }
       } catch (err: any) {
         console.error('Error calculating item price:', err)
-        return item
+        return {
+          ...item,
+          pricingStatus: 'ERROR',
+          pricingError: err.message || 'Unable to calculate price'
+        }
       }
     },
     [metalType]
   )
 
-  // 3. Add Item to POS bill
+  // 3. Add Item to POS bill (with duplicate barcode awareness)
   const addItem = useCallback(
     async (rawItem: Partial<PosBillItem> & { itemId: string; itemName: string; grossWeight: number }) => {
-      setIsCalculating(true)
-      try {
-        const newItem: PosBillItem = {
-          id: uuidv4(),
-          itemId: rawItem.itemId,
-          itemName: rawItem.itemName,
-          itemCode: rawItem.itemCode,
-          description: rawItem.description || rawItem.itemName,
-          stampId: rawItem.stampId || '',
-          designId: rawItem.designId || '',
-          barcode: rawItem.barcode || '',
-          pcs: rawItem.pcs || 1,
-          grossWeight: rawItem.grossWeight,
-          packWeight: rawItem.packWeight || 0,
-          lessWeight: rawItem.lessWeight || 0,
-          addWeight: rawItem.addWeight || 0,
-          metalType: rawItem.metalType || metalType,
-          purityName: rawItem.purityName || '',
-          tunch: rawItem.tunch ?? 100,
-          wastage: rawItem.wastage ?? 0,
-          goldRate: rawItem.goldRate || 0,
-          labourRate: rawItem.labourRate ?? 0,
-          labourRateType: rawItem.labourRateType || 'Kg',
-          stoneCharges: rawItem.stoneCharges || 0,
-          diamondCharges: rawItem.diamondCharges || 0,
-          discountAmount: rawItem.discountAmount || 0,
-          discountPercent: rawItem.discountPercent || 0,
-          taxPercent: rawItem.taxPercent || 0
+      // Check if item with same barcode or itemId already exists in bill
+      const existingIdx = rawItem.barcode
+        ? items.findIndex((it) => it.barcode && it.barcode === rawItem.barcode)
+        : -1
+
+      if (existingIdx >= 0) {
+        // Increment quantity on existing line
+        const existing = items[existingIdx]
+        const newPcs = existing.pcs + (rawItem.pcs || 1)
+        const unitGrossWeight = existing.pcs > 0 ? existing.grossWeight / existing.pcs : existing.grossWeight
+        const newGrossWeight = roundNumber(unitGrossWeight * newPcs, 3)
+
+        const updatedLine: PosBillItem = {
+          ...existing,
+          pcs: newPcs,
+          grossWeight: newGrossWeight,
+          pricingStatus: 'CALCULATING'
         }
 
-        const calculated = await recalculateItemPrice(newItem)
-        setItems((prev) => [...prev, calculated])
-      } finally {
-        setIsCalculating(false)
+        setItems((prev) => prev.map((it, idx) => (idx === existingIdx ? updatedLine : it)))
+        const recalculated = await recalculateItemPrice(updatedLine)
+        setItems((prev) => prev.map((it, idx) => (idx === existingIdx ? recalculated : it)))
+        return
       }
+
+      const newItem: PosBillItem = {
+        id: uuidv4(),
+        itemId: rawItem.itemId,
+        itemName: rawItem.itemName,
+        itemCode: rawItem.itemCode,
+        description: rawItem.description || rawItem.itemName,
+        stampId: rawItem.stampId || '',
+        designId: rawItem.designId || '',
+        barcode: rawItem.barcode || '',
+        pcs: rawItem.pcs || 1,
+        grossWeight: rawItem.grossWeight,
+        packWeight: rawItem.packWeight || 0,
+        lessWeight: rawItem.lessWeight || 0,
+        addWeight: rawItem.addWeight || 0,
+        metalType: rawItem.metalType || metalType,
+        purityName: rawItem.purityName || '',
+        tunch: rawItem.tunch ?? 100,
+        wastage: rawItem.wastage ?? 0,
+        goldRate: rawItem.goldRate || 0,
+        labourRate: rawItem.labourRate ?? 0,
+        labourRateType: rawItem.labourRateType || 'Kg',
+        stoneCharges: rawItem.stoneCharges || 0,
+        diamondCharges: rawItem.diamondCharges || 0,
+        discountAmount: rawItem.discountAmount || 0,
+        discountPercent: rawItem.discountPercent || 0,
+        taxPercent: rawItem.taxPercent || 0,
+        pricingStatus: 'CALCULATING'
+      }
+
+      setItems((prev) => [...prev, newItem])
+      const calculated = await recalculateItemPrice(newItem)
+      setItems((prev) => prev.map((it) => (it.id === newItem.id ? calculated : it)))
     },
-    [metalType, recalculateItemPrice]
+    [items, metalType, recalculateItemPrice]
   )
 
   // 4. Update Item
   const updateItem = useCallback(
     async (id: string, updates: Partial<PosBillItem>) => {
       setItems((prev) =>
-        prev.map((it) => (it.id === id ? { ...it, ...updates } : it))
+        prev.map((it) => (it.id === id ? { ...it, ...updates, pricingStatus: 'CALCULATING' } : it))
       )
 
       const target = items.find((it) => it.id === id)
@@ -184,10 +212,26 @@ export function usePosBilling() {
     setItems((prev) => prev.filter((it) => it.id !== id))
   }, [])
 
-  // 6. Load Customer Order
+  // 6. Safe Customer Selection (Clears incompatible credits)
+  const setCustomerWithSafety = useCallback((newCustomer: CustomerRecord | null) => {
+    setCustomer(newCustomer)
+    if (!newCustomer) {
+      setOrder(null)
+      setSelectedAdvanceIds([])
+      setSelectedExchangeIds([])
+    } else {
+      // Clear previous customer order/advance selections
+      setSelectedAdvanceIds([])
+      setSelectedExchangeIds([])
+      if (order && order.customerId !== newCustomer.id) {
+        setOrder(null)
+      }
+    }
+  }, [order])
+
+  // 7. Load Customer Order with Snapshot
   const loadOrder = useCallback(
     async (orderId: string) => {
-      setIsCalculating(true)
       setError(null)
       try {
         const ord: CustomerOrderRecord = await window.api.orders.getById(orderId)
@@ -223,22 +267,22 @@ export function usePosBilling() {
             stoneCharges: oi.stoneCharges,
             diamondCharges: oi.diamondCharges,
             discountAmount: oi.discountAmount,
-            taxPercent: oi.taxPercent
+            taxPercent: oi.taxPercent,
+            pricingStatus: 'CALCULATING'
           }))
 
+          setItems(mappedItems)
           const recalculated = await Promise.all(mappedItems.map(recalculateItemPrice))
           setItems(recalculated)
         }
       } catch (err: any) {
         setError(err.message || 'Failed to load order')
-      } finally {
-        setIsCalculating(false)
       }
     },
     [recalculateItemPrice]
   )
 
-  // 7. Derived Totals & Reconciled Calculation
+  // 8. Derived Totals & Reconciled Calculation
   const summary = useMemo(() => {
     let totalPcs = 0
     let totalGrossWeight = 0
@@ -305,14 +349,42 @@ export function usePosBilling() {
     }
   }, [items, availableAdvances, selectedAdvanceIds, availableExchanges, selectedExchangeIds, payments])
 
-  // 8. Auto-fill payment amount when single payment line is untouched
+  // 9. Auto-fill payment amount when single payment line is untouched
   useEffect(() => {
     if (payments.length === 1 && payments[0].amount === 0 && summary.netPayable > 0) {
       setPayments([{ ...payments[0], amount: summary.netPayable }])
     }
   }, [summary.netPayable])
 
-  // 9. Payment Helpers
+  // 10. Status checks
+  const isAnyItemCalculating = useMemo(
+    () => items.some((it) => it.pricingStatus === 'CALCULATING'),
+    [items]
+  )
+
+  const hasPricingErrors = useMemo(
+    () => items.some((it) => it.pricingStatus === 'ERROR'),
+    [items]
+  )
+
+  const hasUnsavedChanges = useMemo(
+    () => (customer !== null || items.length > 0) && completedInvoice === null,
+    [customer, items.length, completedInvoice]
+  )
+
+  const lifecycleStage: PosLifecycleStage = useMemo(() => {
+    if (completedInvoice) return 'COMPLETED'
+    if (isSubmitting) return 'PROCESSING'
+    if (error) return 'ERROR'
+    if (items.length === 0) {
+      return customer ? 'CUSTOMER_SELECTED' : 'EMPTY'
+    }
+    if (isAnyItemCalculating) return 'ITEMS_ADDED'
+    if (payments.some((p) => p.amount > 0)) return 'PAYMENT_ENTRY'
+    return 'READY_FOR_PAYMENT'
+  }, [completedInvoice, isSubmitting, error, items.length, customer, isAnyItemCalculating, payments])
+
+  // 11. Payment Helpers
   const addPaymentLine = useCallback(() => {
     const remaining = summary.balanceDue
     setPayments((prev) => [
@@ -331,8 +403,12 @@ export function usePosBilling() {
     setPayments((prev) => (prev.length > 1 ? prev.filter((p) => p.id !== id) : prev))
   }, [])
 
-  // 10. Complete Sale Submission
+  // 12. Complete Sale Submission (with Idempotency & Double-Submission Protection)
   const submitSale = useCallback(async () => {
+    if (isSubmittingRef.current) {
+      return null
+    }
+
     if (!customer?.accountId) {
       setError('Please select a valid customer with an active account')
       return null
@@ -341,7 +417,16 @@ export function usePosBilling() {
       setError('Please add at least one item to the sales invoice')
       return null
     }
+    if (isAnyItemCalculating) {
+      setError('Please wait for item pricing calculations to finish')
+      return null
+    }
+    if (hasPricingErrors) {
+      setError('One or more items have pricing errors. Please verify item weights and rates.')
+      return null
+    }
 
+    isSubmittingRef.current = true
     setIsSubmitting(true)
     setError(null)
     try {
@@ -388,18 +473,44 @@ export function usePosBilling() {
       }
 
       const invoice: SalesInvoiceRecord = await window.api.salesInvoices.create(payload)
+
+      if (!invoice || !invoice.id || !invoice.invoiceNumber) {
+        throw new Error('Backend returned invalid invoice confirmation')
+      }
+
       setCompletedInvoice(invoice)
       return invoice
     } catch (err: any) {
       console.error('Sale checkout failed:', err)
-      setError(err.message || 'Failed to complete sales invoice')
+      const errorMsg = err.message || 'Failed to complete sales invoice'
+      if (errorMsg.includes('stock') || errorMsg.includes('Inventory')) {
+        setError('One or more items are no longer available in stock. Please refresh the bill.')
+      } else if (errorMsg.includes('advance') || errorMsg.includes('Advance')) {
+        setError('Selected customer advance is no longer available. Please refresh the advance selection.')
+      } else if (errorMsg.includes('exchange') || errorMsg.includes('Exchange')) {
+        setError('Selected Old Gold exchange is no longer available. Please refresh the exchange selection.')
+      } else {
+        setError(errorMsg)
+      }
       return null
     } finally {
+      isSubmittingRef.current = false
       setIsSubmitting(false)
     }
-  }, [customer, items, order, metalType, notes, selectedAdvanceIds, selectedExchangeIds, payments])
+  }, [
+    customer,
+    items,
+    order,
+    metalType,
+    notes,
+    selectedAdvanceIds,
+    selectedExchangeIds,
+    payments,
+    isAnyItemCalculating,
+    hasPricingErrors
+  ])
 
-  // 11. Reset POS
+  // 13. Full Transient State Reset
   const resetPos = useCallback(() => {
     setCustomer(null)
     setOrder(null)
@@ -412,11 +523,14 @@ export function usePosBilling() {
     setNotes('')
     setError(null)
     setCompletedInvoice(null)
+    isSubmittingRef.current = false
+    setIsSubmitting(false)
   }, [])
 
   return {
+    lifecycleStage,
     customer,
-    setCustomer,
+    setCustomer: setCustomerWithSafety,
     order,
     loadOrder,
     items,
@@ -438,7 +552,9 @@ export function usePosBilling() {
     notes,
     setNotes,
     summary,
-    isCalculating,
+    isAnyItemCalculating,
+    hasPricingErrors,
+    hasUnsavedChanges,
     isSubmitting,
     error,
     setError,

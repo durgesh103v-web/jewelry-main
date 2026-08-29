@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { usePosBilling } from '../hooks/usePosBilling'
 import { CustomerSelector } from '../components/CustomerSelector'
 import { OrderSelector } from '../components/OrderSelector'
@@ -16,8 +16,9 @@ interface PosBillingScreenProps {
   onClose?: () => void
 }
 
-export const PosBillingScreen: React.FC<PosBillingScreenProps> = () => {
+export const PosBillingScreen: React.FC<PosBillingScreenProps> = ({ onClose }) => {
   const {
+    lifecycleStage,
     customer,
     setCustomer,
     order,
@@ -39,7 +40,9 @@ export const PosBillingScreen: React.FC<PosBillingScreenProps> = () => {
     metalType,
     setMetalType,
     summary,
-    isCalculating,
+    isAnyItemCalculating,
+    hasPricingErrors,
+    hasUnsavedChanges,
     isSubmitting,
     error,
     setError,
@@ -50,6 +53,10 @@ export const PosBillingScreen: React.FC<PosBillingScreenProps> = () => {
 
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [isConfirmOpen, setIsConfirmOpen] = useState(false)
+  const [showUnsavedPrompt, setShowUnsavedPrompt] = useState(false)
+  const [pendingClose, setPendingClose] = useState(false)
+
+  const customerInputRef = useRef<HTMLInputElement>(null)
 
   // 1. Scan item by barcode
   const handleScanBarcode = useCallback(
@@ -95,28 +102,78 @@ export const PosBillingScreen: React.FC<PosBillingScreenProps> = () => {
     )
   }, [setSelectedExchangeIds])
 
-  // 4. Keyboard Navigation
+  // 4. Keyboard Navigation (F2, F4, F6, F8, Esc)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'F4') {
+      if (e.key === 'F2') {
+        e.preventDefault()
+        customerInputRef.current?.focus()
+      } else if (e.key === 'F4') {
         e.preventDefault()
         setIsSearchOpen(true)
+      } else if (e.key === 'F6') {
+        e.preventDefault()
+        // Focus first payment input
+        const paymentInput = document.querySelector<HTMLInputElement>('input[placeholder="Amount"]')
+        paymentInput?.focus()
       } else if (e.key === 'F8') {
         e.preventDefault()
-        if (items.length > 0 && customer) {
+        if (items.length > 0 && customer && !isAnyItemCalculating && !hasPricingErrors && !isSubmitting) {
           setIsConfirmOpen(true)
         }
       } else if (e.key === 'Escape') {
-        setIsSearchOpen(false)
-        if (!completedInvoice) {
+        if (isSearchOpen) {
+          setIsSearchOpen(false)
+        } else if (isConfirmOpen && !completedInvoice && !isSubmitting) {
           setIsConfirmOpen(false)
+        } else if (showUnsavedPrompt) {
+          setShowUnsavedPrompt(false)
+          setPendingClose(false)
         }
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [items.length, customer, completedInvoice])
+  }, [
+    isSearchOpen,
+    isConfirmOpen,
+    showUnsavedPrompt,
+    items.length,
+    customer,
+    isAnyItemCalculating,
+    hasPricingErrors,
+    isSubmitting,
+    completedInvoice
+  ])
+
+  // 5. Handle Clear / Close with unsaved protection
+  const handleRequestClear = useCallback(() => {
+    if (hasUnsavedChanges) {
+      setPendingClose(false)
+      setShowUnsavedPrompt(true)
+    } else {
+      resetPos()
+    }
+  }, [hasUnsavedChanges, resetPos])
+
+  const handleRequestClose = useCallback(() => {
+    if (hasUnsavedChanges) {
+      setPendingClose(true)
+      setShowUnsavedPrompt(true)
+    } else if (onClose) {
+      onClose()
+    }
+  }, [hasUnsavedChanges, onClose])
+
+  const handleConfirmUnsavedAction = useCallback(() => {
+    setShowUnsavedPrompt(false)
+    resetPos()
+    if (pendingClose && onClose) {
+      onClose()
+    }
+    setPendingClose(false)
+  }, [pendingClose, resetPos, onClose])
 
   return (
     <div className="h-full flex flex-col bg-background text-foreground overflow-hidden">
@@ -125,9 +182,14 @@ export const PosBillingScreen: React.FC<PosBillingScreenProps> = () => {
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
             <span className="text-xl">💎</span>
-            <h1 className="font-bold text-sm text-foreground tracking-tight">
-              POS & Retail Billing Counter
-            </h1>
+            <div>
+              <h1 className="font-bold text-sm text-foreground tracking-tight flex items-center gap-2">
+                <span>POS & Retail Billing Counter</span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-mono">
+                  {lifecycleStage}
+                </span>
+              </h1>
+            </div>
           </div>
           <div className="flex items-center bg-muted/60 rounded-lg p-0.5 text-xs font-medium border border-border/50">
             <button
@@ -155,14 +217,34 @@ export const PosBillingScreen: React.FC<PosBillingScreenProps> = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          <div className="text-[11px] text-muted-foreground flex items-center gap-2 font-mono">
+            <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              Scanner Ready
+            </span>
+            <span>•</span>
+            <span className="text-muted-foreground">Print Bridge Ready</span>
+          </div>
+
           {items.length > 0 && (
             <button
               type="button"
-              onClick={resetPos}
+              onClick={handleRequestClear}
               className="text-xs px-3 py-1.5 bg-secondary text-secondary-foreground hover:bg-destructive hover:text-destructive-foreground rounded-lg transition-colors font-medium border border-border"
             >
               Clear Bill
+            </button>
+          )}
+
+          {onClose && (
+            <button
+              type="button"
+              onClick={handleRequestClose}
+              className="text-xs px-2.5 py-1.5 text-muted-foreground hover:text-foreground rounded-lg transition-colors"
+              title="Close POS"
+            >
+              ✕
             </button>
           )}
         </div>
@@ -200,7 +282,6 @@ export const PosBillingScreen: React.FC<PosBillingScreenProps> = () => {
             items={items}
             onUpdateItem={updateItem}
             onRemoveItem={removeItem}
-            isCalculating={isCalculating}
           />
 
           {/* Bottom Left Panels (Breakdown, Advances, Exchanges) */}
@@ -231,6 +312,7 @@ export const PosBillingScreen: React.FC<PosBillingScreenProps> = () => {
               customer={customer}
               onSelectCustomer={setCustomer}
               disabled={isSubmitting}
+              inputRef={customerInputRef}
             />
             <OrderSelector
               customerId={customer?.id}
@@ -253,7 +335,13 @@ export const PosBillingScreen: React.FC<PosBillingScreenProps> = () => {
           <InvoiceSummaryPanel
             summary={summary}
             onOpenCompleteDialog={() => setIsConfirmOpen(true)}
-            disabled={isSubmitting || items.length === 0 || !customer}
+            disabled={
+              isSubmitting ||
+              items.length === 0 ||
+              !customer ||
+              isAnyItemCalculating ||
+              hasPricingErrors
+            }
           />
         </div>
       </div>
@@ -283,6 +371,38 @@ export const PosBillingScreen: React.FC<PosBillingScreenProps> = () => {
           setIsConfirmOpen(false)
         }}
       />
+
+      {/* Unsaved Changes Warning Modal */}
+      {showUnsavedPrompt && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-card border border-border rounded-xl shadow-2xl w-full max-w-sm p-5 text-center animate-in fade-in zoom-in-95 duration-150">
+            <div className="text-3xl mb-2">⚠️</div>
+            <h3 className="font-bold text-foreground text-sm">Discard Active Bill?</h3>
+            <p className="text-xs text-muted-foreground mt-1 mb-4">
+              You have customer and item details in progress. Clearing will reset all transient billing state.
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowUnsavedPrompt(false)
+                  setPendingClose(false)
+                }}
+                className="flex-1 px-3 py-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded-lg text-xs font-semibold"
+              >
+                Keep Bill
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmUnsavedAction}
+                className="flex-1 px-3 py-2 bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-lg text-xs font-bold"
+              >
+                Discard & Reset
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
