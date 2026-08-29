@@ -65,6 +65,7 @@ const ModernSalesReturnScreen = lazy(() => import('../../features/returns/screen
 const ModernPurchaseReturnScreen = lazy(() => import('../../features/returns/screens/PurchaseReturnScreen'))
 const FinancialReportsHubScreen = lazy(() => import('../../features/reports/screens/FinancialReportsHubScreen'))
 const TaxComplianceHubScreen = lazy(() => import('../../features/tax/screens/TaxComplianceHubScreen'))
+const JewelleryTaggingHubScreen = lazy(() => import('../../features/tagging/screens/JewelleryTaggingHubScreen'))
 
 export type ScreenComponentProps = {
   onClose: () => void
@@ -159,6 +160,7 @@ export const screenRegistry: Record<string, ScreenMapValue> = {
   backup: { component: BackupRestoreScreen },
   'restore-backup': { component: BackupRestoreScreen },
   'printer-setting': { component: PrinterSettingScreen },
+  'jewellery-tagging-hub': { component: JewelleryTaggingHubScreen },
   'barcode-printing': { component: BarcodePrintingScreen },
   'change-password': { component: ChangePasswordScreen },
   'financial-year': { component: FinancialYearScreen },

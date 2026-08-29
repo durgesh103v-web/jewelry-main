@@ -2513,6 +2513,33 @@ const api = {
       ipcRenderer.invoke('tax:tax-register', payload),
     getTaxDashboard: (payload?: { startDate?: string; endDate?: string }): Promise<any> =>
       ipcRenderer.invoke('tax:dashboard', payload)
+  },
+
+  itemIdentification: {
+    resolveIdentifier: (payload: { identifier: string; operationType?: string }): Promise<any> =>
+      ipcRenderer.invoke('tagging:resolve-identifier', payload),
+    createStockItem: (payload: any): Promise<any> => ipcRenderer.invoke('tagging:create-stock-item', payload),
+    listStockItems: (filter?: any): Promise<any[]> => ipcRenderer.invoke('tagging:list-stock-items', filter),
+    getStockItem: (id: string): Promise<any> => ipcRenderer.invoke('tagging:get-stock-item', id),
+    reprintTag: (stockItemId: string): Promise<any> => ipcRenderer.invoke('tagging:reprint-tag', stockItemId),
+    replaceTag: (payload: { stockItemId: string; reason: string }): Promise<any> =>
+      ipcRenderer.invoke('tagging:replace-tag', payload),
+    getTimeline: (stockItemId: string): Promise<any[]> => ipcRenderer.invoke('tagging:get-timeline', stockItemId),
+    preparePrintModel: (stockItemIds: string[]): Promise<any[]> =>
+      ipcRenderer.invoke('tagging:prepare-print-model', stockItemIds)
+  },
+
+  stockTake: {
+    startSession: (payload?: { location?: string; createdBy?: string }): Promise<any> =>
+      ipcRenderer.invoke('tagging:start-stock-take', payload),
+    getActiveSession: (): Promise<any> => ipcRenderer.invoke('tagging:get-active-stock-take'),
+    listSessions: (): Promise<any[]> => ipcRenderer.invoke('tagging:list-stock-takes'),
+    scanItem: (payload: { sessionId: string; identifier: string; operator?: string }): Promise<any> =>
+      ipcRenderer.invoke('tagging:scan-stock-take-item', payload),
+    completeSession: (payload: { sessionId: string; notes?: string }): Promise<any> =>
+      ipcRenderer.invoke('tagging:complete-stock-take', payload),
+    getSessionSummary: (sessionId: string): Promise<any> =>
+      ipcRenderer.invoke('tagging:get-stock-take-summary', sessionId)
   }
 }
 

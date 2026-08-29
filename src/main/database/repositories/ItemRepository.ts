@@ -87,6 +87,18 @@ export class ItemRepository extends BaseRepository {
       .get(id) as ItemRow | undefined
   }
 
+  findByBarcode(barcode: string): ItemRow | undefined {
+    return this.db
+      .prepare(
+        `
+        ${itemSelectSql}
+        WHERE i.barcode_value = ?
+        AND i.deleted_at IS NULL
+      `
+      )
+      .get(barcode) as ItemRow | undefined
+  }
+
   findDuplicate(name: string, metalType: string, excludeId?: string): { id: string } | undefined {
     if (excludeId) {
       return this.db

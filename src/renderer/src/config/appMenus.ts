@@ -112,9 +112,9 @@ export const appMenus: AppMenu[] = [
     id: 'utility',
     label: 'Utility',
     children: [
-      { id: 'backup', label: 'Backup', module: 'utility' },
-      { id: 'restore-backup', label: 'Restore Backup', module: 'utility' },
+      { id: 'jewellery-tagging-hub', label: 'Item Tagging & RFID Hub', module: 'utility' },
       { id: 'barcode-printing', label: 'Barcode Printing', module: 'utility' },
+      { id: 'backup', label: 'Backup', module: 'utility' },
       { id: 'reminder', label: 'Reminder', module: 'utility' },
       { id: 'screenshot', label: 'Screen Shot', module: 'utility' },
       { id: 'whatsapp', label: 'WhatsApp', module: 'utility' },

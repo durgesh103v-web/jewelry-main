@@ -2310,5 +2310,25 @@ interface Window {
       getTaxRegister: (payload: { type: string; startDate?: string; endDate?: string }) => Promise<any>
       getTaxDashboard: (payload?: { startDate?: string; endDate?: string }) => Promise<any>
     }
+
+    itemIdentification: {
+      resolveIdentifier: (payload: { identifier: string; operationType?: string }) => Promise<any>
+      createStockItem: (payload: any) => Promise<any>
+      listStockItems: (filter?: any) => Promise<any[]>
+      getStockItem: (id: string) => Promise<any>
+      reprintTag: (stockItemId: string) => Promise<any>
+      replaceTag: (payload: { stockItemId: string; reason: string }) => Promise<any>
+      getTimeline: (stockItemId: string) => Promise<any[]>
+      preparePrintModel: (stockItemIds: string[]) => Promise<any[]>
+    }
+
+    stockTake: {
+      startSession: (payload?: { location?: string; createdBy?: string }) => Promise<any>
+      getActiveSession: () => Promise<any>
+      listSessions: () => Promise<any[]>
+      scanItem: (payload: { sessionId: string; identifier: string; operator?: string }) => Promise<any>
+      completeSession: (payload: { sessionId: string; notes?: string }) => Promise<any>
+      getSessionSummary: (sessionId: string) => Promise<any>
+    }
   }
 }
