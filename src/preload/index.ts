@@ -2402,6 +2402,20 @@ const api = {
     create: (payload: any): Promise<any> => ipcRenderer.invoke('orders:create', payload),
     updateStatus: (id: string, status: string): Promise<any> => ipcRenderer.invoke('orders:update-status', { id, status }),
     remove: (id: string): Promise<{ success: boolean }> => ipcRenderer.invoke('orders:delete', id)
+  },
+
+  advances: {
+    list: (filter?: any): Promise<any[]> => ipcRenderer.invoke('advances:list', filter),
+    getById: (id: string): Promise<any> => ipcRenderer.invoke('advances:get-by-id', id),
+    getByNumber: (number: string): Promise<any> => ipcRenderer.invoke('advances:get-by-number', number),
+    getByCustomer: (customerId: string): Promise<any[]> => ipcRenderer.invoke('advances:get-by-customer', customerId),
+    getByOrder: (orderId: string): Promise<any[]> => ipcRenderer.invoke('advances:get-by-order', orderId),
+    getNextNumber: (): Promise<string> => ipcRenderer.invoke('advances:next-number'),
+    receive: (payload: any): Promise<any> => ipcRenderer.invoke('advances:receive', payload),
+    allocate: (payload: any): Promise<any> => ipcRenderer.invoke('advances:allocate', payload),
+    getOrderBalance: (orderId: string): Promise<any> => ipcRenderer.invoke('advances:get-order-balance', orderId),
+    cancel: (id: string): Promise<{ success: boolean }> => ipcRenderer.invoke('advances:cancel', id),
+    remove: (id: string): Promise<{ success: boolean }> => ipcRenderer.invoke('advances:delete', id)
   }
 }
 

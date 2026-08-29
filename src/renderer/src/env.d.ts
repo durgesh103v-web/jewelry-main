@@ -2200,5 +2200,19 @@ interface Window {
       updateStatus: (id: string, status: string) => Promise<any>
       remove: (id: string) => Promise<{ success: boolean }>
     }
+
+    advances: {
+      list: (filter?: any) => Promise<any[]>
+      getById: (id: string) => Promise<any>
+      getByNumber: (number: string) => Promise<any>
+      getByCustomer: (customerId: string) => Promise<any[]>
+      getByOrder: (orderId: string) => Promise<any[]>
+      getNextNumber: () => Promise<string>
+      receive: (payload: any) => Promise<any>
+      allocate: (payload: any) => Promise<any>
+      getOrderBalance: (orderId: string) => Promise<any>
+      cancel: (id: string) => Promise<{ success: boolean }>
+      remove: (id: string) => Promise<{ success: boolean }>
+    }
   }
 }

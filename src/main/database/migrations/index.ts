@@ -5,6 +5,7 @@ import { migration004 } from './004_master_data_and_inventory'
 import { migration005 } from './005_customers_and_suppliers'
 import { migration006 } from './006_gold_rates_and_pricing'
 import { migration007 } from './007_quotations_and_orders'
+import { migration008 } from './008_customer_advances'
 import { Migration } from './types'
 
 export const allMigrations: Migration[] = [
@@ -14,5 +15,6 @@ export const allMigrations: Migration[] = [
   migration004,
   migration005,
   migration006,
-  migration007
+  migration007,
+  migration008
 ]

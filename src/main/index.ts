@@ -46,6 +46,7 @@ import { registerGoldRateIpc } from './ipc/goldRate.ipc'
 import { registerPricingIpc } from './ipc/pricing.ipc'
 import { registerQuotationIpc } from './ipc/quotation.ipc'
 import { registerCustomerOrderIpc } from './ipc/customerOrder.ipc'
+import { registerAdvanceIpc } from './ipc/advance.ipc'
 
 // Only these URL schemes may be handed to the OS browser. Blocks file:// and
 // custom-scheme links that could otherwise be launched via window.open.
@@ -174,6 +175,7 @@ app.whenReady().then(() => {
   registerPricingIpc()
   registerQuotationIpc()
   registerCustomerOrderIpc()
+  registerAdvanceIpc()
 
   createWindow()
 

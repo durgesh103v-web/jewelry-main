@@ -11,6 +11,7 @@ export type DocumentType =
   | 'REPAIR'
   | 'QUOTATION'
   | 'ORDER'
+  | 'ADVANCE'
 
 interface DocumentConfig {
   table: string
@@ -28,7 +29,8 @@ const DOCUMENT_CONFIGS: Record<DocumentType, DocumentConfig> = {
   JOB_WORK: { table: 'job_work_orders', column: 'order_no', defaultPrefix: 'JW' },
   REPAIR: { table: 'repair_entries', column: 'repair_no', defaultPrefix: 'REP' },
   QUOTATION: { table: 'quotations', column: 'quotation_number', defaultPrefix: 'QT' },
-  ORDER: { table: 'customer_orders', column: 'order_number', defaultPrefix: 'ORD' }
+  ORDER: { table: 'customer_orders', column: 'order_number', defaultPrefix: 'ORD' },
+  ADVANCE: { table: 'customer_advances', column: 'advance_number', defaultPrefix: 'ADV' }
 }
 
 function getSaleBillPrefix(): string {
