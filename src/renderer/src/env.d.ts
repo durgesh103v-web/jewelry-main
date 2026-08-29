@@ -2237,5 +2237,15 @@ interface Window {
       cancel: (id: string) => Promise<{ success: boolean }>
       remove: (id: string) => Promise<{ success: boolean }>
     }
+
+    salesInvoices: {
+      list: (filter?: any) => Promise<any[]>
+      getById: (id: string) => Promise<any>
+      getByNumber: (number: string) => Promise<any>
+      getNextNumber: () => Promise<string>
+      create: (payload: any) => Promise<any>
+      cancel: (id: string) => Promise<{ success: boolean }>
+      remove: (id: string) => Promise<{ success: boolean }>
+    }
   }
 }

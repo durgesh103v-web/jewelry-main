@@ -7,6 +7,7 @@ import { migration006 } from './006_gold_rates_and_pricing'
 import { migration007 } from './007_quotations_and_orders'
 import { migration008 } from './008_customer_advances'
 import { migration009 } from './009_old_gold_and_exchange'
+import { migration010 } from './010_sales_invoices'
 import { Migration } from './types'
 
 export const allMigrations: Migration[] = [
@@ -18,5 +19,6 @@ export const allMigrations: Migration[] = [
   migration006,
   migration007,
   migration008,
-  migration009
+  migration009,
+  migration010
 ]

@@ -2439,6 +2439,16 @@ const api = {
     apply: (payload: any): Promise<any> => ipcRenderer.invoke('exchanges:apply', payload),
     cancel: (id: string): Promise<{ success: boolean }> => ipcRenderer.invoke('exchanges:cancel', id),
     remove: (id: string): Promise<{ success: boolean }> => ipcRenderer.invoke('exchanges:delete', id)
+  },
+
+  salesInvoices: {
+    list: (filter?: any): Promise<any[]> => ipcRenderer.invoke('sales-invoices:list', filter),
+    getById: (id: string): Promise<any> => ipcRenderer.invoke('sales-invoices:get-by-id', id),
+    getByNumber: (number: string): Promise<any> => ipcRenderer.invoke('sales-invoices:get-by-number', number),
+    getNextNumber: (): Promise<string> => ipcRenderer.invoke('sales-invoices:next-number'),
+    create: (payload: any): Promise<any> => ipcRenderer.invoke('sales-invoices:create', payload),
+    cancel: (id: string): Promise<{ success: boolean }> => ipcRenderer.invoke('sales-invoices:cancel', id),
+    remove: (id: string): Promise<{ success: boolean }> => ipcRenderer.invoke('sales-invoices:delete', id)
   }
 }
 
