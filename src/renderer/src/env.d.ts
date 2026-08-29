@@ -1,0 +1,2145 @@
+/// <reference types="vite/client" />
+
+type BusinessType = 'WHOLESALE' | 'RETAIL'
+
+type AuthState = {
+  registered: boolean
+  username: string | null
+  businessType: BusinessType | null
+  authenticated: boolean
+}
+
+type AuthSession = {
+  userId: string
+  username: string
+  role: string
+  businessType: BusinessType
+}
+
+type RegisterPayload = {
+  username: string
+  password: string
+  firmName: string
+  businessType: BusinessType
+}
+
+type LoginPayload = {
+  username: string
+  password: string
+}
+
+type ChangePasswordPayload = {
+  currentPassword: string
+  newPassword: string
+}
+
+type AccountGroupPayload = {
+  groupName: string
+  groupType: string
+  description: string
+  active: boolean
+}
+
+type AccountGroupRecord = AccountGroupPayload & {
+  id: string
+  createdAt: string
+  updatedAt: string
+}
+
+type UserPayload = {
+  username: string
+  password?: string
+  fullName: string
+  role: 'ADMIN' | 'USER'
+  active: boolean
+}
+
+type UserRecord = {
+  id: string
+  username: string
+  fullName: string
+  role: string
+  active: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+type FinancialYearPayload = {
+  yearLabel: string
+  startDate: string
+  endDate: string
+  narration?: string
+}
+
+type FinancialYearRecord = {
+  id: string
+  yearLabel: string
+  startDate: string
+  endDate: string
+  isCurrent: boolean
+  isClosed: boolean
+  narration: string
+  createdAt: string
+  updatedAt: string
+}
+
+type ItemGroupPayload = {
+  groupName: string
+  metalType: string
+  description: string
+  active: boolean
+}
+
+type ItemGroupRecord = ItemGroupPayload & {
+  id: string
+  createdAt: string
+  updatedAt: string
+}
+
+type ItemStampPayload = {
+  stampName: string
+  metalType: string
+  description: string
+  active: boolean
+}
+
+type ItemStampRecord = ItemStampPayload & {
+  id: string
+  createdAt: string
+  updatedAt: string
+}
+
+type ItemDesignPayload = {
+  designName: string
+  metalType: string
+  description: string
+  active: boolean
+}
+
+type ItemDesignRecord = ItemDesignPayload & {
+  id: string
+  createdAt: string
+  updatedAt: string
+}
+
+type ItemPayload = {
+  itemName: string
+  metalType: string
+  itemGroupId: string
+  defaultStampId: string
+  defaultDesignId: string
+  barcodeItem: boolean
+  barcodeType: string
+  labourChargesBy: string
+  salePurchaseBy: string
+  gstHsnCode: string
+  fixedWeightPerPcs: number
+  defaultTanch: number
+  defaultWastage: number
+  defaultLabourRate: number
+  labourRateType: string
+  active: boolean
+}
+
+type ItemRecord = ItemPayload & {
+  id: string
+  groupName: string
+  stampName: string
+  designName: string
+  barcodeValue: string
+  createdAt: string
+  updatedAt: string
+}
+
+type ItemOpeningStockPayload = {
+  stockDate: string
+  itemId: string
+  stampId: string
+  designId: string
+  barcode: string
+  remark: string
+  pcs: number
+  grossWeight: number
+  lessWeight: number
+  addWeight: number
+  tanch: number
+  wastage: number
+  hishob: number
+  unit: 'Kg' | 'Gm' | 'Pcs'
+  majuriRate: number
+  active: boolean
+}
+
+type ItemOpeningStockRecord = ItemOpeningStockPayload & {
+  id: string
+  itemName: string
+  metalType: string
+  stampName: string
+  designName: string
+  netWeight: number
+  fine: number
+  majuri: number
+  createdAt: string
+  updatedAt: string
+}
+
+type SaleItemLinePayload = {
+  lineType: string
+  itemId: string
+  stampId: string
+  designId: string
+  barcode: string
+  remark: string
+  pcs: number
+  grossWeight: number
+  addWeight: number
+  packWeight?: number
+  tunch?: number
+  wastage?: number
+  unit: string
+  labourRate?: number
+  labourRateType?: 'Kg' | 'Gm' | 'Pcs'
+}
+
+type SalePaymentLinePayload = {
+  type: string
+  jamaNave: 'JAMA' | 'NAVE'
+  details: string
+  pcs: number
+  weight: number
+  tunch: number
+  wastage: number
+  fine: number
+  rate: number
+  fineAmount: number
+  anamat: number
+  cash: number
+  bank: number
+  accountId: string
+}
+
+type SalePayload = {
+  saleDate: string
+  accountId: string
+  phone: string
+  metalType: 'Gold' | 'Silver' | 'Diamond' | 'Other'
+  haste: string
+  dpNo: string
+  narration: string
+  reminderDate: string
+  itemLines: SaleItemLinePayload[]
+  paymentLines: SalePaymentLinePayload[]
+}
+
+type ApprovalItemLinePayload = {
+  itemId: string
+  stampId: string
+  designId: string
+  barcode: string
+  remark: string
+  pcs: number
+  grossWeight: number
+  addWeight: number
+  packWeight?: number
+  tunch?: number
+  wastage?: number
+  unit: string
+  labourRate?: number
+  labourRateType?: 'Kg' | 'Gm' | 'Pcs'
+}
+
+type ApprovalPayload = {
+  approvalDate: string
+  accountId: string
+  phone: string
+  metalType: 'Gold' | 'Silver' | 'Diamond' | 'Other'
+  narration: string
+  reminderDate: string
+  itemLines: ApprovalItemLinePayload[]
+}
+
+type ApprovalStatus = 'pending' | 'approved' | 'returned' | 'partial_return'
+
+type SavedApprovalHeader = {
+  id: string
+  approval_no: string
+  approval_date: string
+  account_id: string
+  account_name: string
+  mobile_number: string
+  metal_type: string
+  narration: string
+  reminder_date: string
+  item_fine_total: number
+  item_majuri_total: number
+  status: ApprovalStatus
+  converted_sale_id: string | null
+  converted_at: string | null
+  returned_at: string | null
+}
+
+type SavedApprovalItemLine = {
+  id: string
+  line_no: number
+  item_id: string
+  item_name_snapshot: string
+  barcode: string
+  remark: string
+  pcs: number
+  gross_weight: number
+  pack_weight: number
+  less_weight: number
+  net_weight: number
+  tunch: number
+  wastage: number
+  hishob: number
+  fine: number
+  labour_rate: number
+  labour_rate_type: string
+  majuri: number
+  return_status: 'pending' | 'returned'
+}
+
+type SavedApprovalRecord = {
+  header: SavedApprovalHeader
+  itemLines: SavedApprovalItemLine[]
+}
+
+type ApprovalRegisterRecord = {
+  id: string
+  approval_no: string
+  approval_date: string
+  metal_type: string
+  item_fine_total: number
+  item_majuri_total: number
+  status: ApprovalStatus
+  converted_sale_id: string | null
+  account_name: string
+  mobile_number: string
+}
+
+type ReturnApprovalPayload = {
+  lineIds: string[]
+  returnAll: boolean
+  narration: string
+}
+
+type ConvertApprovalResult = {
+  approval: SavedApprovalRecord
+  sale: SavedSaleRecord
+}
+
+type EstimateItemLinePayload = {
+  itemId: string
+  stampId: string
+  designId: string
+  barcode: string
+  remark: string
+  pcs: number
+  grossWeight: number
+  addWeight: number
+  packWeight?: number
+  tunch?: number
+  wastage?: number
+  labourRate?: number
+  labourRateType?: 'Kg' | 'Gm' | 'Pcs'
+  hsnCode: string
+  gstRate: number
+  taxableAmount: number
+}
+
+type EstimatePayload = {
+  estimateDate: string
+  accountId: string
+  phone: string
+  metalType: 'Gold' | 'Silver' | 'Diamond' | 'Other'
+  narration: string
+  validUntil: string
+  itemLines: EstimateItemLinePayload[]
+}
+
+type EstimateStatus = 'OPEN' | 'CONVERTED' | 'CANCELLED'
+
+type SavedEstimateHeader = {
+  id: string
+  estimate_no: string
+  estimate_date: string
+  account_id: string
+  account_name: string
+  mobile_number: string
+  metal_type: string
+  narration: string
+  valid_until: string
+  item_fine_total: number
+  item_majuri_total: number
+  taxable_amount: number
+  cgst_amount: number
+  sgst_amount: number
+  igst_amount: number
+  status: EstimateStatus
+}
+
+type SavedEstimateItemLine = {
+  id: string
+  line_no: number
+  item_id: string
+  item_name_snapshot: string
+  barcode: string
+  remark: string
+  pcs: number
+  gross_weight: number
+  net_weight: number
+  tunch: number
+  wastage: number
+  fine: number
+  majuri: number
+  hsn_code: string
+  gst_rate: number
+  taxable_amount: number
+  cgst_amount: number
+  sgst_amount: number
+  igst_amount: number
+}
+
+type SavedEstimateRecord = {
+  header: SavedEstimateHeader
+  itemLines: SavedEstimateItemLine[]
+}
+
+type EstimateRegisterRecord = {
+  id: string
+  estimate_no: string
+  estimate_date: string
+  metal_type: string
+  item_fine_total: number
+  item_majuri_total: number
+  taxable_amount: number
+  cgst_amount: number
+  sgst_amount: number
+  igst_amount: number
+  status: EstimateStatus
+  account_name: string
+  mobile_number: string
+}
+
+type ConvertEstimateResult = {
+  estimate: SavedEstimateRecord
+  sale: SavedSaleRecord
+}
+
+type PurchaseItemLinePayload = {
+  itemId: string
+  stampId?: string
+  designId?: string
+  barcode?: string
+  remark?: string
+  pcs: number
+  grossWeight: number
+  packWeight?: number
+  addWeight: number
+  tunch?: number
+  wastage?: number
+  unit?: string
+  labourRate?: number
+  labourRateType?: 'Kg' | 'Gm' | 'Pcs'
+}
+
+type PurchasePaymentLinePayload = {
+  type: string
+  details?: string
+  pcs?: number
+  weight: number
+  tanch: number
+  wastage: number
+  rate?: number
+  fineAmount?: number
+  anamat: number
+  cash: number
+  bank: number
+  accountId?: string
+}
+
+type PurchasePayload = {
+  purchaseNo?: string
+  purchaseDate: string
+  accountId: string
+  phone?: string
+  metalType: 'Gold' | 'Silver' | 'Diamond' | 'Other'
+  haste?: string
+  dpNo?: string
+  narration?: string
+  reminderDate?: string
+  itemLines: PurchaseItemLinePayload[]
+  paymentLines: PurchasePaymentLinePayload[]
+}
+
+type SavedPurchaseHeader = {
+  id: string
+  purchase_no: string
+  purchase_date: string
+  account_name: string
+  mobile_number: string
+  metal_type: string
+  old_gold_fine: number
+  old_silver_fine: number
+  old_cash: number
+  old_anamat: number
+  old_bank: number
+  item_fine_total: number
+  item_majuri_total: number
+  payment_fine_nave_total: number
+  payment_cash_nave_total: number
+  payment_bank_nave_total: number
+  payment_anamat_nave_total: number
+  closing_gold_fine: number
+  closing_silver_fine: number
+  closing_cash: number
+  closing_anamat: number
+  closing_bank: number
+  narration: string
+}
+
+type SavedPurchaseItemLine = {
+  line_no: number
+  item_name_snapshot: string
+  pcs: number
+  gross_weight: number
+  pack_weight: number
+  less_weight: number
+  net_weight: number
+  tunch: number
+  wastage: number
+  hishob: number
+  fine: number
+  labour_rate: number
+  labour_rate_type: string
+  majuri: number
+}
+
+type SavedPurchasePaymentLine = {
+  line_no: number
+  type: string
+  weight: number
+  tanch: number
+  wastage: number
+  hishob: number
+  fine: number
+  cash: number
+  bank: number
+  anamat: number
+  details: string
+}
+
+type SavedPurchaseRecord = {
+  header: SavedPurchaseHeader
+  itemLines: SavedPurchaseItemLine[]
+  paymentLines: SavedPurchasePaymentLine[]
+}
+
+type PurchaseRegisterRecord = {
+  id: string
+  purchaseNo: string
+  purchaseDate: string
+  accountId: string
+  accountName: string
+  mobileNumber: string
+  metalType: string
+  itemFineTotal: number
+  itemMajuriTotal: number
+  paymentFineNaveTotal: number
+  paymentCashNaveTotal: number
+  closingGoldFine: number
+  closingSilverFine: number
+  closingCash: number
+  createdAt: string
+}
+
+type PurchaseReturnItemLinePayload = {
+  itemId: string
+  stampId?: string
+  designId?: string
+  barcode?: string
+  remark?: string
+  pcs: number
+  grossWeight: number
+  packWeight?: number
+  addWeight: number
+  tunch?: number
+  wastage?: number
+  unit?: string
+  labourRate?: number
+  labourRateType?: 'Kg' | 'Gm' | 'Pcs'
+}
+
+type PurchaseReturnPayload = {
+  returnNo?: string
+  returnDate: string
+  accountId: string
+  phone?: string
+  metalType: 'Gold' | 'Silver' | 'Diamond' | 'Other'
+  againstPurchaseId?: string
+  narration?: string
+  itemLines: PurchaseReturnItemLinePayload[]
+}
+
+type SavedPurchaseReturnHeader = {
+  id: string
+  return_no: string
+  return_date: string
+  account_id: string
+  account_name: string
+  mobile_number: string
+  metal_type: string
+  against_purchase_id: string | null
+  against_purchase_no: string | null
+  narration: string
+  old_gold_fine: number
+  old_silver_fine: number
+  old_cash: number
+  old_anamat: number
+  old_bank: number
+  item_fine_total: number
+  item_majuri_total: number
+  closing_gold_fine: number
+  closing_silver_fine: number
+  closing_cash: number
+  closing_anamat: number
+  closing_bank: number
+}
+
+type SavedPurchaseReturnItemLine = {
+  id: string
+  line_no: number
+  item_id: string
+  item_name_snapshot: string
+  barcode: string
+  remark: string
+  pcs: number
+  gross_weight: number
+  pack_weight: number
+  less_weight: number
+  add_weight: number
+  net_weight: number
+  tunch: number
+  wastage: number
+  hishob: number
+  fine: number
+  labour_rate: number
+  labour_rate_type: string
+  majuri: number
+}
+
+type SavedPurchaseReturnRecord = {
+  header: SavedPurchaseReturnHeader
+  itemLines: SavedPurchaseReturnItemLine[]
+}
+
+type PurchaseReturnRegisterRecord = {
+  id: string
+  returnNo: string
+  returnDate: string
+  accountId: string
+  accountName: string
+  mobileNumber: string
+  metalType: string
+  againstPurchaseId: string | null
+  againstPurchaseNo: string | null
+  itemFineTotal: number
+  itemMajuriTotal: number
+  closingGoldFine: number
+  closingSilverFine: number
+  closingCash: number
+  narration: string
+  createdAt: string
+}
+
+type SaleReturnItemLinePayload = {
+  itemId: string
+  stampId?: string
+  designId?: string
+  barcode?: string
+  remark?: string
+  pcs: number
+  grossWeight: number
+  packWeight?: number
+  addWeight: number
+  tunch?: number
+  wastage?: number
+  unit?: string
+  labourRate?: number
+  labourRateType?: 'Kg' | 'Gm' | 'Pcs'
+}
+
+type SaleReturnPayload = {
+  returnNo?: string
+  returnDate: string
+  accountId: string
+  phone?: string
+  metalType: 'Gold' | 'Silver' | 'Diamond' | 'Other'
+  againstSaleId?: string
+  narration?: string
+  itemLines: SaleReturnItemLinePayload[]
+}
+
+type SavedSaleReturnHeader = {
+  id: string
+  return_no: string
+  return_date: string
+  account_id: string
+  account_name: string
+  mobile_number: string
+  metal_type: string
+  against_sale_id: string | null
+  against_sale_no: string | null
+  narration: string
+  old_gold_fine: number
+  old_silver_fine: number
+  old_cash: number
+  old_anamat: number
+  old_bank: number
+  item_fine_total: number
+  item_majuri_total: number
+  closing_gold_fine: number
+  closing_silver_fine: number
+  closing_cash: number
+  closing_anamat: number
+  closing_bank: number
+}
+
+type SavedSaleReturnItemLine = {
+  id: string
+  line_no: number
+  item_id: string
+  item_name_snapshot: string
+  barcode: string
+  remark: string
+  pcs: number
+  gross_weight: number
+  pack_weight: number
+  less_weight: number
+  add_weight: number
+  net_weight: number
+  tunch: number
+  wastage: number
+  hishob: number
+  fine: number
+  labour_rate: number
+  labour_rate_type: string
+  majuri: number
+}
+
+type SavedSaleReturnRecord = {
+  header: SavedSaleReturnHeader
+  itemLines: SavedSaleReturnItemLine[]
+}
+
+type SaleReturnRegisterRecord = {
+  id: string
+  returnNo: string
+  returnDate: string
+  accountId: string
+  accountName: string
+  mobileNumber: string
+  metalType: string
+  againstSaleId: string | null
+  againstSaleNo: string | null
+  itemFineTotal: number
+  itemMajuriTotal: number
+  closingGoldFine: number
+  closingSilverFine: number
+  closingCash: number
+  narration: string
+  createdAt: string
+}
+
+type CashVoucherType = 'RECEIPT' | 'PAYMENT'
+
+type CashVoucherPayload = {
+  voucherType: CashVoucherType
+  voucherDate: string
+  accountId: string
+  amount: number
+  narration: string
+}
+
+type CashVoucherFilter = {
+  fromDate?: string
+  toDate?: string
+  voucherType?: CashVoucherType | 'ALL'
+  accountId?: string
+}
+
+type CashVoucherRecord = {
+  id: string
+  voucherType: CashVoucherType
+  voucherNo: string
+  voucherDate: string
+  accountId: string
+  accountName: string
+  amount: number
+  narration: string
+  createdAt: string
+  updatedAt: string
+}
+
+type TransferPayload = {
+  transferDate: string
+  fromAccountId: string
+  toAccountId: string
+  metalType?: string
+  goldFine?: number
+  silverFine?: number
+  cash?: number
+  bank?: number
+  anamat?: number
+  narration?: string
+}
+
+type TransferRecord = {
+  id: string
+  transferNo: string
+  transferDate: string
+  fromAccountId?: string
+  fromAccountName: string
+  toAccountId?: string
+  toAccountName: string
+  metalType: string
+  goldFine: number
+  silverFine: number
+  cash: number
+  bank: number
+  anamat: number
+  narration: string
+  createdAt: string
+}
+
+type WeightScanPayload = {
+  scanDate: string
+  barcode?: string
+  itemId?: string
+  grossWeight?: number
+  netWeight?: number
+  fine?: number
+  narration?: string
+}
+
+type WeightScanRecord = {
+  id: string
+  scanDate: string
+  barcode: string
+  itemId: string
+  itemName: string
+  grossWeight: number
+  netWeight: number
+  fine: number
+  narration: string
+  createdAt: string
+}
+
+type SaudaPayload = {
+  saudaDate: string
+  accountId: string
+  metalType: string
+  transactionType: string
+  fine: number
+  rate: number
+  deliveryDate?: string
+  narration?: string
+}
+
+type SaudaRecord = {
+  id: string
+  saudaNo: string
+  saudaDate: string
+  accountId: string
+  accountName: string
+  metalType: string
+  transactionType: string
+  fine: number
+  rate: number
+  amount: number
+  deliveryDate: string
+  status: string
+  narration: string
+  createdAt: string
+  updatedAt: string
+}
+
+type OrderPayalPayload = {
+  orderDate: string
+  accountId: string
+  itemId: string
+  pcs?: number
+  weight?: number
+  deliveryDate?: string
+  narration?: string
+}
+
+type OrderPayalRecord = {
+  id: string
+  orderNo: string
+  orderDate: string
+  accountId: string
+  accountName: string
+  itemId: string
+  itemName: string
+  pcs: number
+  weight: number
+  deliveryDate: string
+  status: string
+  narration: string
+  createdAt: string
+  updatedAt: string
+}
+
+type SettlementPayload = {
+  settlementDate: string
+  accountId: string
+  metalType: string
+  goldFine?: number
+  silverFine?: number
+  cash?: number
+  bank?: number
+  anamat?: number
+  narration?: string
+}
+
+type SettlementRecord = {
+  id: string
+  settlementNo: string
+  settlementDate: string
+  accountId: string
+  accountName: string
+  metalType: string
+  goldFine: number
+  silverFine: number
+  cash: number
+  bank: number
+  anamat: number
+  narration: string
+  createdAt: string
+  updatedAt: string
+}
+
+type CashFineOpeningLinePayload = {
+  metalType: 'Gold' | 'Silver'
+  entryType: string
+  details: string
+  weight: number
+  tanch: number
+  ptStatus: string
+}
+
+type CashFineOpeningLineRecord = CashFineOpeningLinePayload & {
+  id: string
+  lineNo: number
+  fine: number
+  createdAt: string
+  updatedAt: string
+}
+
+type CashFineOpeningSummaryPayload = {
+  goldPurchaseFine: number
+  goldPurchaseAmount: number
+  goldSaleFine: number
+  goldSaleAmount: number
+  silverPurchaseFine: number
+  silverPurchaseAmount: number
+  silverSaleFine: number
+  silverSaleAmount: number
+  openingCash: number
+}
+
+type CashFineOpeningRecord = {
+  summary: CashFineOpeningSummaryPayload
+  lines: CashFineOpeningLineRecord[]
+}
+type AccountBalanceRecord = {
+  goldFine: number
+  silverFine: number
+  cash: number
+  anamat: number
+  bank: number
+}
+
+type SavedSaleHeader = {
+  id: string
+  sale_no: string
+  sale_date: string
+  account_name: string
+  mobile_number: string
+  metal_type: string
+  old_gold_fine: number
+  old_silver_fine: number
+  old_cash: number
+  old_anamat: number
+  old_bank: number
+  item_fine_total: number
+  item_majuri_total: number
+  payment_fine_jama_total: number
+  payment_cash_jama_total: number
+  payment_bank_jama_total: number
+  payment_anamat_jama_total: number
+  closing_gold_fine: number
+  closing_silver_fine: number
+  closing_cash: number
+  closing_anamat: number
+  closing_bank: number
+  narration: string
+}
+
+type SavedSaleItemLine = {
+  line_no: number
+  item_name_snapshot: string
+  pcs: number
+  gross_weight: number
+  pack_weight: number
+  less_weight: number
+  net_weight: number
+  tunch: number
+  wastage: number
+  hishob: number
+  fine: number
+  labour_rate: number
+  labour_rate_type: string
+  majuri: number
+}
+
+type SavedSalePaymentLine = {
+  line_no: number
+  type: string
+  weight: number
+  tanch: number
+  wastage: number
+  hishob: number
+  fine: number
+  cash: number
+  bank: number
+  anamat: number
+  details: string
+}
+
+type SavedSaleRecord = {
+  header: SavedSaleHeader
+  itemLines: SavedSaleItemLine[]
+  paymentLines: SavedSalePaymentLine[]
+}
+
+type SaleRegisterRecord = {
+  id: string
+  sale_no: string
+  sale_date: string
+  accountId: string
+  metal_type: string
+  item_fine_total: number
+  item_majuri_total: number
+  payment_fine_jama_total: number
+  payment_cash_jama_total: number
+  closing_gold_fine: number
+  closing_silver_fine: number
+  closing_cash: number
+  account_name: string
+  mobile_number: string
+}
+
+type SaleDeleteListRecord = {
+  id: string
+  sale_no: string
+  sale_date: string
+  accountId: string
+  metal_type: string
+  item_fine_total: number
+  item_majuri_total: number
+  closing_gold_fine: number
+  closing_silver_fine: number
+  closing_cash: number
+  narration: string
+  voided_at: string | null
+  void_reason: string
+  status: 'ACTIVE' | 'VOIDED'
+  account_name: string
+  mobile_number: string
+}
+
+type ReminderRecord = {
+  id: string
+  type: 'Sale' | 'Approval'
+  billNo: string
+  billDate: string
+  reminderDate: string
+  accountName: string
+  mobileNumber: string
+  metalType: string
+  fineAmount: number
+  majuriAmount: number
+  daysUntil: number
+  isOverdue: boolean
+}
+
+type WhatsAppSendPayload = {
+  phone: string
+  message: string
+}
+
+type WhatsAppSendResult = {
+  success: boolean
+  url: string
+}
+
+type ScreenshotCaptureResult = {
+  filePath: string
+  fileName: string
+  capturedAt: string
+}
+
+type ScreenshotListRecord = {
+  fileName: string
+  filePath: string
+  capturedAt: string
+}
+
+type AccountBalanceReportRecord = {
+  id: string
+  accountName: string
+  otherName: string
+  mobileNumber: string
+  city: string
+  groupName: string
+  openingGoldFine: number
+  openingSilverFine: number
+  openingCash: number
+  openingAnamat: number
+  openingBank: number
+  goldFine: number
+  silverFine: number
+  cash: number
+  anamat: number
+  bank: number
+}
+
+type AccountLedgerDetailsRecord = {
+  account: {
+    id: string
+    accountName: string
+    otherName: string
+    mobileNumber: string
+    city: string
+    groupName: string
+  }
+  openingBalance: {
+    goldFine: number
+    silverFine: number
+    cash: number
+    anamat: number
+    bank: number
+  }
+  periodOpeningBalance: {
+    goldFine: number
+    silverFine: number
+    cash: number
+    anamat: number
+    bank: number
+  }
+  rows: Array<{
+    id: string
+    srNo: number
+    sourceType: string
+    sourceId: string
+    saleNo: string
+    billNo: string
+    entryDate: string
+    metalType: string
+    fineJama: number
+    fineNave: number
+    cashJama: number
+    cashNave: number
+    bankJama: number
+    bankNave: number
+    anamatJama: number
+    anamatNave: number
+    narration: string
+    runningGoldFine: number
+    runningSilverFine: number
+    runningCash: number
+    runningBank: number
+    runningAnamat: number
+  }>
+  closingBalance: {
+    goldFine: number
+    silverFine: number
+    cash: number
+    anamat: number
+    bank: number
+  }
+}
+
+type AccountLedgerDetailsFilter = {
+  fromDate?: string
+  toDate?: string
+}
+
+type OutstandingReportRecord = AccountBalanceReportRecord & {
+  status: 'RECEIVABLE' | 'PAYABLE'
+  sortValue: number
+  lastTransactionDate: string | null
+  daysSinceLastTransaction: number | null
+}
+
+type OutstandingReportTotals = {
+  goldFine: number
+  silverFine: number
+  cash: number
+  anamat: number
+  bank: number
+}
+
+type OutstandingReportResult = {
+  receivable: OutstandingReportRecord[]
+  payable: OutstandingReportRecord[]
+  receivableTotals: OutstandingReportTotals
+  payableTotals: OutstandingReportTotals
+}
+
+type ItemStockReportRecord = {
+  itemId: string
+  itemName: string
+  metalType: string
+  groupName: string
+  stampId: string
+  stampName: string
+  designId: string
+  designName: string
+  pcs: number
+  grossWeight: number
+  netWeight: number
+  fine: number
+}
+
+type ItemTransactionReportRecord = {
+  id: string
+  sourceType: string
+  sourceId: string
+  entryDate: string
+  metalType: string
+  pcsDelta: number
+  grossWeightDelta: number
+  netWeightDelta: number
+  fineDelta: number
+  narration: string
+  createdAt: string
+  itemId: string
+  itemName: string
+  groupName: string
+  stampName: string
+  designName: string
+  saleNo: string
+}
+
+type ItemStockLedgerFilter = {
+  fromDate?: string
+  toDate?: string
+}
+
+type ItemStockLedgerResult = {
+  item: {
+    id: string
+    itemName: string
+    metalType: string
+    groupName: string
+  }
+  openingBalance: {
+    pcs: number
+    grossWeight: number
+    netWeight: number
+    fine: number
+  }
+  rows: Array<{
+    id: string
+    srNo: number
+    sourceType: string
+    sourceId: string
+    billNo: string
+    entryDate: string
+    metalType: string
+    stampName: string
+    designName: string
+    pcsDelta: number
+    grossWeightDelta: number
+    netWeightDelta: number
+    fineDelta: number
+    narration: string
+    runningPcs: number
+    runningGrossWeight: number
+    runningNetWeight: number
+    runningFine: number
+  }>
+  closingBalance: {
+    pcs: number
+    grossWeight: number
+    netWeight: number
+    fine: number
+  }
+}
+
+type CashBookReportFilter = {
+  fromDate?: string
+  toDate?: string
+}
+
+type CashBookReportRow = {
+  id: string
+  voucherDate: string
+  voucherNo: string
+  voucherType: 'RECEIPT' | 'PAYMENT'
+  sourceType: string
+  sourceLabel: string
+  accountName: string
+  narration: string
+  receiptAmount: number
+  paymentAmount: number
+  runningBalance: number
+}
+
+type CashBookReportSummary = {
+  openingBalance: number
+  totalReceipt: number
+  totalPayment: number
+  closingBalance: number
+}
+
+type CashBookReportResult = {
+  rows: CashBookReportRow[]
+  summary: CashBookReportSummary
+}
+
+type BankTransactionsReportFilter = {
+  fromDate?: string
+  toDate?: string
+}
+
+type BankTransactionsReportRow = {
+  id: string
+  voucherDate: string
+  voucherNo: string
+  voucherType: 'RECEIPT' | 'PAYMENT'
+  sourceType: string
+  sourceLabel: string
+  accountName: string
+  narration: string
+  receiptAmount: number
+  paymentAmount: number
+  runningBalance: number
+}
+
+type BankTransactionsReportSummary = {
+  openingBalance: number
+  totalReceipt: number
+  totalPayment: number
+  closingBalance: number
+}
+
+type BankTransactionsReportResult = {
+  rows: BankTransactionsReportRow[]
+  summary: BankTransactionsReportSummary
+}
+
+type AccountWiseSalePurchaseRecord = {
+  id: string
+  transactionType: 'SALE' | 'PURCHASE'
+  billNo: string
+  billDate: string
+  accountId: string
+  accountName: string
+  mobileNumber: string
+  city: string
+  groupName: string
+  metalType: string
+  fineJama: number
+  fineNave: number
+  paymentFineJama: number
+  paymentFineNave: number
+  cashJama: number
+  cashNave: number
+  paymentCashJama: number
+  paymentCashNave: number
+  bankJama: number
+  bankNave: number
+  anamatJama: number
+  anamatNave: number
+  closingGoldFine: number
+  closingSilverFine: number
+  closingCash: number
+  createdAt: string
+}
+
+type DarRojmelFilter = {
+  fromDate?: string
+  toDate?: string
+}
+
+type DarRojmelRow = {
+  id: string
+  entryDate: string
+  transactionType: 'SALE' | 'PURCHASE' | 'SAUDA'
+  billNo: string
+  accountName: string
+  metalType: string
+  fine: number
+  rate: number | null
+  amount: number | null
+}
+
+type DarRojmelSummary = {
+  totalFine: number
+  totalAmount: number
+  saudaCount: number
+  recordCount: number
+}
+
+type DarRojmelResult = {
+  rows: DarRojmelRow[]
+  summary: DarRojmelSummary
+}
+
+type AccountwiseSummaryRecord = {
+  id: string
+  accountName: string
+  otherName: string
+  mobileNumber: string
+  city: string
+  groupName: string
+  totalSaleFine: number
+  totalSaleValue: number
+  totalPurchaseFine: number
+  totalPurchaseValue: number
+  goldFine: number
+  silverFine: number
+  cash: number
+  anamat: number
+  bank: number
+}
+
+type ItemwiseSalePurchaseRecord = {
+  itemId: string
+  itemName: string
+  groupName: string
+  metalType: string
+  salePcs: number
+  saleNetWeight: number
+  saleFine: number
+  purchasePcs: number
+  purchaseNetWeight: number
+  purchaseFine: number
+}
+
+type ItemSalePurchaseCityWiseRecord = {
+  itemId: string
+  itemName: string
+  groupName: string
+  metalType: string
+  city: string
+  salePcs: number
+  saleNetWeight: number
+  saleFine: number
+  purchasePcs: number
+  purchaseNetWeight: number
+  purchaseFine: number
+}
+
+type PaymentReceiptFilter = {
+  fromDate?: string
+  toDate?: string
+}
+
+type PaymentReceiptRow = {
+  id: string
+  entryDate: string
+  voucherNo: string
+  sourceType: string
+  sourceLabel: string
+  accountName: string
+  metalType: string
+  fineJama: number
+  fineNave: number
+  cashJama: number
+  cashNave: number
+  bankJama: number
+  bankNave: number
+  anamatJama: number
+  anamatNave: number
+  narration: string
+}
+
+type PaymentReceiptSummary = {
+  totalFineJama: number
+  totalFineNave: number
+  totalCashJama: number
+  totalCashNave: number
+  totalBankJama: number
+  totalBankNave: number
+  totalAnamatJama: number
+  totalAnamatNave: number
+  recordCount: number
+}
+
+type PaymentReceiptResult = {
+  rows: PaymentReceiptRow[]
+  summary: PaymentReceiptSummary
+}
+
+type GstReportFilter = {
+  fromDate?: string
+  toDate?: string
+}
+
+type GstReportRow = {
+  id: string
+  billNo: string
+  billDate: string
+  accountId: string
+  accountName: string
+  gstNo: string
+  metalType: string
+  taxableAmount: number
+  cgstAmount: number
+  sgstAmount: number
+  igstAmount: number
+  totalTax: number
+  totalAmount: number
+  createdAt: string
+}
+
+type FineReportFilter = {
+  fromDate?: string
+  toDate?: string
+}
+
+type FineRojmelRow = {
+  id: string
+  entryDate: string
+  metalType: string
+  fineIn: number
+  fineOut: number
+  balance: number
+}
+
+type FineRojmelSummary = {
+  openingGoldBalance: number
+  totalGoldIn: number
+  totalGoldOut: number
+  closingGoldBalance: number
+  openingSilverBalance: number
+  totalSilverIn: number
+  totalSilverOut: number
+  closingSilverBalance: number
+}
+
+type FineRojmelResult = {
+  rows: FineRojmelRow[]
+  summary: FineRojmelSummary
+}
+
+type FineMarginRow = {
+  id: string
+  billDate: string
+  billNo: string
+  accountId: string
+  accountName: string
+  metalType: string
+  itemName: string
+  pcs: number
+  netWeight: number
+  tunch: number
+  wastage: number
+  hishob: number
+  fine: number
+  majuri: number
+  wastageFineValue: number
+}
+
+type FineMarginSummary = {
+  totalNetWeight: number
+  totalFine: number
+  totalMajuri: number
+  totalWastageFineValue: number
+  recordCount: number
+}
+
+type FineMarginResult = {
+  rows: FineMarginRow[]
+  summary: FineMarginSummary
+}
+
+type DailySummaryFilter = {
+  date?: string
+}
+
+type DailySummarySalesSection = {
+  count: number
+  itemFineTotal: number
+  itemMajuriTotal: number
+  amountTotal: number
+}
+
+type DailySummaryReturnSection = {
+  count: number
+  itemFineTotal: number
+  itemMajuriTotal: number
+}
+
+type DailySummaryCashVoucherSection = {
+  count: number
+  amountTotal: number
+}
+
+type DailySummaryApprovalSection = {
+  count: number
+  itemFineTotal: number
+  itemMajuriTotal: number
+}
+
+type DailySummaryCashSection = {
+  openingBalance: number
+  totalReceipt: number
+  totalPayment: number
+  closingBalance: number
+  netMovement: number
+}
+
+type DailySummaryFineSection = {
+  goldIn: number
+  goldOut: number
+  goldNet: number
+  silverIn: number
+  silverOut: number
+  silverNet: number
+}
+
+type DailySummaryResult = {
+  date: string
+  sales: DailySummarySalesSection
+  purchases: DailySummarySalesSection
+  saleReturns: DailySummaryReturnSection
+  purchaseReturns: DailySummaryReturnSection
+  cashReceipts: DailySummaryCashVoucherSection
+  cashPayments: DailySummaryCashVoucherSection
+  approvals: DailySummaryApprovalSection
+  cash: DailySummaryCashSection
+  fine: DailySummaryFineSection
+}
+
+type BackupResult = {
+  success: boolean
+  cancelled: boolean
+  fileName?: string
+  backupPath?: string
+  backupAt?: string
+  message: string
+}
+
+type LastBackupInfo = {
+  backupAt: string
+  fileName: string
+  backupPath: string
+}
+
+type FirmPayload = {
+  firmName: string
+  ownerName: string
+  address: string
+  city: string
+  state: string
+  pincode: string
+  mobileNumber: string
+  whatsappNumber: string
+  email: string
+  gstNo: string
+  panNo: string
+  billTitle: string
+  billPrefix: string
+  terms: string
+  active: boolean
+}
+
+type FirmRecord = FirmPayload & {
+  id: string
+  createdAt: string
+  updatedAt: string
+}
+
+type PrinterSettingPayload = {
+  paperSize: 'A4' | '80MM' | '58MM'
+  printLayout: 'STANDARD' | 'COMPACT'
+  printCopies: number
+  marginTopMm: number
+  marginRightMm: number
+  marginBottomMm: number
+  marginLeftMm: number
+  showFirmHeader: boolean
+  showGstPan: boolean
+  showTerms: boolean
+  showSignature: boolean
+  showPaymentSection: boolean
+  autoPrintAfterSave: boolean
+}
+
+type PrinterSettingRecord = PrinterSettingPayload & {
+  id: string
+  createdAt: string
+  updatedAt: string
+}
+type AccountPayload = {
+  accountName: string
+  otherName: string
+  accountType: string
+  accountGroupId: string
+  mobileNumber: string
+  whatsappNumber: string
+  phone2: string
+  address: string
+  city: string
+  state: string
+  gstNo: string
+  panNo: string
+  lastDate: string
+  openingGoldFine: number
+  openingSilverFine: number
+  openingCash: number
+  openingAnamat: number
+  openingBank: number
+  goldFineLimit: number
+  silverFineLimit: number
+  notification: string
+  active: boolean
+}
+
+type AccountRecord = AccountPayload & {
+  id: string
+  groupName: string
+  groupType: string
+  createdAt: string
+  updatedAt: string
+}
+
+type JobWorkOrderPayload = {
+  orderNo?: string
+  orderDate: string
+  karigarAccountId: string
+  metalType: 'Gold' | 'Silver' | 'Diamond' | 'Other'
+  itemId: string
+  grossWeightGiven: number
+  netWeightGiven: number
+  narration?: string
+}
+
+type JobWorkStatus = 'pending' | 'partial_received' | 'received' | 'cancelled'
+
+type JobWorkReceiptPayload = {
+  receiptDate: string
+  pcs: number
+  grossWeightReceived: number
+  netWeightReceived: number
+  tunch: number
+  wastage: number
+  labourRate: number
+  labourRateType: 'Kg' | 'Gm' | 'Pcs'
+  narration?: string
+}
+
+type SavedJobWorkHeader = {
+  id: string
+  order_no: string
+  order_date: string
+  karigar_account_id: string
+  karigar_name: string
+  karigar_mobile: string
+  metal_type: string
+  item_id: string
+  item_name: string
+  gross_weight_given: number
+  net_weight_given: number
+  narration: string
+  status: JobWorkStatus
+  total_net_weight_received: number
+  total_fine_received: number
+  total_majuri: number
+}
+
+type SavedJobWorkReceiptLine = {
+  id: string
+  job_work_order_id: string
+  receipt_date: string
+  pcs: number
+  gross_weight_received: number
+  net_weight_received: number
+  tunch: number
+  wastage: number
+  hishob: number
+  fine_received: number
+  weight_loss: number
+  labour_rate: number
+  labour_rate_type: string
+  majuri: number
+  narration: string
+}
+
+type SavedJobWorkRecord = {
+  header: SavedJobWorkHeader
+  receiptLines: SavedJobWorkReceiptLine[]
+}
+
+type RepairEntryPayload = {
+  repairNo?: string
+  receiptDate: string
+  accountId: string
+  phone?: string
+  itemDescription: string
+  metalType: 'Gold' | 'Silver' | 'Diamond' | 'Other'
+  approxWeight: number
+  workDescription?: string
+  estimatedCharge: number
+  narration?: string
+}
+
+type RepairEntryStatus = 'received' | 'completed' | 'delivered' | 'cancelled'
+
+type CompleteRepairPayload = {
+  actualCharge: number
+  completedDate?: string
+  narration?: string
+}
+
+type MarkDeliveredPayload = {
+  deliveredDate?: string
+}
+
+type RepairEntryRecord = {
+  id: string
+  repair_no: string
+  receipt_date: string
+  account_id: string
+  account_name: string
+  mobile_number: string
+  phone: string
+  item_description: string
+  metal_type: string
+  approx_weight: number
+  work_description: string
+  estimated_charge: number
+  actual_charge: number | null
+  status: RepairEntryStatus
+  completed_date: string | null
+  delivered_date: string | null
+  narration: string
+}
+
+type JobWorkRegisterRecord = {
+  id: string
+  order_no: string
+  order_date: string
+  metal_type: string
+  gross_weight_given: number
+  net_weight_given: number
+  status: JobWorkStatus
+  narration: string
+  karigar_name: string
+  karigar_mobile: string
+  item_name: string
+  total_net_weight_received: number
+  total_fine_received: number
+  total_majuri: number
+}
+
+interface Window {
+  api: {
+    auth: {
+      getState: () => Promise<AuthState>
+      register: (payload: RegisterPayload) => Promise<AuthSession>
+      login: (payload: LoginPayload) => Promise<AuthSession>
+      logout: () => Promise<{ success: boolean }>
+      changePassword: (payload: ChangePasswordPayload) => Promise<{ success: boolean }>
+    }
+
+    accountGroups: {
+      list: () => Promise<AccountGroupRecord[]>
+      create: (payload: AccountGroupPayload) => Promise<AccountGroupRecord>
+      update: (id: string, payload: AccountGroupPayload) => Promise<AccountGroupRecord>
+      remove: (id: string) => Promise<{ success: boolean }>
+    }
+
+    users: {
+      list: () => Promise<UserRecord[]>
+      create: (payload: UserPayload) => Promise<UserRecord>
+      update: (id: string, payload: UserPayload) => Promise<UserRecord>
+      remove: (id: string) => Promise<{ success: boolean }>
+    }
+
+    financialYears: {
+      list: () => Promise<FinancialYearRecord[]>
+      getCurrent: () => Promise<FinancialYearRecord | null>
+      create: (payload: FinancialYearPayload) => Promise<FinancialYearRecord>
+      update: (id: string, payload: FinancialYearPayload) => Promise<FinancialYearRecord>
+      setCurrent: (id: string) => Promise<FinancialYearRecord>
+      toggleClosed: (id: string, isClosed: boolean) => Promise<FinancialYearRecord>
+      remove: (id: string) => Promise<{ success: boolean }>
+    }
+
+    itemGroups: {
+      list: () => Promise<ItemGroupRecord[]>
+      create: (payload: ItemGroupPayload) => Promise<ItemGroupRecord>
+      update: (id: string, payload: ItemGroupPayload) => Promise<ItemGroupRecord>
+      remove: (id: string) => Promise<{ success: boolean }>
+    }
+
+    itemStamps: {
+      list: () => Promise<ItemStampRecord[]>
+      create: (payload: ItemStampPayload) => Promise<ItemStampRecord>
+      update: (id: string, payload: ItemStampPayload) => Promise<ItemStampRecord>
+      remove: (id: string) => Promise<{ success: boolean }>
+    }
+
+    itemDesigns: {
+      list: () => Promise<ItemDesignRecord[]>
+      create: (payload: ItemDesignPayload) => Promise<ItemDesignRecord>
+      update: (id: string, payload: ItemDesignPayload) => Promise<ItemDesignRecord>
+      remove: (id: string) => Promise<{ success: boolean }>
+    }
+
+    items: {
+      list: () => Promise<ItemRecord[]>
+      create: (payload: ItemPayload) => Promise<ItemRecord>
+      update: (id: string, payload: ItemPayload) => Promise<ItemRecord>
+      remove: (id: string) => Promise<{ success: boolean }>
+      assignBarcode: (id: string) => Promise<ItemRecord>
+      regenerateBarcode: (id: string) => Promise<ItemRecord>
+    }
+
+    itemOpeningStock: {
+      list: () => Promise<ItemOpeningStockRecord[]>
+      create: (payload: ItemOpeningStockPayload) => Promise<ItemOpeningStockRecord>
+      update: (id: string, payload: ItemOpeningStockPayload) => Promise<ItemOpeningStockRecord>
+      remove: (id: string) => Promise<{ success: boolean }>
+    }
+
+    accounts: {
+      list: () => Promise<AccountRecord[]>
+      create: (payload: AccountPayload) => Promise<AccountRecord>
+      update: (id: string, payload: AccountPayload) => Promise<AccountRecord>
+      remove: (id: string) => Promise<{ success: boolean }>
+    }
+
+    cashVoucher: {
+      getNextNumber: (voucherType: CashVoucherType) => Promise<string>
+      create: (payload: CashVoucherPayload) => Promise<CashVoucherRecord>
+      update: (id: string, payload: CashVoucherPayload) => Promise<CashVoucherRecord>
+      remove: (id: string) => Promise<{ success: boolean }>
+      delete: (id: string) => Promise<{ success: boolean }>
+      getById: (id: string) => Promise<CashVoucherRecord>
+      list: (filter?: CashVoucherFilter) => Promise<CashVoucherRecord[]>
+    }
+
+    cashFineOpening: {
+      get: () => Promise<CashFineOpeningRecord>
+      save: (payload: {
+        lines: CashFineOpeningLinePayload[]
+        summary: CashFineOpeningSummaryPayload
+      }) => Promise<CashFineOpeningRecord>
+    }
+    sales: {
+      getNextNumber: () => Promise<string>
+      getAccountBalance: (accountId: string) => Promise<AccountBalanceRecord>
+      create: (payload: SalePayload) => Promise<SavedSaleRecord>
+      list: () => Promise<SaleRegisterRecord[]>
+      getById: (id: string) => Promise<SavedSaleRecord>
+      cancel: (id: string, reason?: string) => Promise<{ success: boolean; saleNo: string }>
+      listAllForDelete: () => Promise<SaleDeleteListRecord[]>
+    }
+
+    approvals: {
+      getNextNumber: () => Promise<string>
+      create: (payload: ApprovalPayload) => Promise<SavedApprovalRecord>
+      update: (id: string, payload: ApprovalPayload) => Promise<SavedApprovalRecord>
+      list: () => Promise<ApprovalRegisterRecord[]>
+      getById: (id: string) => Promise<SavedApprovalRecord>
+      remove: (id: string) => Promise<{ success: boolean; approvalNo: string }>
+      convertToSale: (id: string) => Promise<ConvertApprovalResult>
+      returnApproval: (id: string, payload: ReturnApprovalPayload) => Promise<SavedApprovalRecord>
+    }
+
+    estimates: {
+      getNextNumber: () => Promise<string>
+      create: (payload: EstimatePayload) => Promise<SavedEstimateRecord>
+      update: (id: string, payload: EstimatePayload) => Promise<SavedEstimateRecord>
+      list: () => Promise<EstimateRegisterRecord[]>
+      getById: (id: string) => Promise<SavedEstimateRecord>
+      remove: (id: string) => Promise<{ success: boolean; estimateNo: string }>
+      convertToSale: (id: string) => Promise<ConvertEstimateResult>
+    }
+
+    purchases: {
+      getNextNumber: () => Promise<string>
+      getAccountBalance: (accountId: string) => Promise<AccountBalanceRecord>
+      create: (payload: PurchasePayload) => Promise<SavedPurchaseRecord>
+      list: () => Promise<PurchaseRegisterRecord[]>
+      getById: (id: string) => Promise<SavedPurchaseRecord>
+      cancel: (id: string) => Promise<{ success: boolean; purchaseNo: string }>
+    }
+
+    purchaseReturns: {
+      getNextNumber: () => Promise<string>
+      getAccountBalance: (accountId: string) => Promise<AccountBalanceRecord>
+      create: (payload: PurchaseReturnPayload) => Promise<SavedPurchaseReturnRecord>
+      update: (id: string, payload: PurchaseReturnPayload) => Promise<SavedPurchaseReturnRecord>
+      list: () => Promise<PurchaseReturnRegisterRecord[]>
+      getById: (id: string) => Promise<SavedPurchaseReturnRecord>
+      remove: (id: string) => Promise<{ success: boolean; returnNo: string }>
+    }
+
+    saleReturns: {
+      getNextNumber: () => Promise<string>
+      getAccountBalance: (accountId: string) => Promise<AccountBalanceRecord>
+      create: (payload: SaleReturnPayload) => Promise<SavedSaleReturnRecord>
+      update: (id: string, payload: SaleReturnPayload) => Promise<SavedSaleReturnRecord>
+      list: () => Promise<SaleReturnRegisterRecord[]>
+      getById: (id: string) => Promise<SavedSaleReturnRecord>
+      remove: (id: string) => Promise<{ success: boolean; returnNo: string }>
+    }
+
+    cashBookReport: {
+      get: (filter?: CashBookReportFilter) => Promise<CashBookReportResult>
+    }
+    reports: {
+      accountBalance: () => Promise<AccountBalanceReportRecord[]>
+      accountLedgerDetails: (
+        accountId: string,
+        filter?: AccountLedgerDetailsFilter
+      ) => Promise<AccountLedgerDetailsRecord>
+      outstanding: () => Promise<OutstandingReportResult>
+      itemStock: () => Promise<ItemStockReportRecord[]>
+      itemTransactions: () => Promise<ItemTransactionReportRecord[]>
+      itemStockLedger: (
+        itemId: string,
+        filter?: ItemStockLedgerFilter
+      ) => Promise<ItemStockLedgerResult>
+      accountWiseSalePurchase: () => Promise<AccountWiseSalePurchaseRecord[]>
+      cashBook: (filter?: CashBookReportFilter) => Promise<CashBookReportResult>
+      bankTransactions: (
+        filter?: BankTransactionsReportFilter
+      ) => Promise<BankTransactionsReportResult>
+      darRojmel: (filter?: DarRojmelFilter) => Promise<DarRojmelResult>
+      accountwiseSummary: () => Promise<AccountwiseSummaryRecord[]>
+      itemwiseSalePurchase: () => Promise<ItemwiseSalePurchaseRecord[]>
+      itemSalePurchaseCityWise: () => Promise<ItemSalePurchaseCityWiseRecord[]>
+      paymentReceipt: (filter?: PaymentReceiptFilter) => Promise<PaymentReceiptResult>
+    }
+
+    gstReport: {
+      purchases: (filter?: GstReportFilter) => Promise<GstReportRow[]>
+      sales: (filter?: GstReportFilter) => Promise<GstReportRow[]>
+    }
+
+    fineReport: {
+      rojmel: (filter?: FineReportFilter) => Promise<FineRojmelResult>
+      margin: (filter?: FineReportFilter) => Promise<FineMarginResult>
+    }
+
+    dailyReport: {
+      summary: (filter?: DailySummaryFilter) => Promise<DailySummaryResult>
+    }
+
+    backup: {
+      create: () => Promise<BackupResult>
+      getLast: () => Promise<LastBackupInfo>
+      restore: () => Promise<BackupResult>
+    }
+
+    firm: {
+      get: () => Promise<FirmRecord>
+      save: (payload: FirmPayload) => Promise<FirmRecord>
+    }
+
+    printerSetting: {
+      get: () => Promise<PrinterSettingRecord>
+      save: (payload: PrinterSettingPayload) => Promise<PrinterSettingRecord>
+    }
+
+    jobWork: {
+      getNextNumber: () => Promise<string>
+      create: (payload: JobWorkOrderPayload) => Promise<SavedJobWorkRecord>
+      update: (id: string, payload: JobWorkOrderPayload) => Promise<SavedJobWorkRecord>
+      list: () => Promise<JobWorkRegisterRecord[]>
+      getById: (id: string) => Promise<SavedJobWorkRecord>
+      remove: (id: string) => Promise<{ success: boolean; orderNo: string }>
+      receiveGoods: (id: string, payload: JobWorkReceiptPayload) => Promise<SavedJobWorkRecord>
+    }
+
+    repairEntry: {
+      getNextNumber: () => Promise<string>
+      create: (payload: RepairEntryPayload) => Promise<RepairEntryRecord>
+      update: (id: string, payload: RepairEntryPayload) => Promise<RepairEntryRecord>
+      list: () => Promise<RepairEntryRecord[]>
+      getById: (id: string) => Promise<RepairEntryRecord>
+      remove: (id: string) => Promise<{ success: boolean; repairNo: string }>
+      completeRepair: (id: string, payload: CompleteRepairPayload) => Promise<RepairEntryRecord>
+      markDelivered: (id: string, payload: MarkDeliveredPayload) => Promise<RepairEntryRecord>
+    }
+
+    transfers: {
+      getNextNumber: () => Promise<string>
+      create: (payload: TransferPayload) => Promise<TransferRecord>
+      list: () => Promise<TransferRecord[]>
+      getById: (id: string) => Promise<TransferRecord>
+      remove: (id: string) => Promise<{ success: boolean }>
+    }
+
+    weightScans: {
+      create: (payload: WeightScanPayload) => Promise<WeightScanRecord>
+      list: () => Promise<WeightScanRecord[]>
+      getById: (id: string) => Promise<WeightScanRecord>
+      remove: (id: string) => Promise<{ success: boolean }>
+    }
+
+    sauda: {
+      getNextNumber: () => Promise<string>
+      create: (payload: SaudaPayload) => Promise<SaudaRecord>
+      update: (id: string, payload: SaudaPayload) => Promise<SaudaRecord>
+      list: () => Promise<SaudaRecord[]>
+      getById: (id: string) => Promise<SaudaRecord>
+      close: (id: string) => Promise<SaudaRecord>
+      remove: (id: string) => Promise<{ success: boolean }>
+    }
+
+    orderPayal: {
+      getNextNumber: () => Promise<string>
+      create: (payload: OrderPayalPayload) => Promise<OrderPayalRecord>
+      update: (id: string, payload: OrderPayalPayload) => Promise<OrderPayalRecord>
+      list: () => Promise<OrderPayalRecord[]>
+      getById: (id: string) => Promise<OrderPayalRecord>
+      markDelivered: (id: string) => Promise<OrderPayalRecord>
+      remove: (id: string) => Promise<{ success: boolean }>
+    }
+
+    settlements: {
+      getNextNumber: () => Promise<string>
+      create: (payload: SettlementPayload) => Promise<SettlementRecord>
+      list: () => Promise<SettlementRecord[]>
+      getById: (id: string) => Promise<SettlementRecord>
+      remove: (id: string) => Promise<{ success: boolean }>
+    }
+
+    reminder: {
+      list: () => Promise<ReminderRecord[]>
+    }
+
+    whatsapp: {
+      send: (payload: WhatsAppSendPayload) => Promise<WhatsAppSendResult>
+    }
+
+    screenshot: {
+      capture: () => Promise<ScreenshotCaptureResult>
+      list: () => Promise<ScreenshotListRecord[]>
+      openFolder: () => Promise<{ success: boolean }>
+      getImage: (fileName: string) => Promise<string>
+    }
+  }
+}

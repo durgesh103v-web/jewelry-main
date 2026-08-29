@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+/* Global application defaults */
+body {
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-body);
+  background: var(--color-background-app);
+  color: var(--color-text-primary);
+  overflow: hidden;
+  user-select: none;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--color-brand-primary);
+  box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.15);
+}
+
+button {
+  color: inherit;
+  border-radius: var(--radius-sm);
+  transition: background-color var(--duration-normal) var(--ease-default),
+              border-color var(--duration-normal) var(--ease-default),
+              box-shadow var(--duration-normal) var(--ease-default),
+              opacity var(--duration-normal) var(--ease-default);
+}

@@ -1,0 +1,161 @@
+:root {
+  /* ==========================================================================
+     DESIGN SYSTEM TOKENS - SINGLE SOURCE OF TRUTH
+     ========================================================================== */
+
+  /* --------------------------------------------------------------------------
+     1. BRAND COLORS
+     -------------------------------------------------------------------------- */
+  --color-brand-primary: #1a73e8;
+  --color-brand-primary-hover: #1557b0;
+  --color-brand-primary-active: #0d47a1;
+  --color-brand-soft: #e8f0fe;
+
+  /* --------------------------------------------------------------------------
+     2. BACKGROUND COLORS
+     -------------------------------------------------------------------------- */
+  --color-background-app: #eef1f5;
+  --color-background-surface: #ffffff;
+  --color-background-card: #ffffff;
+  --color-background-muted: #f4f6f9;
+  --color-background-elevated: #ffffff;
+
+  /* --------------------------------------------------------------------------
+     3. TEXT COLORS
+     -------------------------------------------------------------------------- */
+  --color-text-primary: #1f2430;
+  --color-text-secondary: #4b5563;
+  --color-text-muted: #6b7280;
+  --color-text-disabled: #9ca3af;
+  --color-text-inverse: #ffffff;
+
+  /* --------------------------------------------------------------------------
+     4. BORDER COLORS
+     -------------------------------------------------------------------------- */
+  --color-border-default: #e2e5eb;
+  --color-border-muted: #f0f2f5;
+  --color-border-strong: #d6dbe3;
+
+  /* --------------------------------------------------------------------------
+     5. STATUS COLORS
+     -------------------------------------------------------------------------- */
+  --color-success: #059669;
+  --color-success-soft: #ecfdf5;
+  --color-warning: #b45309;
+  --color-warning-soft: #fffbeb;
+  --color-error: #dc2626;
+  --color-error-soft: #fef2f2;
+  --color-info: #1d4ed8;
+  --color-info-soft: #eff6ff;
+
+  /* --------------------------------------------------------------------------
+     6. JEWELLERY DOMAIN COLORS
+     -------------------------------------------------------------------------- */
+  --color-gold: #d97706;
+  --color-silver: #64748b;
+  --color-platinum: #475569;
+  --color-diamond: #0284c7;
+
+  /* Legacy CSS Variable Mappings (For backwards compatibility with App.css) */
+  --color-primary: var(--color-brand-primary);
+  --color-primary-dark: var(--color-brand-primary-hover);
+  --color-bg-app: var(--color-background-app);
+  --color-bg-panel: var(--color-background-surface);
+  --color-bg-subtle: var(--color-background-muted);
+  --color-border: var(--color-border-default);
+  --color-border-input: var(--color-border-strong);
+  --color-white: var(--color-background-surface);
+  --color-text: var(--color-text-primary);
+
+  /* --------------------------------------------------------------------------
+     7. TYPOGRAPHY TOKENS
+     -------------------------------------------------------------------------- */
+  --font-family-base: Arial, Helvetica, sans-serif;
+  --font-family-mono: monospace;
+
+  --font-size-display: 24px;
+  --font-size-page-title: 20px;
+  --font-size-section-title: 16px;
+  --font-size-card-title: 14px;
+  --font-size-body: 13px;
+  --font-size-body-small: 12px;
+  --font-size-caption: 11px;
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+
+  /* --------------------------------------------------------------------------
+     8. SPACING SCALE
+     -------------------------------------------------------------------------- */
+  --space-1: 4px;
+  --space-2: 6px;
+  --space-3: 8px;
+  --space-4: 10px;
+  --space-5: 12px;
+  --space-6: 14px;
+  --space-7: 18px;
+  --space-8: 24px;
+  --space-10: 32px;
+  --space-12: 48px;
+
+  /* --------------------------------------------------------------------------
+     9. BORDER RADIUS TOKENS
+     -------------------------------------------------------------------------- */
+  --radius-none: 0px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-pill: 9999px;
+
+  /* --------------------------------------------------------------------------
+     10. SHADOW TOKENS
+     -------------------------------------------------------------------------- */
+  --shadow-none: none;
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 30px rgba(15, 23, 42, 0.14);
+  --shadow-xl: 0 12px 40px rgba(15, 40, 90, 0.18);
+  --shadow-window: var(--shadow-lg);
+  --shadow-card: var(--shadow-sm);
+
+  /* --------------------------------------------------------------------------
+     11. REUSED SIZING TOKENS
+     -------------------------------------------------------------------------- */
+  --size-sidebar-width: 240px;
+  --size-header-height: 34px;
+  --size-bottomtabs-height: 32px;
+  --size-input-height: 32px;
+  --size-button-height: 32px;
+  --size-table-row-height: 30px;
+  --size-dialog-width: 540px;
+  --size-drawer-width: 400px;
+
+  --topbar-height: var(--size-header-height);
+  --bottomtabs-height: var(--size-bottomtabs-height);
+
+  /* --------------------------------------------------------------------------
+     12. Z-INDEX TOKENS
+     -------------------------------------------------------------------------- */
+  --z-base: 0;
+  --z-sticky: 100;
+  --z-dropdown: 500;
+  --z-overlay: 1000;
+  --z-modal: 1050;
+  --z-popover: 1100;
+  --z-toast: 1200;
+  --z-tooltip: 1300;
+
+  /* --------------------------------------------------------------------------
+     13. TRANSITION TOKENS
+     -------------------------------------------------------------------------- */
+  --duration-fast: 100ms;
+  --duration-normal: 150ms;
+  --duration-slow: 300ms;
+  --ease-default: cubic-bezier(0.4, 0, 0.2, 1);
+}
