@@ -1,7 +1,10 @@
 import dayjs from 'dayjs'
 import { v4 as uuidv4 } from 'uuid'
 import { z } from 'zod'
-import { getDatabase } from '../database/connection'
+import { ItemRepository, ItemRow } from '../database/repositories/ItemRepository'
+import { ValidationError, NotFoundError, ConflictError } from '../ipc/errors'
+
+const itemRepository = new ItemRepository()
 
 const itemSchema = z.object({
   itemName: z.string().trim().min(1, 'Item name is required').max(120),
@@ -22,9 +25,9 @@ const itemSchema = z.object({
   active: z.boolean().default(true)
 })
 
-type ItemPayload = z.infer<typeof itemSchema>
+export type ItemPayload = z.infer<typeof itemSchema>
 
-type ItemRecord = {
+export type ItemRecord = {
   id: string
   itemName: string
   metalType: string
@@ -48,36 +51,6 @@ type ItemRecord = {
   active: boolean
   createdAt: string
   updatedAt: string
-}
-
-type ItemRow = {
-  id: string
-  item_name: string
-  metal_type: string
-  item_group_id: string
-  group_name: string
-  default_stamp_id: string | null
-  stamp_name: string | null
-  default_design_id: string | null
-  design_name: string | null
-  barcode_item: number
-  barcode_type: string | null
-  barcode_value: string | null
-  labour_charges_by: string
-  sale_purchase_by: string
-  gst_hsn_code: string | null
-  fixed_weight_per_pcs: number
-  default_tanch: number
-  default_wastage: number
-  default_labour_rate: number
-  labour_rate_type: string
-  active: number
-  created_at: string
-  updated_at: string
-}
-
-function emptyToNull(value: string): string | null {
-  return value.trim() ? value.trim() : null
 }
 
 function mapRow(row: ItemRow): ItemRecord {
@@ -108,386 +81,119 @@ function mapRow(row: ItemRow): ItemRecord {
   }
 }
 
-function assertActiveReference(tableName: string, id: string, errorMessage: string): void {
-  if (!id.trim()) return
-
-  const db = getDatabase()
-  const row = db
-    .prepare(
-      `
-      SELECT id
-      FROM ${tableName}
-      WHERE id = ?
-      AND deleted_at IS NULL
-    `
-    )
-    .get(id)
-
-  if (!row) {
-    throw new Error(errorMessage)
-  }
-}
-
-function metalPrefix(metalType: string): string {
-  const firstChar = (metalType || '').trim().charAt(0).toUpperCase()
-  return firstChar || 'X'
-}
-
-function generateBarcodeValue(db: ReturnType<typeof getDatabase>, metalType: string): string {
-  const prefix = metalPrefix(metalType)
-
-  const totalRow = db.prepare(`SELECT COUNT(*) AS count FROM items`).get() as { count: number }
-  let sequence = Number(totalRow.count ?? 0) + 1
-
-  const existsStatement = db.prepare(`SELECT id FROM items WHERE barcode_value = ?`)
-
-  let candidate = `${prefix}${String(sequence).padStart(6, '0')}`
-  while (existsStatement.get(candidate)) {
-    sequence += 1
-    candidate = `${prefix}${String(sequence).padStart(6, '0')}`
-  }
-
-  return candidate
-}
-
 export const itemService = {
   list() {
-    const db = getDatabase()
-
-    const rows = db
-      .prepare(
-        `
-        SELECT
-          i.id,
-          i.item_name,
-          i.metal_type,
-          i.item_group_id,
-          ig.group_name,
-          i.default_stamp_id,
-          ist.stamp_name,
-          i.default_design_id,
-          idg.design_name,
-          i.barcode_item,
-          i.barcode_type,
-          i.barcode_value,
-          i.labour_charges_by,
-          i.sale_purchase_by,
-          i.gst_hsn_code,
-          i.fixed_weight_per_pcs,
-          i.default_tanch,
-          i.default_wastage,
-          i.default_labour_rate,
-          i.labour_rate_type,
-          i.active,
-          i.created_at,
-          i.updated_at
-        FROM items i
-        INNER JOIN item_groups ig ON ig.id = i.item_group_id
-        LEFT JOIN item_stamps ist ON ist.id = i.default_stamp_id
-        LEFT JOIN item_designs idg ON idg.id = i.default_design_id
-        WHERE i.deleted_at IS NULL
-        ORDER BY i.metal_type ASC, i.item_name ASC
-      `
-      )
-      .all() as ItemRow[]
-
+    const rows = itemRepository.findAll()
     return rows.map(mapRow)
   },
 
   create(payload: ItemPayload) {
-    const data = itemSchema.parse(payload)
-    const db = getDatabase()
+    const parseResult = itemSchema.safeParse(payload)
+    if (!parseResult.success) {
+      throw new ValidationError(parseResult.error.issues[0]?.message || 'Invalid item payload')
+    }
+    const data = parseResult.data
 
-    assertActiveReference('item_groups', data.itemGroupId, 'Item group not found')
-    assertActiveReference('item_stamps', data.defaultStampId, 'Item stamp not found')
-    assertActiveReference('item_designs', data.defaultDesignId, 'Item design not found')
+    if (!itemRepository.checkReferenceExists('item_groups', data.itemGroupId)) {
+      throw new NotFoundError('Item group not found')
+    }
+    if (data.defaultStampId && !itemRepository.checkReferenceExists('item_stamps', data.defaultStampId)) {
+      throw new NotFoundError('Item stamp not found')
+    }
+    if (data.defaultDesignId && !itemRepository.checkReferenceExists('item_designs', data.defaultDesignId)) {
+      throw new NotFoundError('Item design not found')
+    }
 
-    const duplicate = db
-      .prepare(
-        `
-        SELECT id
-        FROM items
-        WHERE LOWER(item_name) = LOWER(?)
-        AND metal_type = ?
-        AND deleted_at IS NULL
-      `
-      )
-      .get(data.itemName, data.metalType)
-
-    if (duplicate) {
-      throw new Error('Item already exists')
+    if (itemRepository.findDuplicate(data.itemName, data.metalType)) {
+      throw new ConflictError('Item already exists')
     }
 
     const now = dayjs().format('YYYY-MM-DD HH:mm:ss')
     const id = uuidv4()
 
-    db.prepare(
-      `
-      INSERT INTO items (
-        id,
-        item_name,
-        metal_type,
-        item_group_id,
-        default_stamp_id,
-        default_design_id,
-        barcode_item,
-        barcode_type,
-        labour_charges_by,
-        sale_purchase_by,
-        gst_hsn_code,
-        fixed_weight_per_pcs,
-        default_tanch,
-        default_wastage,
-        default_labour_rate,
-        labour_rate_type,
-        active,
-        created_at,
-        updated_at
-      )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `
-    ).run(
+    itemRepository.insert({
       id,
-      data.itemName,
-      data.metalType,
-      data.itemGroupId,
-      emptyToNull(data.defaultStampId),
-      emptyToNull(data.defaultDesignId),
-      data.barcodeItem ? 1 : 0,
-      data.barcodeType,
-      data.labourChargesBy,
-      data.salePurchaseBy,
-      data.gstHsnCode,
-      data.fixedWeightPerPcs,
-      data.defaultTanch,
-      data.defaultWastage,
-      data.defaultLabourRate,
-      data.labourRateType,
-      data.active ? 1 : 0,
-      now,
-      now
-    )
+      ...data,
+      createdAt: now,
+      updatedAt: now
+    })
 
     return this.getById(id)
   },
 
   update(id: string, payload: ItemPayload) {
-    const data = itemSchema.parse(payload)
-    const db = getDatabase()
+    const parseResult = itemSchema.safeParse(payload)
+    if (!parseResult.success) {
+      throw new ValidationError(parseResult.error.issues[0]?.message || 'Invalid item payload')
+    }
+    const data = parseResult.data
 
-    const existing = db
-      .prepare(
-        `
-        SELECT id
-        FROM items
-        WHERE id = ?
-        AND deleted_at IS NULL
-      `
-      )
-      .get(id)
-
+    const existing = itemRepository.findById(id)
     if (!existing) {
-      throw new Error('Item not found')
+      throw new NotFoundError('Item not found')
     }
 
-    assertActiveReference('item_groups', data.itemGroupId, 'Item group not found')
-    assertActiveReference('item_stamps', data.defaultStampId, 'Item stamp not found')
-    assertActiveReference('item_designs', data.defaultDesignId, 'Item design not found')
+    if (!itemRepository.checkReferenceExists('item_groups', data.itemGroupId)) {
+      throw new NotFoundError('Item group not found')
+    }
+    if (data.defaultStampId && !itemRepository.checkReferenceExists('item_stamps', data.defaultStampId)) {
+      throw new NotFoundError('Item stamp not found')
+    }
+    if (data.defaultDesignId && !itemRepository.checkReferenceExists('item_designs', data.defaultDesignId)) {
+      throw new NotFoundError('Item design not found')
+    }
 
-    const duplicate = db
-      .prepare(
-        `
-        SELECT id
-        FROM items
-        WHERE LOWER(item_name) = LOWER(?)
-        AND metal_type = ?
-        AND id != ?
-        AND deleted_at IS NULL
-      `
-      )
-      .get(data.itemName, data.metalType, id)
-
-    if (duplicate) {
-      throw new Error('Another item with this name already exists')
+    if (itemRepository.findDuplicate(data.itemName, data.metalType, id)) {
+      throw new ConflictError('Another item with this name already exists')
     }
 
     const now = dayjs().format('YYYY-MM-DD HH:mm:ss')
-
-    db.prepare(
-      `
-      UPDATE items
-      SET
-        item_name = ?,
-        metal_type = ?,
-        item_group_id = ?,
-        default_stamp_id = ?,
-        default_design_id = ?,
-        barcode_item = ?,
-        barcode_type = ?,
-        labour_charges_by = ?,
-        sale_purchase_by = ?,
-        gst_hsn_code = ?,
-        fixed_weight_per_pcs = ?,
-        default_tanch = ?,
-        default_wastage = ?,
-        default_labour_rate = ?,
-        labour_rate_type = ?,
-        active = ?,
-        updated_at = ?
-      WHERE id = ?
-    `
-    ).run(
-      data.itemName,
-      data.metalType,
-      data.itemGroupId,
-      emptyToNull(data.defaultStampId),
-      emptyToNull(data.defaultDesignId),
-      data.barcodeItem ? 1 : 0,
-      data.barcodeType,
-      data.labourChargesBy,
-      data.salePurchaseBy,
-      data.gstHsnCode,
-      data.fixedWeightPerPcs,
-      data.defaultTanch,
-      data.defaultWastage,
-      data.defaultLabourRate,
-      data.labourRateType,
-      data.active ? 1 : 0,
-      now,
-      id
-    )
+    itemRepository.update(id, {
+      ...data,
+      updatedAt: now
+    })
 
     return this.getById(id)
   },
 
   delete(id: string) {
-    const db = getDatabase()
     const now = dayjs().format('YYYY-MM-DD HH:mm:ss')
-
-    db.prepare(
-      `
-      UPDATE items
-      SET deleted_at = ?, updated_at = ?
-      WHERE id = ?
-      AND deleted_at IS NULL
-    `
-    ).run(now, now, id)
-
+    itemRepository.delete(id, now)
     return { success: true }
   },
 
   getById(id: string) {
-    const db = getDatabase()
-
-    const row = db
-      .prepare(
-        `
-        SELECT
-          i.id,
-          i.item_name,
-          i.metal_type,
-          i.item_group_id,
-          ig.group_name,
-          i.default_stamp_id,
-          ist.stamp_name,
-          i.default_design_id,
-          idg.design_name,
-          i.barcode_item,
-          i.barcode_type,
-          i.barcode_value,
-          i.labour_charges_by,
-          i.sale_purchase_by,
-          i.gst_hsn_code,
-          i.fixed_weight_per_pcs,
-          i.default_tanch,
-          i.default_wastage,
-          i.default_labour_rate,
-          i.labour_rate_type,
-          i.active,
-          i.created_at,
-          i.updated_at
-        FROM items i
-        INNER JOIN item_groups ig ON ig.id = i.item_group_id
-        LEFT JOIN item_stamps ist ON ist.id = i.default_stamp_id
-        LEFT JOIN item_designs idg ON idg.id = i.default_design_id
-        WHERE i.id = ?
-        AND i.deleted_at IS NULL
-      `
-      )
-      .get(id) as ItemRow | undefined
-
+    const row = itemRepository.findById(id)
     if (!row) {
-      throw new Error('Item not found')
+      throw new NotFoundError('Item not found')
     }
-
     return mapRow(row)
   },
 
   assignBarcode(id: string) {
-    const db = getDatabase()
-
-    const existing = db
-      .prepare(
-        `
-        SELECT id, metal_type, barcode_value
-        FROM items
-        WHERE id = ?
-        AND deleted_at IS NULL
-      `
-      )
-      .get(id) as { id: string; metal_type: string; barcode_value: string | null } | undefined
-
+    const existing = itemRepository.findById(id)
     if (!existing) {
-      throw new Error('Item not found')
+      throw new NotFoundError('Item not found')
     }
-
     if (existing.barcode_value) {
-      return this.getById(id)
+      return mapRow(existing)
     }
 
-    const barcodeValue = generateBarcodeValue(db, existing.metal_type)
+    const barcodeValue = itemRepository.generateBarcode(existing.metal_type)
     const now = dayjs().format('YYYY-MM-DD HH:mm:ss')
-
-    db.prepare(
-      `
-      UPDATE items
-      SET barcode_value = ?, updated_at = ?
-      WHERE id = ?
-    `
-    ).run(barcodeValue, now, id)
-
+    itemRepository.updateBarcode(id, barcodeValue, now)
     return this.getById(id)
   },
 
   regenerateBarcode(id: string) {
-    const db = getDatabase()
-
-    const existing = db
-      .prepare(
-        `
-        SELECT id, metal_type
-        FROM items
-        WHERE id = ?
-        AND deleted_at IS NULL
-      `
-      )
-      .get(id) as { id: string; metal_type: string } | undefined
-
+    const existing = itemRepository.findById(id)
     if (!existing) {
-      throw new Error('Item not found')
+      throw new NotFoundError('Item not found')
     }
 
-    const barcodeValue = generateBarcodeValue(db, existing.metal_type)
+    const barcodeValue = itemRepository.generateBarcode(existing.metal_type)
     const now = dayjs().format('YYYY-MM-DD HH:mm:ss')
-
-    db.prepare(
-      `
-      UPDATE items
-      SET barcode_value = ?, updated_at = ?
-      WHERE id = ?
-    `
-    ).run(barcodeValue, now, id)
-
+    itemRepository.updateBarcode(id, barcodeValue, now)
     return this.getById(id)
   }
 }

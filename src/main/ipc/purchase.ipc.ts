@@ -1,28 +1,28 @@
-import { ipcMain } from 'electron'
+import { createIpcHandler } from './wrapper'
 import { purchaseService } from '../services/purchase.service'
 
 export function registerPurchaseIpc(): void {
-  ipcMain.handle('purchases:next-number', () => {
+  createIpcHandler('purchases:next-number', () => {
     return purchaseService.getNextPurchaseNo()
   })
 
-  ipcMain.handle('purchases:account-balance', (_event, accountId: string) => {
+  createIpcHandler('purchases:account-balance', (_event, accountId: any) => {
     return purchaseService.getAccountBalance(accountId)
   })
 
-  ipcMain.handle('purchases:create', (_event, payload) => {
-    return purchaseService.create(payload)
+  createIpcHandler('purchases:create', (_event, payload: any) => {
+    return purchaseService.create(payload as any)
   })
 
-  ipcMain.handle('purchases:list', () => {
+  createIpcHandler('purchases:list', () => {
     return purchaseService.list()
   })
 
-  ipcMain.handle('purchases:get-by-id', (_event, id: string) => {
+  createIpcHandler('purchases:get-by-id', (_event, id: any) => {
     return purchaseService.getById(id)
   })
 
-  ipcMain.handle('purchases:cancel', (_event, id: string) => {
+  createIpcHandler('purchases:cancel', (_event, id: any) => {
     return purchaseService.cancel(id)
   })
 }

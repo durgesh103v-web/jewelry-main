@@ -1,20 +1,23 @@
-import { ipcMain } from 'electron'
+import { createIpcHandler } from './wrapper'
 import { accountService } from '../services/account.service'
 
 export function registerAccountIpc(): void {
-  ipcMain.handle('accounts:list', () => {
+  createIpcHandler('accounts:list', () => {
     return accountService.list()
   })
 
-  ipcMain.handle('accounts:create', (_event, payload) => {
+  createIpcHandler('accounts:create', (_event, payload: any) => {
     return accountService.create(payload)
   })
 
-  ipcMain.handle('accounts:update', (_event, id: string, payload) => {
-    return accountService.update(id, payload)
+  createIpcHandler('accounts:update', (_event, payload: any) => {
+    if (payload && typeof payload === 'object' && 'id' in payload && 'payload' in payload) {
+      return accountService.update(payload.id, payload.payload)
+    }
+    return accountService.update(payload?.id, payload)
   })
 
-  ipcMain.handle('accounts:delete', (_event, id: string) => {
+  createIpcHandler('accounts:delete', (_event, id: any) => {
     return accountService.delete(id)
   })
 }

@@ -1,28 +1,31 @@
-import { ipcMain } from 'electron'
+import { createIpcHandler } from './wrapper'
 import { itemService } from '../services/item.service'
 
 export function registerItemIpc(): void {
-  ipcMain.handle('items:list', () => {
+  createIpcHandler('items:list', () => {
     return itemService.list()
   })
 
-  ipcMain.handle('items:create', (_event, payload) => {
-    return itemService.create(payload)
+  createIpcHandler('items:create', (_event, payload: any) => {
+    return itemService.create(payload as any)
   })
 
-  ipcMain.handle('items:update', (_event, id: string, payload) => {
-    return itemService.update(id, payload)
+  createIpcHandler('items:update', (_event, payload: any) => {
+    if (payload && typeof payload === 'object' && 'id' in payload && 'payload' in payload) {
+      return itemService.update(payload.id, payload.payload as any)
+    }
+    return itemService.update(payload?.id, payload as any)
   })
 
-  ipcMain.handle('items:delete', (_event, id: string) => {
+  createIpcHandler('items:delete', (_event, id: any) => {
     return itemService.delete(id)
   })
 
-  ipcMain.handle('items:assignBarcode', (_event, id: string) => {
+  createIpcHandler('items:assignBarcode', (_event, id: any) => {
     return itemService.assignBarcode(id)
   })
 
-  ipcMain.handle('items:regenerateBarcode', (_event, id: string) => {
+  createIpcHandler('items:regenerateBarcode', (_event, id: any) => {
     return itemService.regenerateBarcode(id)
   })
 }

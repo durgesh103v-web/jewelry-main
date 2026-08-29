@@ -1,32 +1,35 @@
-import { ipcMain } from 'electron'
+import { createIpcHandler } from './wrapper'
 import { saleService } from '../services/sale.service'
 
 export function registerSaleIpc(): void {
-  ipcMain.handle('sales:next-number', () => {
+  createIpcHandler('sales:next-number', () => {
     return saleService.getNextSaleNo()
   })
 
-  ipcMain.handle('sales:account-balance', (_event, accountId: string) => {
+  createIpcHandler('sales:account-balance', (_event, accountId: any) => {
     return saleService.getAccountBalance(accountId)
   })
 
-  ipcMain.handle('sales:create', (_event, payload) => {
-    return saleService.create(payload)
+  createIpcHandler('sales:create', (_event, payload: any) => {
+    return saleService.create(payload as any)
   })
 
-  ipcMain.handle('sales:list', () => {
+  createIpcHandler('sales:list', () => {
     return saleService.list()
   })
 
-  ipcMain.handle('sales:get-by-id', (_event, id: string) => {
+  createIpcHandler('sales:get-by-id', (_event, id: any) => {
     return saleService.getById(id)
   })
 
-  ipcMain.handle('sales:cancel', (_event, id: string, reason?: string) => {
-    return saleService.cancel(id, reason)
+  createIpcHandler('sales:cancel', (_event, payload: any) => {
+    if (payload && typeof payload === 'object' && 'id' in payload) {
+      return saleService.cancel(payload.id, payload.reason)
+    }
+    return saleService.cancel(payload)
   })
 
-  ipcMain.handle('sales:list-all-for-delete', () => {
+  createIpcHandler('sales:list-all-for-delete', () => {
     return saleService.listAllForDelete()
   })
 }
