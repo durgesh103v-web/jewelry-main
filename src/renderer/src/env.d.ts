@@ -2279,5 +2279,24 @@ interface Window {
       cancel: (id: string) => Promise<{ success: boolean }>
       remove: (id: string) => Promise<{ success: boolean }>
     }
+
+    financialReports: {
+      getDayBook: (filter?: any) => Promise<any>
+      getCashBook: (filter?: any) => Promise<any>
+      getBankBook: (filter?: any) => Promise<any>
+      getSalesRegister: (filter?: any) => Promise<any>
+      getPurchaseRegister: (filter?: any) => Promise<any>
+      getReturnRegister: (payload: { returnType: string; filter?: any }) => Promise<any>
+      getPartyLedger: (payload: { accountId: string; filter?: any }) => Promise<any>
+      getPartyOutstanding: (payload: { partyType: string; filter?: any }) => Promise<any>
+      getAdvances: (filter?: any) => Promise<any>
+      getOldGold: (filter?: any) => Promise<any>
+      getMetalExchanges: (filter?: any) => Promise<any>
+      getStockMovements: (filter?: any) => Promise<any>
+      getStockValuation: (filter?: any) => Promise<any>
+      getTrialBalance: (filter?: any) => Promise<any>
+      getProfitAndLoss: (filter?: any) => Promise<any>
+      getBalanceSheet: (asOfDate?: string) => Promise<any>
+    }
   }
 }

@@ -63,6 +63,7 @@ const PosBillingScreen = lazy(() => import('../../features/sales/screens/PosBill
 const PurchaseInvoiceScreen = lazy(() => import('../../features/purchases/screens/PurchaseInvoiceScreen'))
 const ModernSalesReturnScreen = lazy(() => import('../../features/returns/screens/SalesReturnScreen'))
 const ModernPurchaseReturnScreen = lazy(() => import('../../features/returns/screens/PurchaseReturnScreen'))
+const FinancialReportsHubScreen = lazy(() => import('../../features/reports/screens/FinancialReportsHubScreen'))
 
 export type ScreenComponentProps = {
   onClose: () => void
@@ -113,6 +114,7 @@ export const screenRegistry: Record<string, ScreenMapValue> = {
   'sauda-book': { component: SaudaBookScreen },
   'order-payal': { component: OrderPayalScreen },
   settlement: { component: SettlementScreen },
+  'financial-reports-hub': { component: FinancialReportsHubScreen },
   'purchase-register': { component: PurchaseRegisterScreen },
   'sale-register': { component: SaleRegisterScreen },
   'account-balance': { component: AccountBalanceReportScreen },

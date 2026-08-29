@@ -2474,6 +2474,28 @@ const api = {
     create: (payload: any): Promise<any> => ipcRenderer.invoke('returns:create', payload),
     cancel: (id: string): Promise<{ success: boolean }> => ipcRenderer.invoke('returns:cancel', id),
     remove: (id: string): Promise<{ success: boolean }> => ipcRenderer.invoke('returns:delete', id)
+  },
+
+  financialReports: {
+    getDayBook: (filter?: any): Promise<any> => ipcRenderer.invoke('reports:day-book', filter),
+    getCashBook: (filter?: any): Promise<any> => ipcRenderer.invoke('reports:cash-book', filter),
+    getBankBook: (filter?: any): Promise<any> => ipcRenderer.invoke('reports:bank-book', filter),
+    getSalesRegister: (filter?: any): Promise<any> => ipcRenderer.invoke('reports:sales-register', filter),
+    getPurchaseRegister: (filter?: any): Promise<any> => ipcRenderer.invoke('reports:purchase-register', filter),
+    getReturnRegister: (payload: { returnType: string; filter?: any }): Promise<any> =>
+      ipcRenderer.invoke('reports:return-register', payload),
+    getPartyLedger: (payload: { accountId: string; filter?: any }): Promise<any> =>
+      ipcRenderer.invoke('reports:party-ledger', payload),
+    getPartyOutstanding: (payload: { partyType: string; filter?: any }): Promise<any> =>
+      ipcRenderer.invoke('reports:party-outstanding', payload),
+    getAdvances: (filter?: any): Promise<any> => ipcRenderer.invoke('reports:advances', filter),
+    getOldGold: (filter?: any): Promise<any> => ipcRenderer.invoke('reports:old-gold', filter),
+    getMetalExchanges: (filter?: any): Promise<any> => ipcRenderer.invoke('reports:metal-exchanges', filter),
+    getStockMovements: (filter?: any): Promise<any> => ipcRenderer.invoke('reports:stock-movements', filter),
+    getStockValuation: (filter?: any): Promise<any> => ipcRenderer.invoke('reports:stock-valuation', filter),
+    getTrialBalance: (filter?: any): Promise<any> => ipcRenderer.invoke('reports:trial-balance', filter),
+    getProfitAndLoss: (filter?: any): Promise<any> => ipcRenderer.invoke('reports:profit-and-loss', filter),
+    getBalanceSheet: (asOfDate?: string): Promise<any> => ipcRenderer.invoke('reports:balance-sheet', asOfDate)
   }
 }
 
