@@ -2141,5 +2141,29 @@ interface Window {
       openFolder: () => Promise<{ success: boolean }>
       getImage: (fileName: string) => Promise<string>
     }
+
+    customers: {
+      list: (filter?: any) => Promise<any[]>
+      search: (query: string, limit?: number) => Promise<any[]>
+      getById: (id: string) => Promise<any>
+      getByCode: (code: string) => Promise<any>
+      getBalance: (id: string) => Promise<any>
+      getNextCode: () => Promise<string>
+      create: (payload: any) => Promise<any>
+      update: (id: string, payload: any) => Promise<any>
+      remove: (id: string) => Promise<{ success: boolean }>
+    }
+
+    suppliers: {
+      list: (filter?: any) => Promise<any[]>
+      search: (query: string, limit?: number) => Promise<any[]>
+      getById: (id: string) => Promise<any>
+      getByCode: (code: string) => Promise<any>
+      getBalance: (id: string) => Promise<any>
+      getNextCode: () => Promise<string>
+      create: (payload: any) => Promise<any>
+      update: (id: string, payload: any) => Promise<any>
+      remove: (id: string) => Promise<{ success: boolean }>
+    }
   }
 }

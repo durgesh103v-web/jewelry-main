@@ -2343,6 +2343,30 @@ const api = {
     getMovementHistory: (itemId: string): Promise<any[]> => ipcRenderer.invoke('inventory:getMovementHistory', itemId),
     getLocations: (): Promise<any[]> => ipcRenderer.invoke('inventory:getLocations'),
     postMovement: (params: any): Promise<{ id: string }> => ipcRenderer.invoke('inventory:postMovement', params)
+  },
+
+  customers: {
+    list: (filter?: any): Promise<any[]> => ipcRenderer.invoke('customers:list', filter),
+    search: (query: string, limit?: number): Promise<any[]> => ipcRenderer.invoke('customers:search', query, limit),
+    getById: (id: string): Promise<any> => ipcRenderer.invoke('customers:get-by-id', id),
+    getByCode: (code: string): Promise<any> => ipcRenderer.invoke('customers:get-by-code', code),
+    getBalance: (id: string): Promise<any> => ipcRenderer.invoke('customers:get-balance', id),
+    getNextCode: (): Promise<string> => ipcRenderer.invoke('customers:next-code'),
+    create: (payload: any): Promise<any> => ipcRenderer.invoke('customers:create', payload),
+    update: (id: string, payload: any): Promise<any> => ipcRenderer.invoke('customers:update', { id, payload }),
+    remove: (id: string): Promise<{ success: boolean }> => ipcRenderer.invoke('customers:delete', id)
+  },
+
+  suppliers: {
+    list: (filter?: any): Promise<any[]> => ipcRenderer.invoke('suppliers:list', filter),
+    search: (query: string, limit?: number): Promise<any[]> => ipcRenderer.invoke('suppliers:search', query, limit),
+    getById: (id: string): Promise<any> => ipcRenderer.invoke('suppliers:get-by-id', id),
+    getByCode: (code: string): Promise<any> => ipcRenderer.invoke('suppliers:get-by-code', code),
+    getBalance: (id: string): Promise<any> => ipcRenderer.invoke('suppliers:get-balance', id),
+    getNextCode: (): Promise<string> => ipcRenderer.invoke('suppliers:next-code'),
+    create: (payload: any): Promise<any> => ipcRenderer.invoke('suppliers:create', payload),
+    update: (id: string, payload: any): Promise<any> => ipcRenderer.invoke('suppliers:update', { id, payload }),
+    remove: (id: string): Promise<{ success: boolean }> => ipcRenderer.invoke('suppliers:delete', id)
   }
 }
 

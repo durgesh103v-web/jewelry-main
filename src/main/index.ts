@@ -40,6 +40,8 @@ import { registerAuthIpc } from './ipc/auth.ipc'
 import { registerCategoryIpc } from './ipc/category.ipc'
 import { registerPurityIpc } from './ipc/purity.ipc'
 import { registerInventoryIpc } from './ipc/inventory.ipc'
+import { registerCustomerIpc } from './ipc/customer.ipc'
+import { registerSupplierIpc } from './ipc/supplier.ipc'
 
 // Only these URL schemes may be handed to the OS browser. Blocks file:// and
 // custom-scheme links that could otherwise be launched via window.open.
@@ -162,6 +164,8 @@ app.whenReady().then(() => {
   registerCategoryIpc()
   registerPurityIpc()
   registerInventoryIpc()
+  registerCustomerIpc()
+  registerSupplierIpc()
 
   createWindow()
 
