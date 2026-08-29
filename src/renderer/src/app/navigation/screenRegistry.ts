@@ -2,7 +2,7 @@ import React, { lazy } from 'react'
 
 // Direct static imports for fast/smaller screens
 import AccountGroupScreen from '../../modules/master/account-group/AccountGroupScreen'
-import ItemGroupScreen from '../../modules/master/item-group/ItemGroupScreen'
+const ItemGroupScreen = lazy(() => import('../../features/inventory/screens/ItemGroupScreen'))
 import ItemStampScreen from '../../modules/master/item-stamp/ItemStampScreen'
 import ItemDesignScreen from '../../modules/master/item-design/ItemDesignScreen'
 import ItemOpeningStockScreen from '../../modules/master/item-opening-stock/ItemOpeningStockScreen'
