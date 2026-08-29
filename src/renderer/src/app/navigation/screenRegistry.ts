@@ -61,6 +61,8 @@ const OutstandingReportScreen = lazy(() => import('../../modules/reports/outstan
 const CashBookReportScreen = lazy(() => import('../../modules/reports/cash-book/CashBookReportScreen'))
 const PosBillingScreen = lazy(() => import('../../features/sales/screens/PosBillingScreen'))
 const PurchaseInvoiceScreen = lazy(() => import('../../features/purchases/screens/PurchaseInvoiceScreen'))
+const ModernSalesReturnScreen = lazy(() => import('../../features/returns/screens/SalesReturnScreen'))
+const ModernPurchaseReturnScreen = lazy(() => import('../../features/returns/screens/PurchaseReturnScreen'))
 
 export type ScreenComponentProps = {
   onClose: () => void
@@ -88,10 +90,12 @@ export const screenRegistry: Record<string, ScreenMapValue> = {
   'firm-master': { component: FirmMasterScreen },
   'cash-fine-opening': { component: CashFineOpeningScreen },
   'pos-billing': { component: PosBillingScreen },
+  'sales-return': { component: ModernSalesReturnScreen },
   sale: { component: SaleScreen },
   'sale-return': { component: SaleReturnScreen },
   approval: { component: ApprovalScreen },
   'purchase-invoice': { component: PurchaseInvoiceScreen },
+  'purchase-return-modern': { component: ModernPurchaseReturnScreen },
   purchase: { component: PurchaseScreen },
   'purchase-return': { component: PurchaseReturnScreen },
   'job-work': { component: JobWorkScreen },

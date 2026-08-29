@@ -2461,6 +2461,19 @@ const api = {
     create: (payload: any): Promise<any> => ipcRenderer.invoke('purchase-invoices:create', payload),
     cancel: (id: string): Promise<{ success: boolean }> => ipcRenderer.invoke('purchase-invoices:cancel', id),
     remove: (id: string): Promise<{ success: boolean }> => ipcRenderer.invoke('purchase-invoices:delete', id)
+  },
+
+  returns: {
+    list: (filter?: any): Promise<any[]> => ipcRenderer.invoke('returns:list', filter),
+    getById: (id: string): Promise<any> => ipcRenderer.invoke('returns:get-by-id', id),
+    getByNumber: (number: string): Promise<any> => ipcRenderer.invoke('returns:get-by-number', number),
+    getBySalesInvoice: (salesInvoiceId: string): Promise<any[]> => ipcRenderer.invoke('returns:get-by-sales-invoice', salesInvoiceId),
+    getByPurchaseInvoice: (purchaseInvoiceId: string): Promise<any[]> => ipcRenderer.invoke('returns:get-by-purchase-invoice', purchaseInvoiceId),
+    getReturnableItems: (payload: { invoiceId: string; returnType: string }): Promise<any[]> =>
+      ipcRenderer.invoke('returns:get-returnable-items', payload),
+    create: (payload: any): Promise<any> => ipcRenderer.invoke('returns:create', payload),
+    cancel: (id: string): Promise<{ success: boolean }> => ipcRenderer.invoke('returns:cancel', id),
+    remove: (id: string): Promise<{ success: boolean }> => ipcRenderer.invoke('returns:delete', id)
   }
 }
 

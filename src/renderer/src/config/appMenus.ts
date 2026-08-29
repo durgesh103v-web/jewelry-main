@@ -29,7 +29,9 @@ export const appMenus: AppMenu[] = [
     label: 'Transaction',
     children: [
       { id: 'pos-billing', label: 'POS Billing', module: 'transaction' },
+      { id: 'sales-return', label: 'Sales Return & Credit Note', module: 'transaction' },
       { id: 'purchase-invoice', label: 'Purchase Inward', module: 'transaction' },
+      { id: 'purchase-return-modern', label: 'Purchase Return & Debit Note', module: 'transaction' },
       { id: 'sale', label: 'Sale', module: 'transaction', visibility: 'wholesale' },
       { id: 'sale-return', label: 'Sale Return', module: 'transaction', visibility: 'wholesale' },
       { id: 'approval', label: 'Approval', module: 'transaction', visibility: 'wholesale' },
