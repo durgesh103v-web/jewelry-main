@@ -14,9 +14,12 @@ import { ValidationError, NotFoundError, ConflictError } from '../ipc/errors'
 import type {
   CreateConsignmentInwardPayload,
   ReturnConsignmentItemsPayload,
+  SettleConsignmentPayload,
   ConsignmentInwardRecord,
+  ConsignmentSettlementRecord,
   ConsignmentDashboardSummary,
-  ConsignmentStatus
+  ConsignmentStatus,
+  ConsignmentSettlementStatus
 } from '../../shared/types/consignment'
 
 const consignmentRepo = new ConsignmentRepository()
@@ -323,6 +326,180 @@ export const consignmentService = {
     this.refreshInwardStatus(citem.consignmentInwardId, now)
 
     return true
+  },
+
+  /**
+   * Handle Customer Sales Return of a previously sold consignment item.
+   * If unsettled with vendor, reverses supplier liability and restores showroom custody.
+   * If already settled, transitions item to SHOP_OWNED inventory.
+   */
+  processCustomerReturn(stockItemId: string, returnId: string, returnNumber: string): boolean {
+    const citem = consignmentRepo.getItemByStockItemId(stockItemId)
+    if (!citem || citem.status !== 'SOLD') {
+      return false
+    }
+
+    const inward = consignmentRepo.getInwardById(citem.consignmentInwardId)
+    if (!inward) return false
+
+    const now = dayjs().format('YYYY-MM-DD HH:mm:ss')
+
+    // Check if parent inward has been fully settled with vendor
+    const isSettledWithVendor = inward.settlementStatus === 'SETTLED'
+
+    if (isSettledWithVendor) {
+      // Business Decision: Vendor has already been paid, so the returned item now belongs to the shop
+      stockItemRepo.updateStatus(stockItemId, 'IN_STOCK', now)
+      stockItemRepo.logTagHistory(
+        uuidv4(),
+        stockItemId,
+        'CUSTOMER_RETURN',
+        citem.barcode || null,
+        citem.barcode || null,
+        `Customer Return #${returnNumber}. Item was previously settled with vendor; now added to shop inventory.`,
+        now
+      )
+    } else {
+      // Unsettled: Reverse recognized vendor liability and restore showroom custody
+      if (citem.vendorCost > 0) {
+        const supplier = supplierRepo.findById(citem.supplierId)
+        if (supplier && supplier.accountId) {
+          accountLedgerRepo.insert({
+            id: uuidv4(),
+            sourceType: 'CONSIGNMENT_SALE_REVERSAL',
+            sourceId: returnId,
+            entryDate: dayjs().format('YYYY-MM-DD'),
+            accountId: supplier.accountId,
+            metalType: null,
+            cashJama: 0,
+            cashNave: citem.vendorCost, // Debit / Nave reduces the supplier payable
+            bankJama: 0,
+            bankNave: 0,
+            narration: `Consignment Sale Reversal: Customer Return #${returnNumber} for Item #${citem.stockItemCode || citem.barcode}`,
+            createdAt: now
+          })
+        }
+      }
+
+      // Mark consignment item back to IN_SHOWROOM
+      this.revertItemToInShowroom(citem.id, now)
+
+      // Restore physical stock status to CONSIGNMENT
+      stockItemRepo.updateStatus(stockItemId, 'CONSIGNMENT', now)
+      stockItemRepo.logTagHistory(
+        uuidv4(),
+        stockItemId,
+        'CUSTOMER_RETURN',
+        citem.barcode || null,
+        citem.barcode || null,
+        `Customer Return #${returnNumber}. Reverted to vendor showroom consignment custody.`,
+        now
+      )
+
+      this.refreshInwardStatus(citem.consignmentInwardId, now)
+    }
+
+    return true
+  },
+
+  /**
+   * Settle vendor liability for sold consignment pieces.
+   */
+  settleConsignment(payload: SettleConsignmentPayload): { settlementId: string; settlementNumber: string } {
+    if (!payload.consignmentInwardId) {
+      throw new ValidationError('Consignment Inward ID is required')
+    }
+
+    const inward = consignmentRepo.getInwardById(payload.consignmentInwardId)
+    if (!inward) {
+      throw new NotFoundError(`Consignment Inward not found: ${payload.consignmentInwardId}`)
+    }
+
+    const outstanding = inward.outstandingLiability || 0
+    if (outstanding <= 0) {
+      throw new ConflictError(`No outstanding vendor liability to settle for consignment #${inward.consignmentNumber}`)
+    }
+
+    const settleAmount = Number(payload.amount)
+    if (isNaN(settleAmount) || settleAmount <= 0) {
+      throw new ValidationError('Settlement amount must be greater than 0')
+    }
+
+    if (settleAmount > outstanding) {
+      throw new ValidationError(
+        `Settlement amount (₹${settleAmount.toLocaleString()}) exceeds remaining outstanding liability of ₹${outstanding.toLocaleString()}`
+      )
+    }
+
+    const supplier = supplierRepo.findById(inward.supplierId)
+    if (!supplier) {
+      throw new NotFoundError(`Supplier not found: ${inward.supplierId}`)
+    }
+
+    const settlementDate = payload.settlementDate || dayjs().format('YYYY-MM-DD')
+    const now = dayjs().format('YYYY-MM-DD HH:mm:ss')
+    const settlementId = uuidv4()
+    const settlementNumber = documentSequenceService.getNextNumber('CONSIGNMENT_SETTLEMENT')
+
+    const newTotalSettled = Number(((inward.totalSettledAmount || 0) + settleAmount).toFixed(2))
+    const totalSoldCost = inward.totalSoldVendorCost || 0
+    const newSettlementStatus: ConsignmentSettlementStatus =
+      newTotalSettled >= totalSoldCost ? 'SETTLED' : 'PARTIALLY_SETTLED'
+
+    const isBank = ['BANK', 'UPI', 'CARD', 'CHEQUE'].includes(payload.paymentMethod)
+
+    transactionRepo.executeAtomic(() => {
+      // 1. Insert Settlement Record
+      consignmentRepo.insertSettlement(
+        settlementId,
+        settlementNumber,
+        inward.supplierId,
+        inward.id,
+        settlementDate,
+        settleAmount,
+        payload.paymentMethod,
+        payload.paymentReference || '',
+        payload.notes || '',
+        'Admin',
+        now
+      )
+
+      // 2. Update Inward Settled Totals & Settlement Status
+      consignmentRepo.updateInwardSettledAmount(inward.id, newTotalSettled, newSettlementStatus, now)
+
+      // 3. Post Payment / Settlement in Account Ledger (Debit / Nave to Supplier reduces payable)
+      if (supplier.accountId) {
+        accountLedgerRepo.insert({
+          id: uuidv4(),
+          sourceType: 'CONSIGNMENT_SETTLEMENT',
+          sourceId: settlementId,
+          entryDate: settlementDate,
+          accountId: supplier.accountId,
+          metalType: null,
+          cashJama: 0,
+          cashNave: !isBank ? settleAmount : 0,
+          bankJama: 0,
+          bankNave: isBank ? settleAmount : 0,
+          narration: `Vendor Settlement #${settlementNumber} for Consignment #${inward.consignmentNumber} (${payload.paymentMethod}${
+            payload.paymentReference ? `: ${payload.paymentReference}` : ''
+          })`,
+          createdAt: now
+        })
+      }
+    })
+
+    return { settlementId, settlementNumber }
+  },
+
+  getSettlements(consignmentInwardId: string): ConsignmentSettlementRecord[] {
+    return consignmentRepo.getSettlementsByInwardId(consignmentInwardId)
+  },
+
+  /**
+   * Revert a sold item to showroom status when returned by customer before settlement.
+   */
+  revertItemToInShowroom(citemId: string, now: string): void {
+    consignmentRepo.revertItemToInShowroom(citemId, now)
   },
 
   /**

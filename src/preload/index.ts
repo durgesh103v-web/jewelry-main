@@ -2599,6 +2599,9 @@ const api = {
     getInward: (id: string): Promise<any> => ipcRenderer.invoke('consignment:get-inward', id),
     listInwards: (filter?: any): Promise<any[]> => ipcRenderer.invoke('consignment:list-inwards', filter),
     returnItems: (payload: any): Promise<any> => ipcRenderer.invoke('consignment:return-items', payload),
+    settle: (payload: any): Promise<any> => ipcRenderer.invoke('consignment:settle', payload),
+    getSettlements: (inwardId: string): Promise<any[]> =>
+      ipcRenderer.invoke('consignment:get-settlements', inwardId),
     getByBarcode: (barcode: string): Promise<any> => ipcRenderer.invoke('consignment:get-by-barcode', barcode),
     getDashboard: (): Promise<any> => ipcRenderer.invoke('consignment:get-dashboard')
   }

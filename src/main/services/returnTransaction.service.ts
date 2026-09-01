@@ -6,10 +6,12 @@ import {
   SalesInvoiceRepository,
   PurchaseInvoiceRepository,
   AccountLedgerRepository,
-  TransactionRepository
+  TransactionRepository,
+  JewelleryStockItemRepository
 } from '../database/repositories'
 import { inventoryMovementService } from './inventoryMovement.service'
 import { documentSequenceService } from './documentSequence.service'
+import { consignmentService } from './consignment.service'
 import { ValidationError, NotFoundError, BusinessRuleError } from '../ipc/errors'
 import { roundNumber } from '../../shared/jewelleryFormula'
 import type {
@@ -432,6 +434,15 @@ export const returnTransactionService = {
             entryDate: returnDate,
             narration: `Sales Return ${returnNumber} against ${originalInvoiceNumber}`
           })
+
+          // Handle physical stock / consignment customer return
+          if (item.barcode) {
+            const stockItemRepo = new JewelleryStockItemRepository()
+            const stockItem = stockItemRepo.findByIdentifier(item.barcode)
+            if (stockItem) {
+              consignmentService.processCustomerReturn(stockItem.id, returnId, returnNumber)
+            }
+          }
         } else {
           // Stock goes back OUT to supplier
           inventoryMovementService.postMovement({

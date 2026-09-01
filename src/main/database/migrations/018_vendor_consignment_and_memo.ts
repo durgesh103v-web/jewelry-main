@@ -3,7 +3,7 @@ import { Migration } from './types'
 
 export const migration018: Migration = {
   id: '018_vendor_consignment_and_memo',
-  name: 'Canonical Vendor Consignment, Approval Inward and Memo Management Schema',
+  name: 'Canonical Vendor Consignment, Approval Inward, Memo and Settlement Management Schema',
   up: (database: Database.Database) => {
     database.exec(`
       -- 1. Consignment Inward Header
@@ -14,9 +14,11 @@ export const migration018: Migration = {
         inward_date TEXT NOT NULL,
         expected_return_date TEXT,
         status TEXT NOT NULL DEFAULT 'ACTIVE', -- ACTIVE, PARTIALLY_SETTLED, COMPLETED, CLOSED
+        settlement_status TEXT NOT NULL DEFAULT 'UNSETTLED', -- UNSETTLED, PARTIALLY_SETTLED, SETTLED
         total_pieces INTEGER NOT NULL DEFAULT 0,
         total_gross_weight REAL NOT NULL DEFAULT 0,
         total_vendor_cost REAL NOT NULL DEFAULT 0,
+        total_settled_amount REAL NOT NULL DEFAULT 0,
         notes TEXT DEFAULT '',
         created_by TEXT DEFAULT 'Admin',
         created_at TEXT NOT NULL,
@@ -27,6 +29,7 @@ export const migration018: Migration = {
       CREATE INDEX IF NOT EXISTS idx_ci_number ON consignment_inwards(consignment_number);
       CREATE INDEX IF NOT EXISTS idx_ci_supplier ON consignment_inwards(supplier_id);
       CREATE INDEX IF NOT EXISTS idx_ci_status ON consignment_inwards(status);
+      CREATE INDEX IF NOT EXISTS idx_ci_settlement_status ON consignment_inwards(settlement_status);
       CREATE INDEX IF NOT EXISTS idx_ci_inward_date ON consignment_inwards(inward_date);
 
       -- 2. Consignment Items (Lines linking to Physical Jewellery Stock)
@@ -87,6 +90,26 @@ export const migration018: Migration = {
 
       CREATE INDEX IF NOT EXISTS idx_cri_return ON consignment_return_items(consignment_return_id);
       CREATE INDEX IF NOT EXISTS idx_cri_citem ON consignment_return_items(consignment_item_id);
+
+      -- 5. Consignment Vendor Settlements
+      CREATE TABLE IF NOT EXISTS consignment_settlements (
+        id TEXT PRIMARY KEY,
+        settlement_number TEXT NOT NULL UNIQUE,
+        supplier_id TEXT NOT NULL REFERENCES suppliers(id),
+        consignment_inward_id TEXT NOT NULL REFERENCES consignment_inwards(id),
+        settlement_date TEXT NOT NULL,
+        settled_amount REAL NOT NULL,
+        payment_method TEXT NOT NULL DEFAULT 'CASH', -- CASH, BANK, UPI, CARD, CHEQUE
+        payment_reference TEXT DEFAULT '',
+        notes TEXT DEFAULT '',
+        created_by TEXT DEFAULT 'Admin',
+        created_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_cset_number ON consignment_settlements(settlement_number);
+      CREATE INDEX IF NOT EXISTS idx_cset_supplier ON consignment_settlements(supplier_id);
+      CREATE INDEX IF NOT EXISTS idx_cset_inward ON consignment_settlements(consignment_inward_id);
+      CREATE INDEX IF NOT EXISTS idx_cset_date ON consignment_settlements(settlement_date);
     `)
   }
 }

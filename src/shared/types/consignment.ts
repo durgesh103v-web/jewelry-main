@@ -2,6 +2,8 @@ export type ConsignmentStatus = 'ACTIVE' | 'PARTIALLY_SETTLED' | 'COMPLETED' | '
 
 export type ConsignmentItemStatus = 'IN_SHOWROOM' | 'SOLD' | 'RETURNED'
 
+export type ConsignmentSettlementStatus = 'UNSETTLED' | 'PARTIALLY_SETTLED' | 'SETTLED'
+
 export interface ConsignmentInwardRecord {
   id: string
   consignmentNumber: string
@@ -11,9 +13,13 @@ export interface ConsignmentInwardRecord {
   inwardDate: string
   expectedReturnDate?: string | null
   status: ConsignmentStatus
+  settlementStatus?: ConsignmentSettlementStatus
   totalPieces: number
   totalGrossWeight: number
   totalVendorCost: number
+  totalSettledAmount?: number
+  totalSoldVendorCost?: number
+  outstandingLiability?: number
   notes?: string
   createdBy?: string
   createdAt: string
@@ -74,6 +80,22 @@ export interface ConsignmentReturnRecord {
   }>
 }
 
+export interface ConsignmentSettlementRecord {
+  id: string
+  settlementNumber: string
+  supplierId: string
+  supplierName?: string
+  consignmentInwardId: string
+  consignmentNumber?: string
+  settlementDate: string
+  settledAmount: number
+  paymentMethod: string
+  paymentReference?: string
+  notes?: string
+  createdBy?: string
+  createdAt: string
+}
+
 export interface CreateConsignmentItemLine {
   itemId: string
   vendorItemCode?: string
@@ -104,12 +126,23 @@ export interface ReturnConsignmentItemsPayload {
   notes?: string
 }
 
+export interface SettleConsignmentPayload {
+  consignmentInwardId: string
+  amount: number
+  paymentMethod: 'CASH' | 'BANK' | 'UPI' | 'CARD' | 'CHEQUE'
+  settlementDate?: string
+  paymentReference?: string
+  notes?: string
+}
+
 export interface ConsignmentDashboardSummary {
   activeConsignmentsCount: number
   piecesInShowroomCount: number
   totalShowroomGrossWeight: number
   totalShowroomVendorValue: number
   piecesSoldTotal: number
+  totalSoldVendorValue: number
+  totalSettlementPaid: number
   totalSettlementDueToSuppliers: number
   piecesReturnedTotal: number
   overdueMemosCount: number

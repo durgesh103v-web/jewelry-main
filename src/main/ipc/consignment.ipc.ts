@@ -2,7 +2,8 @@ import { createIpcHandler } from './wrapper'
 import { consignmentService } from '../services/consignment.service'
 import type {
   CreateConsignmentInwardPayload,
-  ReturnConsignmentItemsPayload
+  ReturnConsignmentItemsPayload,
+  SettleConsignmentPayload
 } from '../../shared/types/consignment'
 
 export function registerConsignmentIpc(): void {
@@ -22,6 +23,15 @@ export function registerConsignmentIpc(): void {
   // Vendor Return
   createIpcHandler('consignment:return-items', (_event, payload: ReturnConsignmentItemsPayload) => {
     return consignmentService.returnToVendor(payload)
+  })
+
+  // Vendor Settlement
+  createIpcHandler('consignment:settle', (_event, payload: SettleConsignmentPayload) => {
+    return consignmentService.settleConsignment(payload)
+  })
+
+  createIpcHandler('consignment:get-settlements', (_event, inwardId: string) => {
+    return consignmentService.getSettlements(inwardId)
   })
 
   // Barcode / Scanner resolution

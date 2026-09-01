@@ -16,6 +16,7 @@ export type DocumentType =
   | 'EXCHANGE'
   | 'CONSIGNMENT_INWARD'
   | 'CONSIGNMENT_RETURN'
+  | 'CONSIGNMENT_SETTLEMENT'
 
 interface DocumentConfig {
   table: string
@@ -38,7 +39,8 @@ const DOCUMENT_CONFIGS: Record<DocumentType, DocumentConfig> = {
   OLD_GOLD: { table: 'old_gold_receipts', column: 'receipt_number', defaultPrefix: 'OG' },
   EXCHANGE: { table: 'metal_exchanges', column: 'exchange_number', defaultPrefix: 'EX' },
   CONSIGNMENT_INWARD: { table: 'consignment_inwards', column: 'consignment_number', defaultPrefix: 'CON' },
-  CONSIGNMENT_RETURN: { table: 'consignment_returns', column: 'return_number', defaultPrefix: 'CNR' }
+  CONSIGNMENT_RETURN: { table: 'consignment_returns', column: 'return_number', defaultPrefix: 'CNR' },
+  CONSIGNMENT_SETTLEMENT: { table: 'consignment_settlements', column: 'settlement_number', defaultPrefix: 'SET' }
 }
 
 function getSaleBillPrefix(): string {

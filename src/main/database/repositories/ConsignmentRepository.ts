@@ -2,8 +2,10 @@ import { BaseRepository } from './BaseRepository'
 import type {
   ConsignmentInwardRecord,
   ConsignmentItemRecord,
+  ConsignmentSettlementRecord,
   ConsignmentDashboardSummary,
-  ConsignmentStatus
+  ConsignmentStatus,
+  ConsignmentSettlementStatus
 } from '../../../shared/types/consignment'
 
 export class ConsignmentRepository extends BaseRepository {
@@ -23,9 +25,9 @@ export class ConsignmentRepository extends BaseRepository {
     const stmt = this.db.prepare(`
       INSERT INTO consignment_inwards (
         id, consignment_number, supplier_id, inward_date, expected_return_date,
-        status, total_pieces, total_gross_weight, total_vendor_cost, notes,
-        created_by, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, 'ACTIVE', ?, ?, ?, ?, ?, ?, ?)
+        status, settlement_status, total_pieces, total_gross_weight, total_vendor_cost,
+        total_settled_amount, notes, created_by, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, 'ACTIVE', 'UNSETTLED', ?, ?, ?, 0, ?, ?, ?, ?)
     `)
     stmt.run(
       id,
@@ -110,8 +112,16 @@ export class ConsignmentRepository extends BaseRepository {
     if (!row) return null
 
     const items = this.getItemsByInwardId(id)
+    const totalSoldVendorCost = items
+      .filter((i) => i.status === 'SOLD')
+      .reduce((sum, i) => sum + i.vendorCost, 0)
+    const totalSettled = Number(row.total_settled_amount || 0)
+    const outstandingLiability = Math.max(0, Number((totalSoldVendorCost - totalSettled).toFixed(2)))
+
     return {
       ...this.mapInwardRow(row),
+      totalSoldVendorCost: Number(totalSoldVendorCost.toFixed(2)),
+      outstandingLiability,
       items
     }
   }
@@ -349,6 +359,93 @@ export class ConsignmentRepository extends BaseRepository {
     }
   }
 
+  insertSettlement(
+    id: string,
+    settlementNumber: string,
+    supplierId: string,
+    consignmentInwardId: string,
+    settlementDate: string,
+    settledAmount: number,
+    paymentMethod: string,
+    paymentReference: string,
+    notes: string,
+    createdBy: string,
+    now: string
+  ): void {
+    this.db
+      .prepare(
+        `
+      INSERT INTO consignment_settlements (
+        id, settlement_number, supplier_id, consignment_inward_id,
+        settlement_date, settled_amount, payment_method, payment_reference,
+        notes, created_by, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `
+      )
+      .run(
+        id,
+        settlementNumber,
+        supplierId,
+        consignmentInwardId,
+        settlementDate,
+        settledAmount,
+        paymentMethod,
+        paymentReference,
+        notes,
+        createdBy,
+        now
+      )
+  }
+
+  getSettlementsByInwardId(inwardId: string): ConsignmentSettlementRecord[] {
+    const rows = this.db
+      .prepare(
+        `
+      SELECT 
+        cs.*,
+        ci.consignment_number,
+        s.name as supplier_name
+      FROM consignment_settlements cs
+      JOIN consignment_inwards ci ON ci.id = cs.consignment_inward_id
+      JOIN suppliers s ON s.id = cs.supplier_id
+      WHERE cs.consignment_inward_id = ?
+      ORDER BY cs.settlement_date DESC, cs.created_at DESC
+    `
+      )
+      .all(inwardId) as any[]
+
+    return rows.map((r) => ({
+      id: r.id,
+      settlementNumber: r.settlement_number,
+      supplierId: r.supplier_id,
+      supplierName: r.supplier_name,
+      consignmentInwardId: r.consignment_inward_id,
+      consignmentNumber: r.consignment_number,
+      settlementDate: r.settlement_date,
+      settledAmount: Number(r.settled_amount),
+      paymentMethod: r.payment_method,
+      paymentReference: r.payment_reference,
+      notes: r.notes,
+      createdBy: r.created_by,
+      createdAt: r.created_at
+    }))
+  }
+
+  revertItemToInShowroom(citemId: string, now: string): void {
+    this.db
+      .prepare(
+        `
+      UPDATE consignment_items
+      SET status = 'IN_SHOWROOM',
+          sales_invoice_id = NULL,
+          sold_at = NULL,
+          updated_at = ?
+      WHERE id = ?
+    `
+      )
+      .run(now, citemId)
+  }
+
   updateInwardStatus(inwardId: string, status: ConsignmentStatus, now: string): void {
     this.db
       .prepare(
@@ -360,6 +457,25 @@ export class ConsignmentRepository extends BaseRepository {
     `
       )
       .run(status, now, inwardId)
+  }
+
+  updateInwardSettledAmount(
+    inwardId: string,
+    totalSettledAmount: number,
+    settlementStatus: ConsignmentSettlementStatus,
+    now: string
+  ): void {
+    this.db
+      .prepare(
+        `
+      UPDATE consignment_inwards
+      SET total_settled_amount = ?,
+          settlement_status = ?,
+          updated_at = ?
+      WHERE id = ?
+    `
+      )
+      .run(totalSettledAmount, settlementStatus, now, inwardId)
   }
 
   getDashboardSummary(): ConsignmentDashboardSummary {
@@ -396,13 +512,24 @@ export class ConsignmentRepository extends BaseRepository {
           `
       SELECT 
         COUNT(*) as count,
-        COALESCE(SUM(vendor_cost), 0) as total_settlement_due
+        COALESCE(SUM(vendor_cost), 0) as total_sold_vendor_value
       FROM consignment_items
       WHERE status = 'SOLD'
     `
         )
         .get() as any
-    ) || { count: 0, total_settlement_due: 0 }
+    ) || { count: 0, total_sold_vendor_value: 0 }
+
+    const totalSettledPaid = (
+      this.db
+        .prepare(
+          `
+      SELECT COALESCE(SUM(settled_amount), 0) as total_paid
+      FROM consignment_settlements
+    `
+        )
+        .get() as any
+    )?.total_paid || 0
 
     const returnedCount = (
       this.db
@@ -432,13 +559,19 @@ export class ConsignmentRepository extends BaseRepository {
         .get(today) as any
     )?.count || 0
 
+    const totalSoldValue = Number(soldStats.total_sold_vendor_value)
+    const totalPaidValue = Number(totalSettledPaid)
+    const totalDue = Math.max(0, Number((totalSoldValue - totalPaidValue).toFixed(2)))
+
     return {
       activeConsignmentsCount: activeInwards,
       piecesInShowroomCount: showroomStats.count,
       totalShowroomGrossWeight: Number(Number(showroomStats.total_gross_weight).toFixed(3)),
       totalShowroomVendorValue: Number(Number(showroomStats.total_vendor_cost).toFixed(2)),
       piecesSoldTotal: soldStats.count,
-      totalSettlementDueToSuppliers: Number(Number(soldStats.total_settlement_due).toFixed(2)),
+      totalSoldVendorValue: Number(totalSoldValue.toFixed(2)),
+      totalSettlementPaid: Number(totalPaidValue.toFixed(2)),
+      totalSettlementDueToSuppliers: totalDue,
       piecesReturnedTotal: returnedCount,
       overdueMemosCount: overdueCount
     }
@@ -454,9 +587,11 @@ export class ConsignmentRepository extends BaseRepository {
       inwardDate: row.inward_date,
       expectedReturnDate: row.expected_return_date,
       status: row.status,
+      settlementStatus: row.settlement_status || 'UNSETTLED',
       totalPieces: row.total_pieces,
       totalGrossWeight: Number(row.total_gross_weight),
       totalVendorCost: Number(row.total_vendor_cost),
+      totalSettledAmount: Number(row.total_settled_amount || 0),
       notes: row.notes,
       createdBy: row.created_by,
       createdAt: row.created_at,
