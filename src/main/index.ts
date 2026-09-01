@@ -55,6 +55,7 @@ import { registerReturnTransactionIpc } from './ipc/returnTransaction.ipc'
 import { registerFinancialReportIpc } from './ipc/financialReport.ipc'
 import { registerTaxIpc } from './ipc/tax.ipc'
 import { registerTaggingIpc } from './ipc/tagging.ipc'
+import { registerManufacturingIpc } from './ipc/manufacturing.ipc'
 
 // Only these URL schemes may be handed to the OS browser. Blocks file:// and
 // custom-scheme links that could otherwise be launched via window.open.
@@ -192,6 +193,7 @@ app.whenReady().then(() => {
   registerFinancialReportIpc()
   registerTaxIpc()
   registerTaggingIpc()
+  registerManufacturingIpc()
 
   createWindow()
 

@@ -2540,6 +2540,24 @@ const api = {
       ipcRenderer.invoke('tagging:complete-stock-take', payload),
     getSessionSummary: (sessionId: string): Promise<any> =>
       ipcRenderer.invoke('tagging:get-stock-take-summary', sessionId)
+  },
+
+  manufacturing: {
+    createKarigar: (payload: any): Promise<any> => ipcRenderer.invoke('manufacturing:create-karigar', payload),
+    listKarigars: (filter?: any): Promise<any[]> => ipcRenderer.invoke('manufacturing:list-karigars', filter),
+    getKarigar: (id: string): Promise<any> => ipcRenderer.invoke('manufacturing:get-karigar', id),
+    getKarigarMetalLedger: (payload: { karigarId: string; metalType?: string }): Promise<any[]> =>
+      ipcRenderer.invoke('manufacturing:get-metal-ledger', payload),
+    createOrder: (payload: any): Promise<any> => ipcRenderer.invoke('manufacturing:create-order', payload),
+    listOrders: (filter?: any): Promise<any[]> => ipcRenderer.invoke('manufacturing:list-orders', filter),
+    getOrder: (id: string): Promise<any> => ipcRenderer.invoke('manufacturing:get-order', id),
+    issueMaterial: (payload: any): Promise<any> => ipcRenderer.invoke('manufacturing:issue-material', payload),
+    returnMaterial: (payload: any): Promise<any> => ipcRenderer.invoke('manufacturing:return-material', payload),
+    receiveFinishedGoods: (payload: any): Promise<any> =>
+      ipcRenderer.invoke('manufacturing:receive-finished-goods', payload),
+    settleKarigar: (payload: any): Promise<any> => ipcRenderer.invoke('manufacturing:settle-karigar', payload),
+    getReconciliation: (orderId: string): Promise<any> =>
+      ipcRenderer.invoke('manufacturing:get-reconciliation', orderId)
   }
 }
 

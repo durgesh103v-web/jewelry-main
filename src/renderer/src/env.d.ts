@@ -2330,5 +2330,20 @@ interface Window {
       completeSession: (payload: { sessionId: string; notes?: string }) => Promise<any>
       getSessionSummary: (sessionId: string) => Promise<any>
     }
+
+    manufacturing: {
+      createKarigar: (payload: any) => Promise<any>
+      listKarigars: (filter?: any) => Promise<any[]>
+      getKarigar: (id: string) => Promise<any>
+      getKarigarMetalLedger: (payload: { karigarId: string; metalType?: string }) => Promise<any[]>
+      createOrder: (payload: any) => Promise<any>
+      listOrders: (filter?: any) => Promise<any[]>
+      getOrder: (id: string) => Promise<any>
+      issueMaterial: (payload: any) => Promise<any>
+      returnMaterial: (payload: any) => Promise<any>
+      receiveFinishedGoods: (payload: any) => Promise<any>
+      settleKarigar: (payload: any) => Promise<any>
+      getReconciliation: (orderId: string) => Promise<any>
+    }
   }
 }
