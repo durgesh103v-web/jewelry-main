@@ -2359,5 +2359,20 @@ interface Window {
       getTimeline: (repairJobId: string) => Promise<any[]>
       getDashboard: () => Promise<any>
     }
+
+    scheme: {
+      createScheme: (payload: any) => Promise<any>
+      getScheme: (id: string) => Promise<any>
+      listSchemes: (filter?: any) => Promise<any[]>
+      enrollCustomer: (payload: any) => Promise<any>
+      getAccount: (id: string) => Promise<any>
+      listAccounts: (filter?: any) => Promise<any[]>
+      getInstallments: (schemeAccountId: string) => Promise<any[]>
+      payInstallment: (payload: any) => Promise<any>
+      redeem: (payload: any) => Promise<any>
+      refund: (payload: any) => Promise<any>
+      getTimeline: (schemeAccountId: string) => Promise<any[]>
+      getDashboard: () => Promise<any>
+    }
   }
 }

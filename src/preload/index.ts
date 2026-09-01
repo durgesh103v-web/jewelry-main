@@ -2575,6 +2575,23 @@ const api = {
       ipcRenderer.invoke('repair:cancel', payload),
     getTimeline: (repairJobId: string): Promise<any[]> => ipcRenderer.invoke('repair:get-timeline', repairJobId),
     getDashboard: (): Promise<any> => ipcRenderer.invoke('repair:get-dashboard')
+  },
+
+  scheme: {
+    createScheme: (payload: any): Promise<any> => ipcRenderer.invoke('scheme:create-scheme', payload),
+    getScheme: (id: string): Promise<any> => ipcRenderer.invoke('scheme:get-scheme', id),
+    listSchemes: (filter?: any): Promise<any[]> => ipcRenderer.invoke('scheme:list-schemes', filter),
+    enrollCustomer: (payload: any): Promise<any> => ipcRenderer.invoke('scheme:enroll-customer', payload),
+    getAccount: (id: string): Promise<any> => ipcRenderer.invoke('scheme:get-account', id),
+    listAccounts: (filter?: any): Promise<any[]> => ipcRenderer.invoke('scheme:list-accounts', filter),
+    getInstallments: (schemeAccountId: string): Promise<any[]> =>
+      ipcRenderer.invoke('scheme:get-installments', schemeAccountId),
+    payInstallment: (payload: any): Promise<any> => ipcRenderer.invoke('scheme:pay-installment', payload),
+    redeem: (payload: any): Promise<any> => ipcRenderer.invoke('scheme:redeem', payload),
+    refund: (payload: any): Promise<any> => ipcRenderer.invoke('scheme:refund', payload),
+    getTimeline: (schemeAccountId: string): Promise<any[]> =>
+      ipcRenderer.invoke('scheme:get-timeline', schemeAccountId),
+    getDashboard: (): Promise<any> => ipcRenderer.invoke('scheme:get-dashboard')
   }
 }
 
