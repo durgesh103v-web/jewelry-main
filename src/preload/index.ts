@@ -2592,6 +2592,15 @@ const api = {
     getTimeline: (schemeAccountId: string): Promise<any[]> =>
       ipcRenderer.invoke('scheme:get-timeline', schemeAccountId),
     getDashboard: (): Promise<any> => ipcRenderer.invoke('scheme:get-dashboard')
+  },
+
+  consignment: {
+    createInward: (payload: any): Promise<any> => ipcRenderer.invoke('consignment:create-inward', payload),
+    getInward: (id: string): Promise<any> => ipcRenderer.invoke('consignment:get-inward', id),
+    listInwards: (filter?: any): Promise<any[]> => ipcRenderer.invoke('consignment:list-inwards', filter),
+    returnItems: (payload: any): Promise<any> => ipcRenderer.invoke('consignment:return-items', payload),
+    getByBarcode: (barcode: string): Promise<any> => ipcRenderer.invoke('consignment:get-by-barcode', barcode),
+    getDashboard: (): Promise<any> => ipcRenderer.invoke('consignment:get-dashboard')
   }
 }
 

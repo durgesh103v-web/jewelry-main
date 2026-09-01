@@ -1,0 +1,36 @@
+import { createIpcHandler } from './wrapper'
+import { consignmentService } from '../services/consignment.service'
+import type {
+  CreateConsignmentInwardPayload,
+  ReturnConsignmentItemsPayload
+} from '../../shared/types/consignment'
+
+export function registerConsignmentIpc(): void {
+  // Consignment Inward
+  createIpcHandler('consignment:create-inward', (_event, payload: CreateConsignmentInwardPayload) => {
+    return consignmentService.createInward(payload)
+  })
+
+  createIpcHandler('consignment:get-inward', (_event, id: string) => {
+    return consignmentService.getInwardById(id)
+  })
+
+  createIpcHandler('consignment:list-inwards', (_event, filter?: any) => {
+    return consignmentService.listInwards(filter)
+  })
+
+  // Vendor Return
+  createIpcHandler('consignment:return-items', (_event, payload: ReturnConsignmentItemsPayload) => {
+    return consignmentService.returnToVendor(payload)
+  })
+
+  // Barcode / Scanner resolution
+  createIpcHandler('consignment:get-by-barcode', (_event, barcode: string) => {
+    return consignmentService.getActiveItemByBarcode(barcode)
+  })
+
+  // Dashboard
+  createIpcHandler('consignment:get-dashboard', () => {
+    return consignmentService.getDashboardSummary()
+  })
+}

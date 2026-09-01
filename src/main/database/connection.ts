@@ -8,7 +8,8 @@ import { allMigrations } from './migrations'
 let db: Database.Database | null = null
 
 export function getDatabasePath(): string {
-  const dataDir = join(app.getPath('userData'), 'data')
+  const baseDir = app?.getPath ? app.getPath('userData') : process.env.APPDATA || '.'
+  const dataDir = join(baseDir, 'data')
 
   if (!existsSync(dataDir)) {
     mkdirSync(dataDir, { recursive: true })

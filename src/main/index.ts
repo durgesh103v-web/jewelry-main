@@ -58,6 +58,7 @@ import { registerTaggingIpc } from './ipc/tagging.ipc'
 import { registerManufacturingIpc } from './ipc/manufacturing.ipc'
 import { registerRepairIpc } from './ipc/repair.ipc'
 import { registerSchemeIpc } from './ipc/scheme.ipc'
+import { registerConsignmentIpc } from './ipc/consignment.ipc'
 
 // Only these URL schemes may be handed to the OS browser. Blocks file:// and
 // custom-scheme links that could otherwise be launched via window.open.
@@ -198,6 +199,7 @@ app.whenReady().then(() => {
   registerManufacturingIpc()
   registerRepairIpc()
   registerSchemeIpc()
+  registerConsignmentIpc()
 
   createWindow()
 

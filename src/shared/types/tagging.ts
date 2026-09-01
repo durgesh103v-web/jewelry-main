@@ -1,8 +1,10 @@
 export type StockItemStatus =
   | 'IN_STOCK'
+  | 'CONSIGNMENT'
   | 'RESERVED'
   | 'SOLD'
   | 'RETURNED'
+  | 'RETURNED_TO_VENDOR'
   | 'REPAIR'
   | 'JOB_WORK'
   | 'TRANSFERRED'

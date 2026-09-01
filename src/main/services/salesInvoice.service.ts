@@ -20,6 +20,8 @@ import type {
   SalesInvoiceFilter
 } from '../../shared/types/salesInvoice'
 import type { CustomerOrderRecord } from '../../shared/types/customerOrder'
+import { JewelleryStockItemRepository } from '../database/repositories/JewelleryStockItemRepository'
+import { consignmentService } from './consignment.service'
 import { roundNumber } from '../../shared/jewelleryFormula'
 
 const salesInvoiceRepository = new SalesInvoiceRepository()
@@ -31,6 +33,7 @@ const advanceRepository = new AdvanceRepository()
 const exchangeRepository = new MetalExchangeRepository()
 const accountLedgerRepository = new AccountLedgerRepository()
 const transactionRepository = new TransactionRepository()
+const stockItemRepository = new JewelleryStockItemRepository()
 
 const invoiceItemSchema = z.object({
   itemId: z.string().trim().min(1, 'Item is required'),
@@ -357,6 +360,27 @@ export const salesInvoiceService = {
           entryDate: invoiceDate,
           narration: `Sale Invoice ${invoiceNumber}`
         })
+
+        // 2b. If serialized physical stock / consignment item, transition status
+        if (item.barcode) {
+          const stockItem = stockItemRepository.findByIdentifier(item.barcode)
+          if (stockItem) {
+            if (stockItem.status === 'CONSIGNMENT') {
+              consignmentService.processConsignmentSale(stockItem.id, invoiceId, invoiceNumber)
+            } else if (stockItem.status === 'IN_STOCK') {
+              stockItemRepository.updateStatus(stockItem.id, 'SOLD', timestamp)
+              stockItemRepository.logTagHistory(
+                uuidv4(),
+                stockItem.id,
+                'SOLD',
+                stockItem.barcode || null,
+                stockItem.barcode || null,
+                `Sold on Sales Invoice #${invoiceNumber}`,
+                timestamp
+              )
+            }
+          }
+        }
       }
 
       // 3. Insert payments

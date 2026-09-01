@@ -2374,5 +2374,14 @@ interface Window {
       getTimeline: (schemeAccountId: string) => Promise<any[]>
       getDashboard: () => Promise<any>
     }
+
+    consignment: {
+      createInward: (payload: any) => Promise<any>
+      getInward: (id: string) => Promise<any>
+      listInwards: (filter?: any) => Promise<any[]>
+      returnItems: (payload: any) => Promise<any>
+      getByBarcode: (barcode: string) => Promise<any>
+      getDashboard: () => Promise<any>
+    }
   }
 }
