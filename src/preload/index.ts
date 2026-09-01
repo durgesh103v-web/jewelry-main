@@ -2558,6 +2558,23 @@ const api = {
     settleKarigar: (payload: any): Promise<any> => ipcRenderer.invoke('manufacturing:settle-karigar', payload),
     getReconciliation: (orderId: string): Promise<any> =>
       ipcRenderer.invoke('manufacturing:get-reconciliation', orderId)
+  },
+
+  repair: {
+    createJob: (payload: any): Promise<any> => ipcRenderer.invoke('repair:create-job', payload),
+    getJob: (id: string): Promise<any> => ipcRenderer.invoke('repair:get-job', id),
+    listJobs: (filter?: any): Promise<any[]> => ipcRenderer.invoke('repair:list-jobs', filter),
+    assignKarigar: (payload: any): Promise<any> => ipcRenderer.invoke('repair:assign-karigar', payload),
+    issueMaterial: (payload: any): Promise<any> => ipcRenderer.invoke('repair:issue-material', payload),
+    receiveFromKarigar: (payload: any): Promise<any> =>
+      ipcRenderer.invoke('repair:receive-from-karigar', payload),
+    updateQc: (payload: { repairJobId: string; qcStatus: string; notes?: string }): Promise<any> =>
+      ipcRenderer.invoke('repair:update-qc', payload),
+    deliver: (payload: any): Promise<any> => ipcRenderer.invoke('repair:deliver', payload),
+    cancel: (payload: { repairJobId: string; reason?: string }): Promise<any> =>
+      ipcRenderer.invoke('repair:cancel', payload),
+    getTimeline: (repairJobId: string): Promise<any[]> => ipcRenderer.invoke('repair:get-timeline', repairJobId),
+    getDashboard: (): Promise<any> => ipcRenderer.invoke('repair:get-dashboard')
   }
 }
 

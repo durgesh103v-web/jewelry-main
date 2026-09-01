@@ -67,6 +67,7 @@ const FinancialReportsHubScreen = lazy(() => import('../../features/reports/scre
 const TaxComplianceHubScreen = lazy(() => import('../../features/tax/screens/TaxComplianceHubScreen'))
 const JewelleryTaggingHubScreen = lazy(() => import('../../features/tagging/screens/JewelleryTaggingHubScreen'))
 const ManufacturingHubScreen = lazy(() => import('../../features/manufacturing/screens/ManufacturingHubScreen'))
+const RepairHubScreen = lazy(() => import('../../features/repair/screens/RepairHubScreen'))
 
 export type ScreenComponentProps = {
   onClose: () => void
@@ -118,6 +119,7 @@ export const screenRegistry: Record<string, ScreenMapValue> = {
   'order-payal': { component: OrderPayalScreen },
   settlement: { component: SettlementScreen },
   'manufacturing-hub': { component: ManufacturingHubScreen },
+  'repair-hub': { component: RepairHubScreen },
   'financial-reports-hub': { component: FinancialReportsHubScreen },
   'purchase-register': { component: PurchaseRegisterScreen },
   'sale-register': { component: SaleRegisterScreen },

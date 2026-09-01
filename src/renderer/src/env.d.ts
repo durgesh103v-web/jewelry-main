@@ -2345,5 +2345,19 @@ interface Window {
       settleKarigar: (payload: any) => Promise<any>
       getReconciliation: (orderId: string) => Promise<any>
     }
+
+    repair: {
+      createJob: (payload: any) => Promise<any>
+      getJob: (id: string) => Promise<any>
+      listJobs: (filter?: any) => Promise<any[]>
+      assignKarigar: (payload: any) => Promise<any>
+      issueMaterial: (payload: any) => Promise<any>
+      receiveFromKarigar: (payload: any) => Promise<any>
+      updateQc: (payload: { repairJobId: string; qcStatus: string; notes?: string }) => Promise<any>
+      deliver: (payload: any) => Promise<any>
+      cancel: (payload: { repairJobId: string; reason?: string }) => Promise<any>
+      getTimeline: (repairJobId: string) => Promise<any[]>
+      getDashboard: () => Promise<any>
+    }
   }
 }
