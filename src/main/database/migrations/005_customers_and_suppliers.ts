@@ -153,7 +153,7 @@ export const migration005: Migration = {
         `INSERT INTO suppliers (
           id, supplier_code, account_id, name, display_name, supplier_type, mobile, alternate_mobile,
           address, city, state, gstin, pan, active, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, 'Supplier', ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        ) VALUES (?, ?, ?, ?, ?, 'Supplier', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
 
       let suppCodeIndex = 1

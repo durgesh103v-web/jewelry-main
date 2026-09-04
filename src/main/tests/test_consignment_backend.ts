@@ -24,11 +24,11 @@ export async function runConsignmentTests() {
   const consignmentRepo = new ConsignmentRepository()
 
   // Ensure test supplier and account
-  let supplierAccount = db.prepare(`SELECT * FROM accounts WHERE name = 'Hardened Test Supplier Account'`).get() as any
+  let supplierAccount = db.prepare(`SELECT * FROM accounts WHERE account_name = 'Hardened Test Supplier Account'`).get() as any
   if (!supplierAccount) {
     const accId = uuidv4()
     db.prepare(`
-      INSERT INTO accounts (id, name, group_id, opening_cash, opening_gold_fine, opening_silver_fine, created_at, updated_at)
+      INSERT INTO accounts (id, account_name, account_group_id, opening_cash, opening_gold_fine, opening_silver_fine, created_at, updated_at)
       VALUES (?, 'Hardened Test Supplier Account', (SELECT id FROM account_groups LIMIT 1), 0, 0, 0, datetime('now'), datetime('now'))
     `).run(accId)
     supplierAccount = { id: accId }
@@ -38,8 +38,8 @@ export async function runConsignmentTests() {
   if (!supplier) {
     const suppId = uuidv4()
     db.prepare(`
-      INSERT INTO suppliers (id, name, phone, account_id, created_at, updated_at)
-      VALUES (?, 'Hardened Wholesaler', '9876543210', ?, datetime('now'), datetime('now'))
+      INSERT INTO suppliers (id, supplier_code, name, mobile, account_id, created_at, updated_at)
+      VALUES (?, 'SUPP-TEST-001', 'Hardened Wholesaler', '9876543210', ?, datetime('now'), datetime('now'))
     `).run(suppId, supplierAccount.id)
     supplier = { id: suppId, name: 'Hardened Wholesaler', account_id: supplierAccount.id }
   }
@@ -60,12 +60,12 @@ export async function runConsignmentTests() {
     const cId = uuidv4()
     const cAccId = uuidv4()
     db.prepare(`
-      INSERT INTO accounts (id, name, group_id, opening_cash, opening_gold_fine, opening_silver_fine, created_at, updated_at)
+      INSERT INTO accounts (id, account_name, account_group_id, opening_cash, opening_gold_fine, opening_silver_fine, created_at, updated_at)
       VALUES (?, 'Hardened Customer Account', (SELECT id FROM account_groups LIMIT 1), 0, 0, 0, datetime('now'), datetime('now'))
     `).run(cAccId)
     db.prepare(`
-      INSERT INTO customers (id, name, mobile, account_id, created_at, updated_at)
-      VALUES (?, 'Hardened Test Customer', '9998887776', ?, datetime('now'), datetime('now'))
+      INSERT INTO customers (id, customer_code, name, mobile, account_id, created_at, updated_at)
+      VALUES (?, 'CUST-TEST-001', 'Hardened Test Customer', '9998887776', ?, datetime('now'), datetime('now'))
     `).run(cId, cAccId)
     customer = { id: cId, name: 'Hardened Test Customer', account_id: cAccId }
   }
@@ -324,6 +324,24 @@ export async function runConsignmentTests() {
   const dashboard = consignmentService.getDashboardSummary()
   assert(dashboard.activeConsignmentsCount >= 2, 'Dashboard tracks active consignments')
   assert(dashboard.totalSettlementPaid >= 100000, 'Dashboard accurately aggregates total settlement paid')
+
+  // --- Test M: Reports Queries Reconciliation ---
+  console.log('\n--- Test M: Reports Queries Reconciliation ---')
+  const registerList = consignmentService.listInwards({ supplierId: supplier.id })
+  assert(registerList.length >= 2, 'Consignment Register returns inward records')
+  assert(registerList[0].totalPieces > 0, 'Consignment Register tracks total pieces')
+
+  const showroomStock = consignmentService.listItems({ status: 'IN_SHOWROOM', supplierId: supplier.id })
+  assert(showroomStock.length > 0, 'Vendor-Owned Stock report returns active showroom pieces')
+  assert(showroomStock.every(it => it.status === 'IN_SHOWROOM'), 'Only IN_SHOWROOM pieces appear in stock report')
+
+  const soldItems = consignmentService.listItems({ status: 'SOLD', supplierId: supplier.id })
+  assert(soldItems.length > 0, 'Sold Consignments report returns sold items')
+  assert(soldItems.every(it => it.status === 'SOLD'), 'Only SOLD pieces appear in sold consignments report')
+
+  const allSettlements = consignmentService.getSettlements({ supplierId: supplier.id })
+  assert(allSettlements.length >= 2, 'Settlement History report returns recorded settlements across inwards')
+  assert(allSettlements.every(s => s.settledAmount > 0), 'Settlements have valid amounts')
 
   console.log(`\n=== CONSIGNMENT TESTS SUMMARY: ${passed} PASSED, ${failed} FAILED ===`)
   if (app) {
