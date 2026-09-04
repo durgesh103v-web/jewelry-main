@@ -13,6 +13,7 @@ import { getFriendlyErrorMessage } from '../../../utils/getFriendlyErrorMessage'
 export interface ConsignmentInwardScreenProps {
   onClose?: () => void
   onSuccess?: (consignmentNumber: string) => void
+  onViewMemo?: (memoId: string) => void
   onNavigate?: (id: string, label: string, module: 'home' | 'master' | 'transaction' | 'reports' | 'gst' | 'utility') => void
 }
 
@@ -37,6 +38,7 @@ const PURITY_OPTIONS = [
 export const ConsignmentInwardScreen: React.FC<ConsignmentInwardScreenProps> = ({
   onClose,
   onSuccess,
+  onViewMemo,
   onNavigate
 }) => {
   // 1. Memo Header State
@@ -69,6 +71,7 @@ export const ConsignmentInwardScreen: React.FC<ConsignmentInwardScreenProps> = (
   const [formError, setFormError] = useState<string | null>(null)
   const [itemError, setItemError] = useState<string | null>(null)
   const [successMemo, setSuccessMemo] = useState<{
+    inwardId?: string
     consignmentNumber: string
     totalPieces: number
     totalGrossWeight: number
@@ -271,6 +274,7 @@ export const ConsignmentInwardScreen: React.FC<ConsignmentInwardScreenProps> = (
       const result = await window.api.consignment.createInward(payload)
 
       setSuccessMemo({
+        inwardId: result.id,
         consignmentNumber: result.consignmentNumber,
         totalPieces: totals.totalPieces,
         totalGrossWeight: totals.totalGrossWeight,
@@ -856,6 +860,16 @@ export const ConsignmentInwardScreen: React.FC<ConsignmentInwardScreenProps> = (
               >
                 Inward Another Memo
               </button>
+
+              {onViewMemo && successMemo.inwardId && (
+                <button
+                  type="button"
+                  onClick={() => onViewMemo(successMemo.inwardId!)}
+                  className="h-8 px-3.5 bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 font-semibold rounded-lg transition-colors"
+                >
+                  View Memo Details
+                </button>
+              )}
 
               <button
                 type="button"

@@ -9,6 +9,7 @@ import { formatDate, formatCurrency, formatWeight } from '../../../utils/formatt
 import { getFriendlyErrorMessage } from '../../../utils/getFriendlyErrorMessage'
 
 import { ConsignmentInwardScreen } from './ConsignmentInwardScreen'
+import { ConsignmentDetailScreen } from './ConsignmentDetailScreen'
 
 export interface ConsignmentHubScreenProps {
   onClose?: () => void
@@ -22,7 +23,7 @@ export const ConsignmentHubScreen: React.FC<ConsignmentHubScreenProps> = ({
   onNavigate
 }) => {
   // Navigation View State
-  const [currentView, setCurrentView] = useState<'HUB' | 'INWARD'>('HUB')
+  const [currentView, setCurrentView] = useState<'HUB' | 'INWARD' | 'DETAIL'>('HUB')
 
   // State
   const [inwards, setInwards] = useState<ConsignmentInwardRecord[]>([])
@@ -36,10 +37,8 @@ export const ConsignmentHubScreen: React.FC<ConsignmentHubScreenProps> = ({
   const [searchQuery, setSearchQuery] = useState<string>('')
   const [settlementFilter, setSettlementFilter] = useState<string>('ALL')
 
-  // Selected Inward for Read-Only Quick View Modal
+  // Selected Inward for Detail View
   const [selectedInwardId, setSelectedInwardId] = useState<string | null>(null)
-  const [selectedInwardDetails, setSelectedInwardDetails] = useState<ConsignmentInwardRecord | null>(null)
-  const [loadingDetails, setLoadingDetails] = useState<boolean>(false)
 
   // Load dashboard & consignment list
   const loadConsignmentData = useCallback(async () => {
@@ -77,24 +76,10 @@ export const ConsignmentHubScreen: React.FC<ConsignmentHubScreenProps> = ({
     })
   }, [inwards, settlementFilter])
 
-  // Handle Quick View Details Modal
-  const handleOpenDetails = async (id: string) => {
+  // Handle Opening Detail View
+  const handleOpenDetails = (id: string) => {
     setSelectedInwardId(id)
-    setLoadingDetails(true)
-    try {
-      const details = await window.api.consignment.getInward(id)
-      setSelectedInwardDetails(details)
-    } catch (err: unknown) {
-      console.error('Error loading consignment details:', err)
-      setError(getFriendlyErrorMessage(err))
-    } finally {
-      setLoadingDetails(false)
-    }
-  }
-
-  const handleCloseDetails = () => {
-    setSelectedInwardId(null)
-    setSelectedInwardDetails(null)
+    setCurrentView('DETAIL')
   }
 
   // Physical status badge renderer
@@ -166,6 +151,25 @@ export const ConsignmentHubScreen: React.FC<ConsignmentHubScreenProps> = ({
           void loadConsignmentData()
         }}
         onSuccess={() => {
+          void loadConsignmentData()
+        }}
+        onViewMemo={(memoId) => {
+          setSelectedInwardId(memoId)
+          setCurrentView('DETAIL')
+          void loadConsignmentData()
+        }}
+        onNavigate={onNavigate}
+      />
+    )
+  }
+
+  if (currentView === 'DETAIL' && selectedInwardId) {
+    return (
+      <ConsignmentDetailScreen
+        inwardId={selectedInwardId}
+        onClose={() => {
+          setCurrentView('HUB')
+          setSelectedInwardId(null)
           void loadConsignmentData()
         }}
         onNavigate={onNavigate}
@@ -637,210 +641,6 @@ export const ConsignmentHubScreen: React.FC<ConsignmentHubScreenProps> = ({
         </section>
       </div>
 
-      {/* 5. Read-Only Memo Quick View Modal */}
-      {selectedInwardId && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-150">
-          <div className="bg-card border border-border rounded-2xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden text-xs">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between px-5 py-3.5 border-b border-border bg-muted/30">
-              <div className="flex items-center gap-3">
-                <span className="text-xl">📋</span>
-                <div>
-                  <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
-                    <span>Consignment Memo:</span>
-                    <span className="font-mono text-primary">
-                      {selectedInwardDetails?.consignmentNumber || 'Loading...'}
-                    </span>
-                  </h2>
-                  <p className="text-[11px] text-muted-foreground">
-                    Vendor: {selectedInwardDetails?.supplierName || '-'} (
-                    {selectedInwardDetails?.supplierMobile || 'No Mobile'})
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                {selectedInwardDetails && (
-                  <>
-                    {renderSettlementStatusBadge(selectedInwardDetails.settlementStatus)}
-                    {renderPhysicalStatusBadge(selectedInwardDetails.status)}
-                  </>
-                )}
-                <button
-                  type="button"
-                  onClick={handleCloseDetails}
-                  className="h-7 w-7 text-muted-foreground hover:text-foreground rounded-lg flex items-center justify-center font-bold text-sm ml-2"
-                >
-                  ✕
-                </button>
-              </div>
-            </div>
-
-            {/* Modal Body */}
-            <div className="flex-1 overflow-y-auto p-5 space-y-4">
-              {loadingDetails ? (
-                <div className="py-16 text-center text-muted-foreground">
-                  <span className="animate-spin text-xl block mb-2">⏳</span>
-                  <span>Fetching memo items and settlement details...</span>
-                </div>
-              ) : selectedInwardDetails ? (
-                <>
-                  {/* Summary Metric Strip */}
-                  <div className="grid grid-cols-4 gap-3 bg-muted/40 p-3 rounded-xl border border-border">
-                    <div>
-                      <div className="text-[10px] text-muted-foreground uppercase font-semibold">
-                        Inward Date
-                      </div>
-                      <div className="font-mono font-semibold text-foreground text-xs mt-0.5">
-                        {formatDate(selectedInwardDetails.inwardDate)}
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="text-[10px] text-muted-foreground uppercase font-semibold">
-                        Expected Return
-                      </div>
-                      <div className="font-mono font-semibold text-foreground text-xs mt-0.5">
-                        {formatDate(selectedInwardDetails.expectedReturnDate)}
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="text-[10px] text-muted-foreground uppercase font-semibold">
-                        Total Items
-                      </div>
-                      <div className="font-mono font-semibold text-foreground text-xs mt-0.5">
-                        {selectedInwardDetails.totalPieces} Pcs (
-                        {formatWeight(selectedInwardDetails.totalGrossWeight)})
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="text-[10px] text-muted-foreground uppercase font-semibold">
-                        Outstanding Due
-                      </div>
-                      <div className="font-mono font-bold text-rose-600 dark:text-rose-400 text-xs mt-0.5">
-                        {formatCurrency(selectedInwardDetails.outstandingLiability ?? 0)}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Notes if available */}
-                  {selectedInwardDetails.notes && (
-                    <div className="p-2.5 bg-muted/30 border border-border rounded-lg text-xs text-muted-foreground">
-                      <span className="font-bold text-foreground">Memo Notes: </span>
-                      {selectedInwardDetails.notes}
-                    </div>
-                  )}
-
-                  {/* Items List */}
-                  <div>
-                    <h3 className="text-xs font-bold text-foreground uppercase tracking-wider mb-2 flex items-center justify-between">
-                      <span>Serialized Physical Items ({selectedInwardDetails.items?.length ?? 0})</span>
-                      <span className="text-[11px] font-normal text-muted-foreground">
-                        Showroom custody status
-                      </span>
-                    </h3>
-
-                    <div className="border border-border rounded-xl overflow-hidden shadow-sm">
-                      <table className="w-full text-left text-xs border-collapse">
-                        <thead className="bg-muted/60 text-muted-foreground font-semibold text-[10px] uppercase border-b border-border">
-                          <tr>
-                            <th className="py-2 px-3">Barcode / Tag</th>
-                            <th className="py-2 px-3">Item Name</th>
-                            <th className="py-2 px-2 text-center">Purity</th>
-                            <th className="py-2 px-2 text-right">Gross Wt</th>
-                            <th className="py-2 px-2 text-right">Net Wt</th>
-                            <th className="py-2 px-3 text-right">Vendor Cost</th>
-                            <th className="py-2 px-3 text-right">Retail Tag</th>
-                            <th className="py-2 px-3 text-center">Status</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-border/60">
-                          {selectedInwardDetails.items?.map((item) => (
-                            <tr key={item.id} className="hover:bg-muted/30">
-                              <td className="py-2 px-3 font-mono font-bold text-primary">
-                                {item.barcode || item.stockItemCode}
-                              </td>
-                              <td className="py-2 px-3">
-                                <div className="font-semibold text-foreground">
-                                  {item.itemName || 'Jewellery Piece'}
-                                </div>
-                                {item.vendorItemCode && (
-                                  <div className="text-[10px] text-muted-foreground font-mono">
-                                    Code: {item.vendorItemCode}
-                                  </div>
-                                )}
-                              </td>
-                              <td className="py-2 px-2 text-center font-mono">
-                                {item.purityName} ({item.tunch}%)
-                              </td>
-                              <td className="py-2 px-2 text-right font-mono">
-                                {formatWeight(item.grossWeight)}
-                              </td>
-                              <td className="py-2 px-2 text-right font-mono text-muted-foreground">
-                                {formatWeight(item.netWeight)}
-                              </td>
-                              <td className="py-2 px-3 text-right font-mono font-semibold text-foreground">
-                                {formatCurrency(item.vendorCost)}
-                              </td>
-                              <td className="py-2 px-3 text-right font-mono text-muted-foreground">
-                                {formatCurrency(item.retailPrice)}
-                              </td>
-                              <td className="py-2 px-3 text-center">
-                                {item.status === 'IN_SHOWROOM' && (
-                                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400">
-                                    IN SHOWROOM
-                                  </span>
-                                )}
-                                {item.status === 'SOLD' && (
-                                  <div>
-                                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-500/10 text-purple-600 dark:text-purple-400">
-                                      SOLD
-                                    </span>
-                                    {item.salesInvoiceNumber && (
-                                      <div className="text-[9px] font-mono text-muted-foreground mt-0.5">
-                                        Inv: {item.salesInvoiceNumber}
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-                                {item.status === 'RETURNED' && (
-                                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-500/10 text-slate-600 dark:text-slate-400">
-                                    RETURNED
-                                  </span>
-                                )}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <div className="py-12 text-center text-muted-foreground">
-                  Failed to load details.
-                </div>
-              )}
-            </div>
-
-            {/* Modal Footer */}
-            <div className="flex items-center justify-between px-5 py-3 border-t border-border bg-muted/20">
-              <span className="text-[11px] text-muted-foreground">
-                Read-only memo preview. Settlement and Return actions will be active in UI-2.
-              </span>
-              <button
-                type="button"
-                onClick={handleCloseDetails}
-                className="h-8 px-4 bg-muted hover:bg-muted/80 text-foreground font-semibold rounded-lg transition-colors"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
