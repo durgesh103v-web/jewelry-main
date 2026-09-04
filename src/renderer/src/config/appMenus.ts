@@ -33,6 +33,7 @@ export const appMenus: AppMenu[] = [
       { id: 'repair-hub', label: 'Repair & Alteration Hub', module: 'transaction' },
       { id: 'manufacturing-hub', label: 'Manufacturing & Job Work Hub', module: 'transaction' },
       { id: 'consignment-hub', label: 'Vendor Consignment & Memo Hub', module: 'transaction' },
+      { id: 'consignment-inward', label: 'Consignment Inward', module: 'transaction' },
       { id: 'sales-return', label: 'Sales Return & Credit Note', module: 'transaction' },
       { id: 'purchase-invoice', label: 'Purchase Inward', module: 'transaction' },
       { id: 'purchase-return-modern', label: 'Purchase Return & Debit Note', module: 'transaction' },

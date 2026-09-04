@@ -8,6 +8,8 @@ import type {
 import { formatDate, formatCurrency, formatWeight } from '../../../utils/formatters'
 import { getFriendlyErrorMessage } from '../../../utils/getFriendlyErrorMessage'
 
+import { ConsignmentInwardScreen } from './ConsignmentInwardScreen'
+
 export interface ConsignmentHubScreenProps {
   onClose?: () => void
   onNavigate?: (id: string, label: string, module: 'home' | 'master' | 'transaction' | 'reports' | 'gst' | 'utility') => void
@@ -16,8 +18,12 @@ export interface ConsignmentHubScreenProps {
 type TabFilter = 'ALL' | 'ACTIVE' | 'PARTIALLY_SETTLED' | 'COMPLETED' | 'CLOSED'
 
 export const ConsignmentHubScreen: React.FC<ConsignmentHubScreenProps> = ({
-  onClose
+  onClose,
+  onNavigate
 }) => {
+  // Navigation View State
+  const [currentView, setCurrentView] = useState<'HUB' | 'INWARD'>('HUB')
+
   // State
   const [inwards, setInwards] = useState<ConsignmentInwardRecord[]>([])
   const [dashboard, setDashboard] = useState<ConsignmentDashboardSummary | null>(null)
@@ -152,6 +158,21 @@ export const ConsignmentHubScreen: React.FC<ConsignmentHubScreenProps> = ({
     }
   }
 
+  if (currentView === 'INWARD') {
+    return (
+      <ConsignmentInwardScreen
+        onClose={() => {
+          setCurrentView('HUB')
+          void loadConsignmentData()
+        }}
+        onSuccess={() => {
+          void loadConsignmentData()
+        }}
+        onNavigate={onNavigate}
+      />
+    )
+  }
+
   return (
     <div className="flex-1 flex flex-col h-full bg-background text-foreground overflow-hidden">
       {/* 1. Header Bar */}
@@ -187,11 +208,7 @@ export const ConsignmentHubScreen: React.FC<ConsignmentHubScreenProps> = ({
 
           <button
             type="button"
-            onClick={() => {
-              setInfoMessage(
-                'Consignment Inward intake form will be fully available in Phase 21 UI-2. Backend is ready.'
-              )
-            }}
+            onClick={() => setCurrentView('INWARD')}
             className="h-8 px-3.5 text-xs bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 transition-colors shadow-sm flex items-center gap-1.5"
           >
             <span>+</span>
@@ -483,7 +500,7 @@ export const ConsignmentHubScreen: React.FC<ConsignmentHubScreenProps> = ({
               ) : filteredInwards.length === 0 ? (
                 <tr>
                   <td colSpan={12} className="py-12 text-center text-muted-foreground">
-                    <div className="flex flex-col items-center justify-center gap-1">
+                    <div className="flex flex-col items-center justify-center gap-2">
                       <span className="text-2xl">📦</span>
                       <span className="font-semibold text-foreground text-sm">
                         No consignment memos found
@@ -493,6 +510,16 @@ export const ConsignmentHubScreen: React.FC<ConsignmentHubScreenProps> = ({
                           ? 'Try changing or clearing your search query and filters.'
                           : 'No vendor consignment inwards have been recorded yet.'}
                       </span>
+                      {!searchQuery && settlementFilter === 'ALL' && activeTab === 'ALL' && (
+                        <button
+                          type="button"
+                          onClick={() => setCurrentView('INWARD')}
+                          className="mt-2 px-3 py-1.5 bg-primary text-primary-foreground text-xs font-semibold rounded-lg hover:bg-primary/90 transition-colors shadow-sm flex items-center gap-1.5"
+                        >
+                          <span>+</span>
+                          <span>Create Consignment Inward</span>
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
