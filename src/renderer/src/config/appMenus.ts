@@ -75,6 +75,7 @@ export const appMenus: AppMenu[] = [
     label: 'Reports',
     children: [
       { id: 'financial-reports-hub', label: 'Financial & Accounting Hub', module: 'reports' },
+      { id: 'consignment-reports', label: 'Vendor Consignment Reports', module: 'reports' },
       { id: 'cash-book', label: 'Cash Book', module: 'reports' },
       { id: 'bank-transactions', label: 'Bank Transactions', module: 'reports' },
       { id: 'daily-summary-report', label: 'Daily Summary Report', module: 'reports' },

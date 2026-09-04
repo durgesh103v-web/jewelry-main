@@ -30,8 +30,13 @@ export function registerConsignmentIpc(): void {
     return consignmentService.settleConsignment(payload)
   })
 
-  createIpcHandler('consignment:get-settlements', (_event, inwardId: string) => {
-    return consignmentService.getSettlements(inwardId)
+  createIpcHandler('consignment:get-settlements', (_event, payload?: any) => {
+    return consignmentService.getSettlements(payload)
+  })
+
+  // Consignment Items List / Reporting
+  createIpcHandler('consignment:list-items', (_event, filter?: any) => {
+    return consignmentService.listItems(filter)
   })
 
   // Barcode / Scanner resolution

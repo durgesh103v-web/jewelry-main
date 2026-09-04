@@ -72,6 +72,7 @@ const GoldSchemeHubScreen = lazy(() => import('../../features/schemes/screens/Go
 const ConsignmentHubScreen = lazy(() => import('../../features/consignment/screens/ConsignmentHubScreen'))
 const ConsignmentInwardScreen = lazy(() => import('../../features/consignment/screens/ConsignmentInwardScreen'))
 const ConsignmentDetailScreen = lazy(() => import('../../features/consignment/screens/ConsignmentDetailScreen'))
+const ConsignmentReportsScreen = lazy(() => import('../../features/consignment/screens/ConsignmentReportsScreen'))
 
 export type ScreenComponentProps = {
   onClose: () => void
@@ -128,6 +129,7 @@ export const screenRegistry: Record<string, ScreenMapValue> = {
   'consignment-hub': { component: ConsignmentHubScreen },
   'consignment-inward': { component: ConsignmentInwardScreen },
   'consignment-detail': { component: ConsignmentDetailScreen },
+  'consignment-reports': { component: ConsignmentReportsScreen },
   'financial-reports-hub': { component: FinancialReportsHubScreen },
   'purchase-register': { component: PurchaseRegisterScreen },
   'sale-register': { component: SaleRegisterScreen },

@@ -2381,7 +2381,8 @@ interface Window {
       listInwards: (filter?: any) => Promise<any[]>
       returnItems: (payload: any) => Promise<any>
       settle: (payload: any) => Promise<any>
-      getSettlements: (inwardId: string) => Promise<any[]>
+      getSettlements: (payload?: any) => Promise<any[]>
+      listItems: (filter?: any) => Promise<any[]>
       getByBarcode: (barcode: string) => Promise<any>
       getDashboard: () => Promise<any>
     }

@@ -10,6 +10,7 @@ import { getFriendlyErrorMessage } from '../../../utils/getFriendlyErrorMessage'
 
 import { ConsignmentInwardScreen } from './ConsignmentInwardScreen'
 import { ConsignmentDetailScreen } from './ConsignmentDetailScreen'
+import { ConsignmentReportsScreen } from './ConsignmentReportsScreen'
 
 export interface ConsignmentHubScreenProps {
   onClose?: () => void
@@ -23,7 +24,7 @@ export const ConsignmentHubScreen: React.FC<ConsignmentHubScreenProps> = ({
   onNavigate
 }) => {
   // Navigation View State
-  const [currentView, setCurrentView] = useState<'HUB' | 'INWARD' | 'DETAIL'>('HUB')
+  const [currentView, setCurrentView] = useState<'HUB' | 'INWARD' | 'DETAIL' | 'REPORTS'>('HUB')
 
   // State
   const [inwards, setInwards] = useState<ConsignmentInwardRecord[]>([])
@@ -177,6 +178,18 @@ export const ConsignmentHubScreen: React.FC<ConsignmentHubScreenProps> = ({
     )
   }
 
+  if (currentView === 'REPORTS') {
+    return (
+      <ConsignmentReportsScreen
+        onClose={() => {
+          setCurrentView('HUB')
+          void loadConsignmentData()
+        }}
+        onNavigate={onNavigate}
+      />
+    )
+  }
+
   return (
     <div className="flex-1 flex flex-col h-full bg-background text-foreground overflow-hidden">
       {/* 1. Header Bar */}
@@ -199,6 +212,22 @@ export const ConsignmentHubScreen: React.FC<ConsignmentHubScreenProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              if (onNavigate) {
+                onNavigate('consignment-reports', 'Vendor Consignment & Memo Reports', 'reports')
+              } else {
+                setCurrentView('REPORTS')
+              }
+            }}
+            className="h-8 px-3 text-xs bg-muted hover:bg-muted/80 text-foreground font-semibold rounded-lg transition-colors flex items-center gap-1.5 border border-border shadow-sm"
+            title="Consignment Reports & Analytics"
+          >
+            <span>📊</span>
+            <span>Reports</span>
+          </button>
+
           <button
             type="button"
             onClick={() => void loadConsignmentData()}

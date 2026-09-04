@@ -20,6 +20,8 @@ export interface ConsignmentInwardRecord {
   totalSettledAmount?: number
   totalSoldVendorCost?: number
   outstandingLiability?: number
+  soldPieces?: number
+  returnedPieces?: number
   notes?: string
   createdBy?: string
   createdAt: string
@@ -32,6 +34,9 @@ export interface ConsignmentItemRecord {
   id: string
   consignmentInwardId: string
   consignmentNumber?: string
+  inwardDate?: string
+  expectedReturnDate?: string | null
+  inwardSettlementStatus?: ConsignmentSettlementStatus
   supplierId: string
   supplierName?: string
   stockItemId: string
@@ -52,6 +57,7 @@ export interface ConsignmentItemRecord {
   salesInvoiceId?: string | null
   salesInvoiceNumber?: string | null
   soldAt?: string | null
+  saleDate?: string | null
   returnedAt?: string | null
   notes?: string
   createdAt: string

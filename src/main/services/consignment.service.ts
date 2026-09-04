@@ -16,6 +16,7 @@ import type {
   ReturnConsignmentItemsPayload,
   SettleConsignmentPayload,
   ConsignmentInwardRecord,
+  ConsignmentItemRecord,
   ConsignmentSettlementRecord,
   ConsignmentDashboardSummary,
   ConsignmentStatus,
@@ -491,8 +492,14 @@ export const consignmentService = {
     return { settlementId, settlementNumber }
   },
 
-  getSettlements(consignmentInwardId: string): ConsignmentSettlementRecord[] {
-    return consignmentRepo.getSettlementsByInwardId(consignmentInwardId)
+  getSettlements(
+    payload?: string | { inwardId?: string; supplierId?: string; startDate?: string; endDate?: string; search?: string }
+  ): ConsignmentSettlementRecord[] {
+    if (typeof payload === 'string') {
+      return consignmentRepo.getSettlementsByInwardId(payload)
+    }
+    const { inwardId, ...filters } = payload || {}
+    return consignmentRepo.getSettlementsByInwardId(inwardId, filters)
   },
 
   /**
@@ -533,8 +540,26 @@ export const consignmentService = {
     return consignmentRepo.getInwardById(id)
   },
 
-  listInwards(filters?: { status?: string; supplierId?: string; search?: string }): ConsignmentInwardRecord[] {
+  listInwards(filters?: {
+    status?: string
+    settlementStatus?: string
+    supplierId?: string
+    startDate?: string
+    endDate?: string
+    search?: string
+  }): ConsignmentInwardRecord[] {
     return consignmentRepo.listInwards(filters)
+  },
+
+  listItems(filters?: {
+    status?: string
+    supplierId?: string
+    inwardId?: string
+    startDate?: string
+    endDate?: string
+    search?: string
+  }): ConsignmentItemRecord[] {
+    return consignmentRepo.listConsignmentItems(filters)
   },
 
   getActiveItemByBarcode(barcode: string) {
