@@ -73,6 +73,9 @@ const ConsignmentHubScreen = lazy(() => import('../../features/consignment/scree
 const ConsignmentInwardScreen = lazy(() => import('../../features/consignment/screens/ConsignmentInwardScreen'))
 const ConsignmentDetailScreen = lazy(() => import('../../features/consignment/screens/ConsignmentDetailScreen'))
 const ConsignmentReportsScreen = lazy(() => import('../../features/consignment/screens/ConsignmentReportsScreen'))
+const CustomerQuotationScreen = lazy(() => import('../../features/quotations/screens/CustomerQuotationScreen'))
+const CustomerOrdersScreen = lazy(() => import('../../features/orders/screens/CustomerOrdersScreen'))
+const CustomerAdvancesScreen = lazy(() => import('../../features/advances/screens/CustomerAdvancesScreen'))
 
 export type ScreenComponentProps = {
   onClose: () => void
@@ -100,6 +103,9 @@ export const screenRegistry: Record<string, ScreenMapValue> = {
   'firm-master': { component: FirmMasterScreen },
   'cash-fine-opening': { component: CashFineOpeningScreen },
   'pos-billing': { component: PosBillingScreen },
+  'customer-quotation': { component: CustomerQuotationScreen },
+  'customer-orders': { component: CustomerOrdersScreen },
+  'customer-advances': { component: CustomerAdvancesScreen },
   'sales-return': { component: ModernSalesReturnScreen },
   sale: { component: SaleScreen },
   'sale-return': { component: SaleReturnScreen },

@@ -25,58 +25,58 @@ const quickActionItems: Array<{
   icon: string
   tileClass: string
 }> = [
-  { id: 'sale', label: 'Sale', module: 'transaction', icon: '\u{1F9FE}', tileClass: 'sale-tile' },
-  {
-    id: 'purchase',
-    label: 'Purchase',
-    module: 'transaction',
-    icon: '\u{1F9BE}',
-    tileClass: 'purchase-tile'
-  },
-  {
-    id: 'cash-receipt-jama',
-    label: 'Cash Receipt',
-    module: 'transaction',
-    icon: '\u{1F4B0}',
-    tileClass: 'receipt-tile'
-  },
-  {
-    id: 'cash-payment-nave',
-    label: 'Cash Payment',
-    module: 'transaction',
-    icon: '\u{1F4B8}',
-    tileClass: 'payment-tile'
-  },
-  {
-    id: 'account-master',
-    label: 'Accounts',
-    module: 'master',
-    icon: '\u{1F465}',
-    tileClass: 'account-tile'
-  },
-  {
-    id: 'item-master',
-    label: 'Items',
-    module: 'master',
-    icon: '\u{1F48D}',
-    tileClass: 'item-tile'
-  },
-  {
-    id: 'account-balance',
-    label: 'Reports',
-    module: 'reports',
-    icon: '\u{1F4CA}',
-    tileClass: 'report-tile'
-  },
-  { id: 'backup', label: 'Backup', module: 'utility', icon: '\u{1F4BE}', tileClass: 'backup-tile' },
-  {
-    id: 'reminder',
-    label: 'Reminder',
-    module: 'utility',
-    icon: '\u{1F514}',
-    tileClass: 'reminder-tile'
-  }
-]
+    { id: 'sale', label: 'Sale', module: 'transaction', icon: '\u{1F9FE}', tileClass: 'sale-tile' },
+    {
+      id: 'purchase',
+      label: 'Purchase',
+      module: 'transaction',
+      icon: '\u{1F9BE}',
+      tileClass: 'purchase-tile'
+    },
+    {
+      id: 'cash-receipt-jama',
+      label: 'Cash Receipt',
+      module: 'transaction',
+      icon: '\u{1F4B0}',
+      tileClass: 'receipt-tile'
+    },
+    {
+      id: 'cash-payment-nave',
+      label: 'Cash Payment',
+      module: 'transaction',
+      icon: '\u{1F4B8}',
+      tileClass: 'payment-tile'
+    },
+    {
+      id: 'account-master',
+      label: 'Accounts',
+      module: 'master',
+      icon: '\u{1F465}',
+      tileClass: 'account-tile'
+    },
+    {
+      id: 'item-master',
+      label: 'Items',
+      module: 'master',
+      icon: '\u{1F48D}',
+      tileClass: 'item-tile'
+    },
+    {
+      id: 'account-balance',
+      label: 'Reports',
+      module: 'reports',
+      icon: '\u{1F4CA}',
+      tileClass: 'report-tile'
+    },
+    { id: 'backup', label: 'Backup', module: 'utility', icon: '\u{1F4BE}', tileClass: 'backup-tile' },
+    {
+      id: 'reminder',
+      label: 'Reminder',
+      module: 'utility',
+      icon: '\u{1F514}',
+      tileClass: 'reminder-tile'
+    }
+  ]
 
 export interface DashboardScreenProps {
   openQuickScreen: (id: string, label: string, module: AppMenuChild['module']) => void

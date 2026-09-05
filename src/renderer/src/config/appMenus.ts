@@ -29,6 +29,9 @@ export const appMenus: AppMenu[] = [
     label: 'Transaction',
     children: [
       { id: 'pos-billing', label: 'POS Billing', module: 'transaction' },
+      { id: 'customer-quotation', label: 'Customer Quotation / Estimate Desk', module: 'transaction' },
+      { id: 'customer-orders', label: 'Customer Custom Orders Desk', module: 'transaction' },
+      { id: 'customer-advances', label: 'Customer Advances & Receipts', module: 'transaction' },
       { id: 'gold-scheme-hub', label: 'Gold Savings & Kitty Hub', module: 'transaction' },
       { id: 'repair-hub', label: 'Repair & Alteration Hub', module: 'transaction' },
       { id: 'manufacturing-hub', label: 'Manufacturing & Job Work Hub', module: 'transaction' },
@@ -63,6 +66,7 @@ export const appMenus: AppMenu[] = [
     label: 'GST / Estimate',
     children: [
       { id: 'tax-compliance-hub', label: 'GST & Tax Compliance Hub', module: 'gst-estimate' },
+      { id: 'customer-quotation', label: 'Customer Quotation / Estimate', module: 'gst-estimate' },
       { id: 'retail-sale-gst', label: 'Retail Sale GST', module: 'gst-estimate' },
       { id: 'retail-sale-estimate', label: 'Retail Sale Estimate', module: 'gst-estimate' },
       { id: 'gst-purchase', label: 'GST Purchase', module: 'gst-estimate' },
