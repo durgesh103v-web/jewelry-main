@@ -233,7 +233,9 @@ export const salesInvoiceService = {
         taxPercent: priceResult.tax.taxPercent,
         taxAmount: priceResult.tax.taxAmount,
         lineTotal: priceResult.total.finalAmount,
-        pricingBreakdown: priceResult.breakdown.join(' | ')
+        pricingBreakdown: priceResult.breakdown.join(' | '),
+        createdAt: timestamp,
+        updatedAt: timestamp
       })
     }
 

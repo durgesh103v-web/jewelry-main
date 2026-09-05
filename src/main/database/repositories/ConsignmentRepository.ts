@@ -101,7 +101,7 @@ export class ConsignmentRepository extends BaseRepository {
       SELECT 
         ci.*,
         s.name as supplier_name,
-        s.phone as supplier_mobile
+        s.mobile as supplier_mobile
       FROM consignment_inwards ci
       JOIN suppliers s ON s.id = ci.supplier_id
       WHERE ci.id = ? AND ci.deleted_at IS NULL
@@ -137,7 +137,7 @@ export class ConsignmentRepository extends BaseRepository {
       SELECT 
         ci.*,
         s.name as supplier_name,
-        s.phone as supplier_mobile
+        s.mobile as supplier_mobile
       FROM consignment_inwards ci
       JOIN suppliers s ON s.id = ci.supplier_id
       WHERE ci.consignment_number = ? AND ci.deleted_at IS NULL
@@ -161,7 +161,7 @@ export class ConsignmentRepository extends BaseRepository {
       SELECT 
         ci.*,
         s.name as supplier_name,
-        s.phone as supplier_mobile,
+        s.mobile as supplier_mobile,
         COALESCE((
           SELECT SUM(vendor_cost) FROM consignment_items 
           WHERE consignment_inward_id = ci.id AND status = 'SOLD'
@@ -207,7 +207,7 @@ export class ConsignmentRepository extends BaseRepository {
 
     if (filters?.search?.trim()) {
       const term = `%${filters.search.trim()}%`
-      query += ` AND (ci.consignment_number LIKE ? OR s.name LIKE ? OR s.phone LIKE ?)`
+      query += ` AND (ci.consignment_number LIKE ? OR s.name LIKE ? OR s.mobile LIKE ?)`
       params.push(term, term, term)
     }
 

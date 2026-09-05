@@ -20,28 +20,50 @@ export async function runConsignmentTests() {
     // If tables already exist, ignore
   }
 
+  const itemColumns = db.prepare(`PRAGMA table_info(items)`).all() as { name: string }[]
+  if (!itemColumns.some((col) => col.name === 'item_code')) {
+    db.exec(`ALTER TABLE items ADD COLUMN item_code TEXT DEFAULT ''`)
+  }
+
   const stockItemRepo = new JewelleryStockItemRepository()
   const consignmentRepo = new ConsignmentRepository()
 
-  // Ensure test supplier and account
-  let supplierAccount = db.prepare(`SELECT * FROM accounts WHERE account_name = 'Hardened Test Supplier Account'`).get() as any
-  if (!supplierAccount) {
-    const accId = uuidv4()
+  // Ensure account group exists
+  let accountGroup = db.prepare(`SELECT id FROM account_groups LIMIT 1`).get() as any
+  if (!accountGroup) {
+    const agId = uuidv4()
     db.prepare(`
-      INSERT INTO accounts (id, account_name, account_group_id, opening_cash, opening_gold_fine, opening_silver_fine, created_at, updated_at)
-      VALUES (?, 'Hardened Test Supplier Account', (SELECT id FROM account_groups LIMIT 1), 0, 0, 0, datetime('now'), datetime('now'))
-    `).run(accId)
-    supplierAccount = { id: accId }
+      INSERT INTO account_groups (id, group_name, group_type, created_at, updated_at)
+      VALUES (?, 'Test Sundry Creditors', 'Creditors', datetime('now'), datetime('now'))
+    `).run(agId)
+    accountGroup = { id: agId }
   }
 
-  let supplier = db.prepare(`SELECT * FROM suppliers WHERE name = 'Hardened Wholesaler'`).get() as any
-  if (!supplier) {
-    const suppId = uuidv4()
+  // Ensure isolated test supplier and account
+  const runSuffix = Math.floor(Math.random() * 100000)
+  const accId = uuidv4()
+  db.prepare(`
+    INSERT INTO accounts (id, account_name, account_group_id, opening_cash, opening_gold_fine, opening_silver_fine, created_at, updated_at)
+    VALUES (?, ?, ?, 0, 0, 0, datetime('now'), datetime('now'))
+  `).run(accId, `Hardened Test Supplier Account ${runSuffix}`, accountGroup.id)
+  const supplierAccount = { id: accId }
+
+  const suppId = uuidv4()
+  db.prepare(`
+    INSERT INTO suppliers (id, supplier_code, name, mobile, account_id, created_at, updated_at)
+    VALUES (?, ?, ?, '9876543210', ?, datetime('now'), datetime('now'))
+  `).run(suppId, `SUPP-TEST-${runSuffix}`, `Hardened Wholesaler ${runSuffix}`, supplierAccount.id)
+  const supplier = { id: suppId, name: `Hardened Wholesaler ${runSuffix}`, account_id: supplierAccount.id }
+
+  // Ensure item group exists
+  let itemGroup = db.prepare(`SELECT id FROM item_groups LIMIT 1`).get() as any
+  if (!itemGroup) {
+    const igId = uuidv4()
     db.prepare(`
-      INSERT INTO suppliers (id, supplier_code, name, mobile, account_id, created_at, updated_at)
-      VALUES (?, 'SUPP-TEST-001', 'Hardened Wholesaler', '9876543210', ?, datetime('now'), datetime('now'))
-    `).run(suppId, supplierAccount.id)
-    supplier = { id: suppId, name: 'Hardened Wholesaler', account_id: supplierAccount.id }
+      INSERT INTO item_groups (id, group_name, metal_type, created_at, updated_at)
+      VALUES (?, 'Gold Jewellery', 'Gold', datetime('now'), datetime('now'))
+    `).run(igId)
+    itemGroup = { id: igId }
   }
 
   // Ensure test item
@@ -49,9 +71,9 @@ export async function runConsignmentTests() {
   if (!item) {
     const itemId = uuidv4()
     db.prepare(`
-      INSERT INTO items (id, item_name, item_code, metal_type, default_tanch, default_labour_rate, active, created_at, updated_at)
-      VALUES (?, 'Diamond Bracelet 18K', 'DB-18K', 'Gold', 75, 500, 1, datetime('now'), datetime('now'))
-    `).run(itemId)
+      INSERT INTO items (id, item_name, metal_type, item_group_id, created_at, updated_at)
+      VALUES (?, 'Diamond Bracelet 18K', 'Gold', ?, datetime('now'), datetime('now'))
+    `).run(itemId, itemGroup.id)
     item = { id: itemId, item_name: 'Diamond Bracelet 18K', metal_type: 'Gold' }
   }
 
@@ -61,8 +83,8 @@ export async function runConsignmentTests() {
     const cAccId = uuidv4()
     db.prepare(`
       INSERT INTO accounts (id, account_name, account_group_id, opening_cash, opening_gold_fine, opening_silver_fine, created_at, updated_at)
-      VALUES (?, 'Hardened Customer Account', (SELECT id FROM account_groups LIMIT 1), 0, 0, 0, datetime('now'), datetime('now'))
-    `).run(cAccId)
+      VALUES (?, 'Hardened Customer Account', ?, 0, 0, 0, datetime('now'), datetime('now'))
+    `).run(cAccId, accountGroup.id)
     db.prepare(`
       INSERT INTO customers (id, customer_code, name, mobile, account_id, created_at, updated_at)
       VALUES (?, 'CUST-TEST-001', 'Hardened Test Customer', '9998887776', ?, datetime('now'), datetime('now'))

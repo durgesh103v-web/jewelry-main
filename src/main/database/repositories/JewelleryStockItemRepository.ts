@@ -19,14 +19,14 @@ export class JewelleryStockItemRepository extends BaseRepository {
         i.item_name,
         i.item_code,
         i.metal_type,
-        c.category_name,
+        c.name as category_name,
         s.stamp_name,
         d.design_name
       FROM jewellery_stock_items si
       JOIN items i ON i.id = si.item_id
       LEFT JOIN categories c ON c.id = i.category_id
-      LEFT JOIN item_stamps s ON s.id = i.stamp_id
-      LEFT JOIN item_designs d ON d.id = i.design_id
+      LEFT JOIN item_stamps s ON s.id = i.default_stamp_id
+      LEFT JOIN item_designs d ON d.id = i.default_design_id
       WHERE (
         si.barcode = ? OR
         si.qr_code = ? OR
@@ -47,14 +47,14 @@ export class JewelleryStockItemRepository extends BaseRepository {
         i.item_name,
         i.item_code,
         i.metal_type,
-        c.category_name,
+        c.name as category_name,
         s.stamp_name,
         d.design_name
       FROM jewellery_stock_items si
       JOIN items i ON i.id = si.item_id
       LEFT JOIN categories c ON c.id = i.category_id
-      LEFT JOIN item_stamps s ON s.id = i.stamp_id
-      LEFT JOIN item_designs d ON d.id = i.design_id
+      LEFT JOIN item_stamps s ON s.id = i.default_stamp_id
+      LEFT JOIN item_designs d ON d.id = i.default_design_id
       WHERE si.id = ? AND si.deleted_at IS NULL
     `
     const row = this.db.prepare(query).get(id) as any
@@ -68,14 +68,14 @@ export class JewelleryStockItemRepository extends BaseRepository {
         i.item_name,
         i.item_code,
         i.metal_type,
-        c.category_name,
+        c.name as category_name,
         s.stamp_name,
         d.design_name
       FROM jewellery_stock_items si
       JOIN items i ON i.id = si.item_id
       LEFT JOIN categories c ON c.id = i.category_id
-      LEFT JOIN item_stamps s ON s.id = i.stamp_id
-      LEFT JOIN item_designs d ON d.id = i.design_id
+      LEFT JOIN item_stamps s ON s.id = i.default_stamp_id
+      LEFT JOIN item_designs d ON d.id = i.default_design_id
       WHERE si.deleted_at IS NULL
     `
     const params: any[] = []

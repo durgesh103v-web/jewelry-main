@@ -64,6 +64,7 @@ export const migration004: Migration = {
     addColumnIfMissing(database, 'items', 'location_id', 'TEXT REFERENCES locations(id)')
     addColumnIfMissing(database, 'items', 'item_status', "TEXT NOT NULL DEFAULT 'IN_STOCK'")
     addColumnIfMissing(database, 'items', 'sku', "TEXT DEFAULT ''")
+    addColumnIfMissing(database, 'items', 'item_code', "TEXT DEFAULT ''")
     addColumnIfMissing(database, 'stock_ledger', 'location_id', 'TEXT')
     addColumnIfMissing(database, 'stock_ledger', 'movement_type', "TEXT NOT NULL DEFAULT 'OPENING_STOCK'")
 

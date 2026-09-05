@@ -101,7 +101,7 @@ const invoiceSelectSql = `
     si.customer_id,
     c.name AS customer_name,
     c.customer_code,
-    c.phone AS customer_phone,
+    c.mobile AS customer_phone,
     si.account_id,
     a.account_name,
     si.order_id,
@@ -270,7 +270,7 @@ export class SalesInvoiceRepository extends BaseRepository {
     if (filter?.search) {
       const pattern = `%${filter.search.trim().toLowerCase()}%`
       conditions.push(
-        `(LOWER(si.invoice_number) LIKE ? OR LOWER(COALESCE(c.name, '')) LIKE ? OR LOWER(COALESCE(c.phone, '')) LIKE ? OR LOWER(COALESCE(a.account_name, '')) LIKE ?)`
+        `(LOWER(si.invoice_number) LIKE ? OR LOWER(COALESCE(c.name, '')) LIKE ? OR LOWER(COALESCE(c.mobile, '')) LIKE ? OR LOWER(COALESCE(a.account_name, '')) LIKE ?)`
       )
       params.push(pattern, pattern, pattern, pattern)
     }
@@ -514,8 +514,8 @@ export class SalesInvoiceRepository extends BaseRepository {
         data.taxAmount,
         data.lineTotal,
         data.pricingBreakdown ?? '',
-        data.createdAt,
-        data.updatedAt
+        data.createdAt || new Date().toISOString(),
+        data.updatedAt || new Date().toISOString()
       )
   }
 

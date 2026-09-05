@@ -76,21 +76,36 @@ export const documentSequenceService = {
 
     const prefix = type === 'SALE' ? getSaleBillPrefix() : config.defaultPrefix
 
-    const rows = db
-      .prepare(
-        `
-        SELECT ${config.column} AS doc_no
-        FROM ${config.table}
-        WHERE ${config.column} LIKE ?
-        ORDER BY created_at DESC
-      `
-      )
-      .all(`${prefix}-%`) as { doc_no: string }[]
+    const sources = [{ table: config.table, column: config.column }]
+    if (type === 'SALE') {
+      sources.push({ table: 'sales_invoices', column: 'invoice_number' })
+    } else if (type === 'PURCHASE') {
+      sources.push({ table: 'purchase_invoices', column: 'invoice_number' })
+    } else if (type === 'SALE_RETURN' || type === 'PURCHASE_RETURN') {
+      sources.push({ table: 'return_transactions', column: 'return_number' })
+    }
 
-    const maxNumber = rows.reduce((max, row) => {
-      const num = extractSequenceNumber(row.doc_no, prefix)
-      return Math.max(max, num)
-    }, 0)
+    let maxNumber = 0
+    for (const src of sources) {
+      try {
+        const rows = db
+          .prepare(
+            `
+            SELECT ${src.column} AS doc_no
+            FROM ${src.table}
+            WHERE ${src.column} LIKE ?
+          `
+          )
+          .all(`${prefix}-%`) as { doc_no: string }[]
+
+        for (const row of rows) {
+          const num = extractSequenceNumber(row.doc_no, prefix)
+          if (num > maxNumber) maxNumber = num
+        }
+      } catch {
+        // Table or column may not exist in legacy schema; ignore
+      }
+    }
 
     const nextNumber = maxNumber + 1
     return `${prefix}-${String(nextNumber).padStart(4, '0')}`

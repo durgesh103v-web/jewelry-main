@@ -111,5 +111,10 @@ export const migration018: Migration = {
       CREATE INDEX IF NOT EXISTS idx_cset_inward ON consignment_settlements(consignment_inward_id);
       CREATE INDEX IF NOT EXISTS idx_cset_date ON consignment_settlements(settlement_date);
     `)
+
+    const itemColumns = database.prepare(`PRAGMA table_info(items)`).all() as { name: string }[]
+    if (!itemColumns.some((col) => col.name === 'item_code')) {
+      database.exec(`ALTER TABLE items ADD COLUMN item_code TEXT DEFAULT ''`)
+    }
   }
 }
