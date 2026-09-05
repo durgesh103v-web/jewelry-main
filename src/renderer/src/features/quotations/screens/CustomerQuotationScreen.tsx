@@ -5,6 +5,7 @@ import { getFriendlyErrorMessage } from '../../../utils/getFriendlyErrorMessage'
 import { NewQuotationModal } from '../components/NewQuotationModal'
 import { QuotationDetailModal } from '../components/QuotationDetailModal'
 import { QuotationPrintView } from '../components/QuotationPrintView'
+import { StatusPill, MetalRatesStrip } from '../../../components/ui'
 
 export interface CustomerQuotationScreenProps {
   onClose?: () => void
@@ -197,6 +198,9 @@ export const CustomerQuotationScreen: React.FC<CustomerQuotationScreenProps> = (
             </button>
           </div>
         )}
+
+        {/* Live Showroom Metal Rates Reference */}
+        <MetalRatesStrip />
 
         {/* Metric KPI Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -423,13 +427,7 @@ export const CustomerQuotationScreen: React.FC<CustomerQuotationScreenProps> = (
 
                       {/* Status */}
                       <td className="p-3 text-center">
-                        <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${
-                            STATUS_BADGE_MAP[q.status]?.className || 'bg-muted text-muted-foreground'
-                          }`}
-                        >
-                          {STATUS_BADGE_MAP[q.status]?.label || q.status}
-                        </span>
+                        <StatusPill statusText={STATUS_BADGE_MAP[q.status]?.label || q.status} />
                       </td>
 
                       {/* Converted Order # */}

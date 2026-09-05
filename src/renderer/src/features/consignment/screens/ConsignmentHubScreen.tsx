@@ -11,6 +11,7 @@ import { getFriendlyErrorMessage } from '../../../utils/getFriendlyErrorMessage'
 import { ConsignmentInwardScreen } from './ConsignmentInwardScreen'
 import { ConsignmentDetailScreen } from './ConsignmentDetailScreen'
 import { ConsignmentReportsScreen } from './ConsignmentReportsScreen'
+import { StatusPill } from '../../../components/ui'
 
 export interface ConsignmentHubScreenProps {
   onClose?: () => void
@@ -87,35 +88,15 @@ export const ConsignmentHubScreen: React.FC<ConsignmentHubScreenProps> = ({
   const renderPhysicalStatusBadge = (status: ConsignmentStatus) => {
     switch (status) {
       case 'ACTIVE':
-        return (
-          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
-            ACTIVE (IN SHOWROOM)
-          </span>
-        )
+        return <StatusPill variant="in-progress">ACTIVE (IN SHOWROOM)</StatusPill>
       case 'PARTIALLY_SETTLED':
-        return (
-          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-            PARTIAL
-          </span>
-        )
+        return <StatusPill variant="pending">PARTIAL</StatusPill>
       case 'COMPLETED':
-        return (
-          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-            COMPLETED
-          </span>
-        )
+        return <StatusPill variant="ready">COMPLETED</StatusPill>
       case 'CLOSED':
-        return (
-          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-slate-500/10 text-slate-600 dark:text-slate-400 border border-slate-500/20">
-            CLOSED
-          </span>
-        )
+        return <StatusPill variant="neutral">CLOSED</StatusPill>
       default:
-        return (
-          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-muted text-muted-foreground">
-            {status}
-          </span>
-        )
+        return <StatusPill variant="neutral">{status}</StatusPill>
     }
   }
 
@@ -123,24 +104,12 @@ export const ConsignmentHubScreen: React.FC<ConsignmentHubScreenProps> = ({
   const renderSettlementStatusBadge = (status?: ConsignmentSettlementStatus) => {
     switch (status) {
       case 'SETTLED':
-        return (
-          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-            SETTLED
-          </span>
-        )
+        return <StatusPill variant="ready">SETTLED</StatusPill>
       case 'PARTIALLY_SETTLED':
-        return (
-          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-            PARTIALLY PAID
-          </span>
-        )
+        return <StatusPill variant="pending">PARTIALLY PAID</StatusPill>
       case 'UNSETTLED':
       default:
-        return (
-          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
-            UNSETTLED
-          </span>
-        )
+        return <StatusPill variant="expiring">UNSETTLED</StatusPill>
     }
   }
 

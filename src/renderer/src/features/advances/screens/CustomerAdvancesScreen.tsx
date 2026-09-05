@@ -6,6 +6,7 @@ import { getFriendlyErrorMessage } from '../../../utils/getFriendlyErrorMessage'
 import { NewAdvanceModal } from '../components/NewAdvanceModal'
 import { AdvanceDetailModal } from '../components/AdvanceDetailModal'
 import { AdvanceReceiptView } from '../components/AdvanceReceiptView'
+import { StatusPill } from '../../../components/ui'
 
 export interface CustomerAdvancesScreenProps {
   onClose?: () => void
@@ -561,11 +562,7 @@ export const CustomerAdvancesScreen: React.FC<CustomerAdvancesScreenProps> = ({
 
                       {/* Status */}
                       <td className="py-3 px-3.5 text-center">
-                        <span
-                          className={`inline-block text-[11px] px-2.5 py-0.5 rounded-full border ${statusBadge.className}`}
-                        >
-                          {statusBadge.label}
-                        </span>
+                        <StatusPill statusText={statusBadge.label} />
                       </td>
 
                       {/* Actions */}

@@ -7,6 +7,7 @@ import { NewOrderModal } from '../components/NewOrderModal'
 import { OrderDetailModal } from '../components/OrderDetailModal'
 import { OrderPrintView } from '../components/OrderPrintView'
 import { NewAdvanceModal } from '../../advances/components/NewAdvanceModal'
+import { StatusPill } from '../../../components/ui'
 
 export interface CustomerOrdersScreenProps {
   onClose?: () => void
@@ -486,13 +487,7 @@ export const CustomerOrdersScreen: React.FC<CustomerOrdersScreenProps> = ({
 
                       {/* Status */}
                       <td className="p-3 text-center">
-                        <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium ${
-                            STATUS_BADGE_MAP[o.status]?.className || 'bg-muted text-muted-foreground'
-                          }`}
-                        >
-                          {STATUS_BADGE_MAP[o.status]?.label || o.status}
-                        </span>
+                        <StatusPill statusText={STATUS_BADGE_MAP[o.status]?.label || o.status} />
                       </td>
 
                       {/* Action Buttons */}
