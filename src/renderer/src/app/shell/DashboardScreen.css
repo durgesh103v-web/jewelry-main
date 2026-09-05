@@ -1,0 +1,1221 @@
+/* ==========================================================================
+   PRODUCTION JEWELLERY ERP DASHBOARD STYLES
+   Adheres strictly to tokens.css design tokens.
+   Matches the high-density desktop reference layout (1366px, 1440px, 1920px).
+   ========================================================================== */
+
+.erp-dashboard-container {
+  width: 100%;
+  min-height: 100%;
+  background-color: var(--color-background-app);
+  color: var(--color-text-primary);
+  font-family: var(--font-family-base);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5) var(--space-6) var(--space-5);
+  box-sizing: border-box;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* ==========================================================================
+   1. TOP COMMAND BAR
+   ========================================================================== */
+.erp-top-command-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  background: var(--color-background-surface);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  padding: 8px var(--space-4);
+  box-shadow: var(--shadow-sm);
+}
+
+.command-bar-search-wrap {
+  position: relative;
+  flex: 1;
+  max-width: 520px;
+  display: flex;
+  align-items: center;
+}
+
+.command-search-icon {
+  position: absolute;
+  left: 12px;
+  width: 16px;
+  height: 16px;
+  color: var(--color-text-muted);
+  pointer-events: none;
+}
+
+.command-search-input {
+  width: 100%;
+  height: 36px;
+  padding-left: 38px;
+  padding-right: 64px;
+  font-size: var(--font-size-body);
+  background-color: var(--color-background-muted);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-pill);
+  color: var(--color-text-primary);
+  transition: all var(--duration-fast) var(--ease-default);
+}
+
+.command-search-input:focus {
+  background-color: var(--color-background-surface);
+  border-color: var(--color-brand-primary);
+  box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.15);
+}
+
+.command-search-shortcut {
+  position: absolute;
+  right: 10px;
+  padding: 2px 6px;
+  font-size: 11px;
+  font-family: var(--font-family-mono);
+  background: var(--color-background-surface);
+  border: 1px solid var(--color-border-default);
+  border-radius: 4px;
+  color: var(--color-text-muted);
+}
+
+.command-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.command-location-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--font-size-body-small);
+  color: var(--color-text-secondary);
+  padding: 6px 10px;
+  background: var(--color-background-muted);
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--color-border-muted);
+}
+
+.command-location-badge svg {
+  color: var(--color-gold);
+}
+
+.command-primary-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--color-brand-primary);
+  color: var(--color-text-inverse);
+  font-size: var(--font-size-body-small);
+  font-weight: var(--font-weight-semibold);
+  height: 36px;
+  padding: 0 16px;
+  border-radius: var(--radius-sm);
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(26, 115, 232, 0.3);
+  transition: all var(--duration-fast) var(--ease-default);
+}
+
+.command-primary-btn:hover {
+  background: var(--color-brand-primary-hover);
+  box-shadow: 0 2px 6px rgba(26, 115, 232, 0.4);
+}
+
+.command-icon-btn {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-background-surface);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-default);
+}
+
+.command-icon-btn:hover {
+  background: var(--color-background-muted);
+  color: var(--color-text-primary);
+}
+
+.notification-badge-count {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  background: var(--color-error);
+  color: var(--color-text-inverse);
+  border-radius: 999px;
+  border: 2px solid var(--color-background-surface);
+}
+
+.command-user-profile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-left: var(--space-2);
+  border-left: 1px solid var(--color-border-default);
+}
+
+.command-user-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-pill);
+  background: #0f172a;
+  color: var(--color-text-inverse);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: var(--font-weight-bold);
+  font-size: 14px;
+}
+
+.command-user-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.command-user-name {
+  font-size: 13px;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  line-height: 1.2;
+}
+
+.command-user-role {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  line-height: 1.2;
+}
+
+/* ==========================================================================
+   2. DASHBOARD HEADER
+   ========================================================================== */
+.erp-dashboard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2) 0;
+}
+
+.header-greeting-title {
+  font-size: 26px;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.header-greeting-subtitle {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  margin: 4px 0 0 0;
+}
+
+.header-meta-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.header-date-box {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  border-right: 1px solid var(--color-border-strong);
+  padding-right: var(--space-4);
+}
+
+.header-date-main {
+  font-size: 14px;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+}
+
+.header-date-sub {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.header-refresh-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 16px;
+  font-size: var(--font-size-body-small);
+  font-weight: var(--font-weight-semibold);
+  background: #a36209;
+  color: #ffffff;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(163, 98, 9, 0.3);
+  transition: all var(--duration-fast) var(--ease-default);
+}
+
+.header-refresh-btn:hover {
+  background: #874f07;
+}
+
+.header-refresh-btn svg.spinning {
+  animation: spin-refresh 1s linear infinite;
+}
+
+@keyframes spin-refresh {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* ==========================================================================
+   3. LIVE METAL RATES STRIP
+   ========================================================================== */
+.erp-metal-rates-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(90deg, #fffbeb 0%, #ffffff 50%, #fefce8 100%);
+  border: 1px solid #fde68a;
+  border-radius: var(--radius-lg);
+  padding: 10px 18px;
+  box-shadow: var(--shadow-sm);
+}
+
+.metal-rates-title-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-right: 1px solid #fde68a;
+  padding-right: 18px;
+}
+
+.metal-rates-emblem {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-pill);
+  background: #fef3c7;
+  color: var(--color-gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.metal-rates-title {
+  font-size: 13px;
+  font-weight: var(--font-weight-bold);
+  color: #92400e;
+  line-height: 1.2;
+}
+
+.metal-rates-updated {
+  font-size: 11px;
+  color: #b45309;
+  line-height: 1.2;
+}
+
+.metal-rates-items-group {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.metal-rate-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.metal-icon-pill {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: #fef3c7;
+  color: var(--color-gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.metal-icon-pill.silver {
+  background: #f1f5f9;
+  color: var(--color-silver);
+}
+
+.metal-item-label {
+  font-size: 12px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+}
+
+.metal-item-rate {
+  font-size: 15px;
+  font-weight: var(--font-weight-bold);
+  font-family: var(--font-family-mono);
+  color: var(--color-text-primary);
+}
+
+.metal-rate-settings-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: var(--font-weight-semibold);
+  color: #92400e;
+  background: #fef3c7;
+  border: 1px solid #fde68a;
+  border-radius: var(--radius-pill);
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-default);
+}
+
+.metal-rate-settings-btn:hover {
+  background: #fde68a;
+}
+
+/* ==========================================================================
+   4. EXECUTIVE FINANCIAL KPIs ROW
+   ========================================================================== */
+.erp-kpis-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--space-4);
+}
+
+.erp-kpi-card {
+  background: var(--color-background-surface);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: transform var(--duration-fast) var(--ease-default),
+              box-shadow var(--duration-fast) var(--ease-default),
+              border-color var(--duration-fast) var(--ease-default);
+}
+
+.erp-kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-brand-primary);
+}
+
+.kpi-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.kpi-icon-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-pill);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.kpi-icon-circle.sales {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.kpi-icon-circle.purchases {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.kpi-icon-circle.cash {
+  background: #fef9c3;
+  color: #a16207;
+}
+
+.kpi-icon-circle.receivables {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.kpi-icon-circle.payables {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.kpi-title-text {
+  font-size: 13px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+}
+
+.kpi-value-text {
+  font-size: 24px;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  font-family: var(--font-family-mono);
+  line-height: 1.2;
+  margin-bottom: 6px;
+}
+
+.kpi-trend-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: var(--font-weight-semibold);
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+.kpi-trend-pill.positive {
+  color: var(--color-success);
+  background: var(--color-success-soft);
+}
+
+.kpi-trend-pill.negative {
+  color: var(--color-error);
+  background: var(--color-error-soft);
+}
+
+.kpi-trend-pill.neutral {
+  color: var(--color-text-muted);
+  background: var(--color-background-muted);
+}
+
+.kpi-footer-meta {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  border-top: 1px solid var(--color-border-muted);
+  padding-top: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* ==========================================================================
+   5. MIDDLE ANALYTICS & OPERATIONAL ROW (3 COLUMNS)
+   ========================================================================== */
+.erp-middle-grid {
+  display: grid;
+  grid-template-columns: 1.6fr 1.1fr 0.9fr;
+  gap: var(--space-4);
+}
+
+.erp-card-panel {
+  background: var(--color-background-surface);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+}
+
+.panel-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.panel-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.panel-title-wrap svg {
+  color: var(--color-gold);
+}
+
+.panel-title-text {
+  font-size: 15px;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.panel-action-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-brand-primary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.panel-action-link:hover {
+  text-decoration: underline;
+}
+
+/* Tab filter pills for Sales Overview */
+.sales-time-filters {
+  display: flex;
+  background: var(--color-background-muted);
+  border-radius: var(--radius-pill);
+  padding: 2px;
+  border: 1px solid var(--color-border-muted);
+}
+
+.time-filter-btn {
+  font-size: 11px;
+  font-weight: var(--font-weight-medium);
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-default);
+}
+
+.time-filter-btn.active {
+  background: var(--color-background-surface);
+  color: var(--color-brand-primary);
+  font-weight: var(--font-weight-bold);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Chart Canvas Area */
+.sales-chart-wrapper {
+  position: relative;
+  width: 100%;
+  height: 190px;
+  margin-bottom: 12px;
+}
+
+.sales-chart-legend {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+  margin-bottom: 4px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend-indicator-bar {
+  width: 12px;
+  height: 8px;
+  background: #60a5fa;
+  border-radius: 2px;
+}
+
+.legend-indicator-line {
+  width: 16px;
+  height: 2px;
+  background: #1e3a8a;
+  position: relative;
+}
+
+.legend-indicator-line::after {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: 4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #1e3a8a;
+}
+
+.sales-summary-subgrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.2fr 1.6fr;
+  gap: 12px;
+  border-top: 1px solid var(--color-border-muted);
+  padding-top: 12px;
+  align-items: center;
+}
+
+.metric-summary-box {
+  display: flex;
+  flex-direction: column;
+}
+
+.metric-summary-label {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  margin-bottom: 2px;
+}
+
+.metric-summary-val {
+  font-size: 17px;
+  font-weight: var(--font-weight-bold);
+  font-family: var(--font-family-mono);
+  color: var(--color-text-primary);
+}
+
+.payment-methods-donut-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.donut-legend-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 10px;
+  color: var(--color-text-secondary);
+}
+
+.donut-legend-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.donut-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+/* Inventory Health Specific */
+.inventory-weights-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.inventory-weight-tile {
+  background: var(--color-background-muted);
+  border: 1px solid var(--color-border-muted);
+  border-radius: var(--radius-sm);
+  padding: 8px;
+}
+
+.inv-tile-label {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  margin-bottom: 2px;
+}
+
+.inv-tile-val {
+  font-size: 14px;
+  font-weight: var(--font-weight-bold);
+  font-family: var(--font-family-mono);
+  color: var(--color-text-primary);
+}
+
+.inventory-totals-row {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.inv-total-label {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.inv-total-val {
+  font-size: 22px;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  font-family: var(--font-family-mono);
+}
+
+.inv-attention-alert-bar {
+  background: var(--color-warning-soft);
+  border: 1px solid #fed7aa;
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+}
+
+.inv-alert-message {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-warning);
+  font-weight: var(--font-weight-medium);
+}
+
+.inv-alert-link {
+  font-size: 11px;
+  font-weight: var(--font-weight-bold);
+  color: #9a3412;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+/* Today's Activity Stream Specific */
+.activity-stream-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  overflow-y: auto;
+  max-height: 220px;
+}
+
+.activity-stream-row {
+  display: grid;
+  grid-template-columns: 56px 1fr 85px;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--color-background-muted);
+  border: 1px solid var(--color-border-muted);
+  font-size: 12px;
+}
+
+.activity-time {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  font-family: var(--font-family-mono);
+}
+
+.activity-type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: var(--font-weight-bold);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.activity-type-badge.sale {
+  color: #1d4ed8;
+  background: #eff6ff;
+}
+
+.activity-type-badge.purchase {
+  color: #b91c1c;
+  background: #fef2f2;
+}
+
+.activity-type-badge.advance {
+  color: #047857;
+  background: #ecfdf5;
+}
+
+.activity-type-badge.order {
+  color: #7c3aed;
+  background: #f5f3ff;
+}
+
+.activity-type-badge.consignment {
+  color: #0284c7;
+  background: #f0f9ff;
+}
+
+.activity-type-badge.repair {
+  color: #d97706;
+  background: #fffbeb;
+}
+
+.activity-ref {
+  color: var(--color-text-secondary);
+  font-size: 11px;
+}
+
+.activity-amount {
+  font-weight: var(--font-weight-bold);
+  font-family: var(--font-family-mono);
+  text-align: right;
+  color: var(--color-text-primary);
+  font-size: 12px;
+}
+
+.view-all-activity-foot {
+  text-align: center;
+  padding-top: 8px;
+  border-top: 1px solid var(--color-border-muted);
+}
+
+/* ==========================================================================
+   6. LOWER OPERATIONAL WORKSPACE (3 COLUMNS)
+   ========================================================================== */
+.erp-lower-grid {
+  display: grid;
+  grid-template-columns: 1.6fr 1.1fr 0.9fr;
+  gap: var(--space-4);
+}
+
+/* Operational Table Tabs */
+.workspace-tabs-strip {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid var(--color-border-default);
+  margin-bottom: 12px;
+}
+
+.workspace-tab-btn {
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-default);
+}
+
+.workspace-tab-btn.active {
+  color: var(--color-brand-primary);
+  font-weight: var(--font-weight-bold);
+  border-bottom-color: var(--color-brand-primary);
+}
+
+.operational-erp-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.operational-erp-table th {
+  background: var(--color-background-muted);
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-semibold);
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--color-border-default);
+}
+
+.operational-erp-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--color-border-muted);
+  color: var(--color-text-primary);
+  vertical-align: middle;
+}
+
+.operational-erp-table tr:hover td {
+  background: var(--color-background-muted);
+}
+
+.table-status-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: var(--font-weight-semibold);
+  border-radius: var(--radius-pill);
+}
+
+.table-status-pill.in-progress {
+  color: #1d4ed8;
+  background: #eff6ff;
+}
+
+.table-status-pill.pending {
+  color: #b45309;
+  background: #fef3c7;
+}
+
+.table-status-pill.partial {
+  color: #7c3aed;
+  background: #f5f3ff;
+}
+
+.table-status-pill.ready {
+  color: #047857;
+  background: #ecfdf5;
+}
+
+.table-status-pill.expiring {
+  color: #dc2626;
+  background: #fef2f2;
+}
+
+.table-action-view-btn {
+  color: var(--color-brand-primary);
+  font-weight: var(--font-weight-semibold);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 6px;
+}
+
+.table-action-view-btn:hover {
+  text-decoration: underline;
+}
+
+/* Consignment Overview Specific */
+.consignment-metrics-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.consignment-metric-cell {
+  background: var(--color-background-muted);
+  border: 1px solid var(--color-border-muted);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+}
+
+.cons-cell-val {
+  font-size: 18px;
+  font-weight: var(--font-weight-bold);
+  font-family: var(--font-family-mono);
+  color: var(--color-text-primary);
+}
+
+.cons-cell-val.overdue-alert {
+  color: var(--color-error);
+}
+
+.cons-cell-label {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+/* Attention & Alerts Center Specific */
+.alerts-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.alert-item-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--color-background-muted);
+  border: 1px solid var(--color-border-muted);
+  font-size: 12px;
+}
+
+.alert-item-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.alert-dot-icon {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.alert-dot-icon.red {
+  background: var(--color-error);
+  box-shadow: 0 0 6px rgba(220, 38, 38, 0.4);
+}
+
+.alert-dot-icon.orange {
+  background: #f97316;
+}
+
+.alert-dot-icon.green {
+  background: var(--color-success);
+}
+
+.alert-dot-icon.yellow {
+  background: #eab308;
+}
+
+.alert-text-block {
+  display: flex;
+  flex-direction: column;
+}
+
+.alert-title-main {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  font-size: 12px;
+}
+
+.alert-desc-sub {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.alert-view-action-btn {
+  font-size: 11px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-brand-primary);
+  background: var(--color-background-surface);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-sm);
+  padding: 3px 8px;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-default);
+}
+
+.alert-view-action-btn:hover {
+  background: var(--color-brand-soft);
+  border-color: var(--color-brand-primary);
+}
+
+/* ==========================================================================
+   7. BOTTOM COMMAND STRIP (QUICK ACTIONS)
+   ========================================================================== */
+.erp-bottom-command-strip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--color-background-surface);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  padding: 10px 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+.command-strip-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  padding-right: 12px;
+  border-right: 1px solid var(--color-border-default);
+  white-space: nowrap;
+}
+
+.command-strip-label svg {
+  color: var(--color-gold);
+}
+
+.command-buttons-scroll {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.quick-action-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  font-size: 12px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  background: var(--color-background-surface);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-default);
+  white-space: nowrap;
+}
+
+.quick-action-pill-btn:hover {
+  background: var(--color-background-muted);
+  border-color: var(--color-brand-primary);
+  color: var(--color-brand-primary);
+}
+
+.quick-action-pill-btn.primary {
+  background: var(--color-brand-primary);
+  color: var(--color-text-inverse);
+  border-color: var(--color-brand-primary);
+}
+
+.quick-action-pill-btn.primary:hover {
+  background: var(--color-brand-primary-hover);
+}
+
+/* ==========================================================================
+   8. DESKTOP SYSTEM FOOTER
+   ========================================================================== */
+.erp-system-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  border-top: 1px solid var(--color-border-default);
+  margin-top: var(--space-2);
+}
+
+.footer-system-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-success);
+  font-weight: var(--font-weight-medium);
+}
+
+.status-green-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-success);
+  box-shadow: 0 0 6px rgba(5, 150, 105, 0.4);
+}
+
+.footer-tagline {
+  letter-spacing: 0.08em;
+  font-weight: var(--font-weight-semibold);
+  color: #94a3b8;
+}
+
+/* ==========================================================================
+   9. RESPONSIVE BREAKPOINTS (1366px, 1440px, 1920px)
+   ========================================================================== */
+@media (max-width: 1400px) {
+  .erp-middle-grid,
+  .erp-lower-grid {
+    grid-template-columns: 1.5fr 1fr 1fr;
+  }
+  
+  .erp-kpis-grid {
+    gap: 8px;
+  }
+  
+  .kpi-value-text {
+    font-size: 20px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .erp-middle-grid,
+  .erp-lower-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .erp-kpis-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
