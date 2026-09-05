@@ -2117,7 +2117,7 @@ const api = {
       ipcRenderer.invoke('reports:account-wise-sale-purchase'),
 
     cashBook: (filter?: CashBookReportFilter): Promise<CashBookReportResult> =>
-      ipcRenderer.invoke('reports:cash-book', filter),
+      ipcRenderer.invoke('cashBookReport:get', filter),
 
     bankTransactions: (
       filter?: BankTransactionsReportFilter

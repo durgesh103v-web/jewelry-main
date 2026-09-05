@@ -49,10 +49,6 @@ export function registerReportIpc(): void {
     return getCashBookReport(filter)
   })
 
-  createIpcHandler('reports:cash-book', (_event, filter: any) => {
-    return getCashBookReport(filter)
-  })
-
   createIpcHandler('reports:bank-transactions', (_event, filter: any) => {
     return getBankTransactionsReport(filter)
   })
