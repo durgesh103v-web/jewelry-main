@@ -99,28 +99,54 @@ export const dailyReportService = {
         `
         SELECT
           COUNT(*) AS count,
-          COALESCE(SUM(item_fine_total), 0) AS itemFineTotal,
-          COALESCE(SUM(item_majuri_total), 0) AS itemMajuriTotal,
-          COALESCE(SUM(taxable_amount + cgst_amount + sgst_amount + igst_amount), 0) AS amountTotal
-        FROM sale_headers
-        WHERE sale_date = ? AND deleted_at IS NULL
+          COALESCE(SUM(fine), 0) AS itemFineTotal,
+          COALESCE(SUM(majuri), 0) AS itemMajuriTotal,
+          COALESCE(SUM(amt), 0) AS amountTotal
+        FROM (
+          SELECT
+            item_fine_total AS fine,
+            item_majuri_total AS majuri,
+            (taxable_amount + cgst_amount + sgst_amount + igst_amount) AS amt
+          FROM sale_headers
+          WHERE sale_date = ? AND deleted_at IS NULL
+          UNION ALL
+          SELECT
+            fine_weight AS fine,
+            0 AS majuri,
+            grand_total AS amt
+          FROM sales_invoices
+          WHERE invoice_date = ? AND deleted_at IS NULL AND status != 'CANCELLED'
+        )
       `
       )
-      .get(date) as HeaderAmountRow
+      .get(date, date) as HeaderAmountRow
 
     const purchasesRow = db
       .prepare(
         `
         SELECT
           COUNT(*) AS count,
-          COALESCE(SUM(item_fine_total), 0) AS itemFineTotal,
-          COALESCE(SUM(item_majuri_total), 0) AS itemMajuriTotal,
-          COALESCE(SUM(taxable_amount + cgst_amount + sgst_amount + igst_amount), 0) AS amountTotal
-        FROM purchase_headers
-        WHERE purchase_date = ? AND deleted_at IS NULL
+          COALESCE(SUM(fine), 0) AS itemFineTotal,
+          COALESCE(SUM(majuri), 0) AS itemMajuriTotal,
+          COALESCE(SUM(amt), 0) AS amountTotal
+        FROM (
+          SELECT
+            item_fine_total AS fine,
+            item_majuri_total AS majuri,
+            (taxable_amount + cgst_amount + sgst_amount + igst_amount) AS amt
+          FROM purchase_headers
+          WHERE purchase_date = ? AND deleted_at IS NULL
+          UNION ALL
+          SELECT
+            fine_weight AS fine,
+            0 AS majuri,
+            grand_total AS amt
+          FROM purchase_invoices
+          WHERE invoice_date = ? AND deleted_at IS NULL AND status != 'CANCELLED'
+        )
       `
       )
-      .get(date) as HeaderAmountRow
+      .get(date, date) as HeaderAmountRow
 
     const saleReturnsRow = db
       .prepare(
