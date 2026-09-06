@@ -1,0 +1,501 @@
+/* ==========================================================================
+   DESKTOP TOP NAVBAR STYLES
+   Pixel-perfect match to user reference screenshot for Jewellery ERP
+   ========================================================================== */
+
+.desktop-top-navbar {
+  height: 50px;
+  min-height: 50px;
+  max-height: 50px;
+  background-color: #ffffff;
+  border-bottom: 1px solid var(--color-border-default, #e2e5eb);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  position: relative;
+  z-index: 1000;
+  user-select: none;
+}
+
+/* --------------------------------------------------------------------------
+   1. LEFT CLUSTER: BRAND & MENUS
+   -------------------------------------------------------------------------- */
+.navbar-left-cluster {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 100%;
+}
+
+.navbar-brand-cluster {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-right: 14px;
+  margin-right: 6px;
+  border-right: 1px solid var(--color-border-muted, #f0f2f5);
+  cursor: pointer;
+  height: 32px;
+}
+
+.navbar-brand-gem {
+  color: var(--color-brand-primary, #1a73e8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.navbar-app-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-text-primary, #1f2430);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.navbar-menu-items {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 100%;
+}
+
+.nav-menu-wrapper {
+  position: relative;
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.nav-menu-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-primary, #1f2430);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm, 4px);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  white-space: nowrap;
+}
+
+.nav-menu-btn:hover {
+  background-color: var(--color-background-muted, #f4f6f9);
+  color: var(--color-brand-primary, #1a73e8);
+}
+
+.nav-menu-btn.active-home {
+  background-color: #e8f0fe;
+  color: #1a73e8;
+  font-weight: 600;
+}
+
+.nav-menu-btn.menu-open {
+  background-color: #e8f0fe;
+  color: #1a73e8;
+  border-color: #c7d2fe;
+}
+
+.nav-menu-btn.child-active {
+  font-weight: 600;
+  color: #1a73e8;
+}
+
+.nav-menu-caret {
+  font-size: 10px;
+  color: var(--color-text-muted, #6b7280);
+  margin-left: 2px;
+}
+
+/* --------------------------------------------------------------------------
+   CLASSIC WINDOWS DESKTOP DROPDOWN PANE
+   -------------------------------------------------------------------------- */
+.desktop-dropdown-pane {
+  position: absolute;
+  top: calc(100% - 4px);
+  left: 0;
+  min-width: 230px;
+  max-width: 320px;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14), 0 2px 6px rgba(0, 0, 0, 0.06);
+  padding: 4px 0;
+  z-index: 2000;
+  animation: dropdownFadeIn 0.12s ease-out;
+}
+
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dropdown-scroll-body {
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.dropdown-menu-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 16px;
+  font-size: 13px;
+  font-weight: 400;
+  color: #1f2430;
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.12s ease, color 0.12s ease;
+  white-space: nowrap;
+}
+
+.dropdown-menu-item:hover {
+  background-color: #f3f4f6;
+  color: #1a73e8;
+}
+
+.dropdown-menu-item.selected-item {
+  background-color: #eff6ff;
+  color: #1d4ed8;
+  font-weight: 600;
+}
+
+.item-bullet {
+  font-size: 14px;
+  color: #9ca3af;
+}
+
+.dropdown-menu-item:hover .item-bullet {
+  color: #1a73e8;
+}
+
+/* --------------------------------------------------------------------------
+   2. RIGHT CLUSTER: SEARCH, FIRM, BACKUP, WHATSAPP, USER, LOGOUT
+   -------------------------------------------------------------------------- */
+.navbar-right-cluster {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 100%;
+}
+
+/* Search Box */
+.navbar-search-box {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px;
+  background: #f8fafc;
+  border: 1px solid var(--color-border-default, #e2e5eb);
+  border-radius: 4px;
+  width: 170px;
+  transition: all 0.15s ease;
+  color: var(--color-text-secondary, #4b5563);
+}
+
+.navbar-search-box.search-active {
+  width: 220px;
+  background: #ffffff;
+  border-color: var(--color-brand-primary, #1a73e8);
+  box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.15);
+}
+
+.navbar-search-input {
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 12px;
+  width: 100%;
+  color: var(--color-text-primary, #1f2430);
+}
+
+.navbar-search-input::placeholder {
+  color: var(--color-text-muted, #9ca3af);
+}
+
+.search-shortcut-badge {
+  font-size: 10px;
+  font-weight: 600;
+  color: #64748b;
+  background: #e2e8f0;
+  padding: 1px 5px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+/* Firm Selector */
+.navbar-firm-selector {
+  position: relative;
+}
+
+.firm-select-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #1f2430;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.firm-select-btn:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.firm-label-prefix {
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.firm-name-text {
+  font-weight: 600;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.firm-caret {
+  font-size: 9px;
+  color: #6b7280;
+}
+
+.firm-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 220px;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+  padding: 6px 0;
+  z-index: 2000;
+}
+
+.firm-dropdown-header {
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.firm-dropdown-item {
+  width: 100%;
+  padding: 6px 14px;
+  font-size: 12px;
+  color: #1f2430;
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.firm-dropdown-item:hover {
+  background: #f3f4f6;
+}
+
+.firm-dropdown-item.active {
+  color: #1a73e8;
+  font-weight: 600;
+}
+
+.firm-dropdown-divider {
+  height: 1px;
+  background: #e5e7eb;
+  margin: 4px 0;
+}
+
+/* Last Backup Button */
+.navbar-backup-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px;
+  background: #ede9fe;
+  border: 1px solid #ddd6fe;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #5b21b6;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.navbar-backup-btn:hover {
+  background: #ddd6fe;
+}
+
+/* WhatsApp Button */
+.navbar-whatsapp-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #065f46;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.navbar-whatsapp-btn:hover {
+  background: #d1fae5;
+}
+
+.whatsapp-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+}
+
+/* Screenshot & Settings Tool Buttons */
+.navbar-tool-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  background: #f8fafc;
+  border: 1px solid #e2e5eb;
+  border-radius: 4px;
+  color: #4b5563;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.navbar-tool-btn:hover {
+  background: #f1f5f9;
+  color: #1f2430;
+}
+
+/* User Profile Badge */
+.navbar-user-container {
+  position: relative;
+}
+
+.navbar-user-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px;
+  background: #f1f5f9;
+  border: 1px solid #e2e5eb;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #1f2430;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.navbar-user-btn:hover {
+  background: #e2e8f0;
+}
+
+.navbar-username {
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 180px;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+  padding: 6px 0;
+  z-index: 2000;
+}
+
+.user-menu-header {
+  padding: 6px 14px;
+  display: flex;
+  flex-direction: column;
+}
+
+.user-menu-role {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.user-menu-divider {
+  height: 1px;
+  background: #e5e7eb;
+  margin: 4px 0;
+}
+
+.user-menu-item {
+  width: 100%;
+  padding: 6px 14px;
+  font-size: 12px;
+  color: #1f2430;
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.user-menu-item:hover {
+  background: #f3f4f6;
+  color: #1a73e8;
+}
+
+/* Logout Button (Solid Red Accent from User Reference) */
+.navbar-logout-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
+  padding: 0 14px;
+  background: #dc2626;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.navbar-logout-btn:hover {
+  background: #b91c1c;
+}

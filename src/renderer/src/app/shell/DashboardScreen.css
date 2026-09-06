@@ -1,1221 +1,698 @@
 /* ==========================================================================
    PRODUCTION JEWELLERY ERP DASHBOARD STYLES
-   Adheres strictly to tokens.css design tokens.
-   Matches the high-density desktop reference layout (1366px, 1440px, 1920px).
+   Exact match to user reference screenshot
+   Clean, precise desktop ERP software (White surfaces, light-gray bg, zero footer)
    ========================================================================== */
 
 .erp-dashboard-container {
   width: 100%;
-  min-height: 100%;
-  background-color: var(--color-background-app);
-  color: var(--color-text-primary);
-  font-family: var(--font-family-base);
+  flex: 1;
+  background-color: var(--color-background-app, #eef1f5);
+  color: var(--color-text-primary, #1f2430);
+  font-family: var(--font-family-base, Arial, Helvetica, sans-serif);
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
-  padding: var(--space-4) var(--space-5) var(--space-6) var(--space-5);
+  gap: 12px;
+  padding: 14px 16px 20px 16px;
   box-sizing: border-box;
   overflow-y: auto;
   overflow-x: hidden;
 }
 
-/* ==========================================================================
-   1. TOP COMMAND BAR
-   ========================================================================== */
-.erp-top-command-bar {
+.erp-dashboard-loading-state {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-4);
-  background: var(--color-background-surface);
-  border: 1px solid var(--color-border-default);
-  border-radius: var(--radius-lg);
-  padding: 8px var(--space-4);
-  box-shadow: var(--shadow-sm);
-}
-
-.command-bar-search-wrap {
-  position: relative;
-  flex: 1;
-  max-width: 520px;
-  display: flex;
-  align-items: center;
-}
-
-.command-search-icon {
-  position: absolute;
-  left: 12px;
-  width: 16px;
-  height: 16px;
-  color: var(--color-text-muted);
-  pointer-events: none;
-}
-
-.command-search-input {
-  width: 100%;
-  height: 36px;
-  padding-left: 38px;
-  padding-right: 64px;
-  font-size: var(--font-size-body);
-  background-color: var(--color-background-muted);
-  border: 1px solid var(--color-border-default);
-  border-radius: var(--radius-pill);
-  color: var(--color-text-primary);
-  transition: all var(--duration-fast) var(--ease-default);
-}
-
-.command-search-input:focus {
-  background-color: var(--color-background-surface);
-  border-color: var(--color-brand-primary);
-  box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.15);
-}
-
-.command-search-shortcut {
-  position: absolute;
-  right: 10px;
-  padding: 2px 6px;
-  font-size: 11px;
-  font-family: var(--font-family-mono);
-  background: var(--color-background-surface);
-  border: 1px solid var(--color-border-default);
-  border-radius: 4px;
-  color: var(--color-text-muted);
-}
-
-.command-bar-actions {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-}
-
-.command-location-badge {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: var(--font-size-body-small);
-  color: var(--color-text-secondary);
-  padding: 6px 10px;
-  background: var(--color-background-muted);
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--color-border-muted);
-}
-
-.command-location-badge svg {
-  color: var(--color-gold);
-}
-
-.command-primary-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: var(--color-brand-primary);
-  color: var(--color-text-inverse);
-  font-size: var(--font-size-body-small);
-  font-weight: var(--font-weight-semibold);
-  height: 36px;
-  padding: 0 16px;
-  border-radius: var(--radius-sm);
-  border: none;
-  cursor: pointer;
-  box-shadow: 0 1px 3px rgba(26, 115, 232, 0.3);
-  transition: all var(--duration-fast) var(--ease-default);
-}
-
-.command-primary-btn:hover {
-  background: var(--color-brand-primary-hover);
-  box-shadow: 0 2px 6px rgba(26, 115, 232, 0.4);
-}
-
-.command-icon-btn {
-  position: relative;
-  width: 36px;
-  height: 36px;
-  display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: var(--color-background-surface);
-  border: 1px solid var(--color-border-default);
-  border-radius: var(--radius-sm);
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  transition: all var(--duration-fast) var(--ease-default);
+  min-height: 480px;
+  gap: 12px;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 500;
 }
 
-.command-icon-btn:hover {
-  background: var(--color-background-muted);
-  color: var(--color-text-primary);
-}
-
-.notification-badge-count {
-  position: absolute;
-  top: -4px;
-  right: -4px;
-  min-width: 16px;
-  height: 16px;
-  padding: 0 4px;
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 16px;
-  text-align: center;
-  background: var(--color-error);
-  color: var(--color-text-inverse);
-  border-radius: 999px;
-  border: 2px solid var(--color-background-surface);
-}
-
-.command-user-profile {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding-left: var(--space-2);
-  border-left: 1px solid var(--color-border-default);
-}
-
-.command-user-avatar {
+.dashboard-spinner {
   width: 34px;
   height: 34px;
-  border-radius: var(--radius-pill);
-  background: #0f172a;
-  color: var(--color-text-inverse);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: var(--font-weight-bold);
-  font-size: 14px;
+  border: 3px solid #e2e5eb;
+  border-top-color: #1a73e8;
+  border-radius: 50%;
+  animation: dashboardSpin 0.9s linear infinite;
 }
 
-.command-user-meta {
-  display: flex;
-  flex-direction: column;
-}
-
-.command-user-name {
-  font-size: 13px;
-  font-weight: var(--font-weight-bold);
-  color: var(--color-text-primary);
-  line-height: 1.2;
-}
-
-.command-user-role {
-  font-size: 11px;
-  color: var(--color-text-muted);
-  line-height: 1.2;
-}
-
-/* ==========================================================================
-   2. DASHBOARD HEADER
-   ========================================================================== */
-.erp-dashboard-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--space-2) 0;
-}
-
-.header-greeting-title {
-  font-size: 26px;
-  font-weight: var(--font-weight-bold);
-  color: var(--color-text-primary);
-  margin: 0;
-  letter-spacing: -0.01em;
-}
-
-.header-greeting-subtitle {
-  font-size: 14px;
-  color: var(--color-text-muted);
-  margin: 4px 0 0 0;
-}
-
-.header-meta-group {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-}
-
-.header-date-box {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  border-right: 1px solid var(--color-border-strong);
-  padding-right: var(--space-4);
-}
-
-.header-date-main {
-  font-size: 14px;
-  font-weight: var(--font-weight-bold);
-  color: var(--color-text-primary);
-}
-
-.header-date-sub {
-  font-size: 12px;
-  color: var(--color-text-muted);
-}
-
-.header-refresh-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  height: 38px;
-  padding: 0 16px;
-  font-size: var(--font-size-body-small);
-  font-weight: var(--font-weight-semibold);
-  background: #a36209;
-  color: #ffffff;
-  border: none;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  box-shadow: 0 1px 3px rgba(163, 98, 9, 0.3);
-  transition: all var(--duration-fast) var(--ease-default);
-}
-
-.header-refresh-btn:hover {
-  background: #874f07;
-}
-
-.header-refresh-btn svg.spinning {
-  animation: spin-refresh 1s linear infinite;
-}
-
-@keyframes spin-refresh {
+@keyframes dashboardSpin {
   100% {
     transform: rotate(360deg);
   }
 }
 
-/* ==========================================================================
-   3. LIVE METAL RATES STRIP
-   ========================================================================== */
-.erp-metal-rates-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: linear-gradient(90deg, #fffbeb 0%, #ffffff 50%, #fefce8 100%);
-  border: 1px solid #fde68a;
-  border-radius: var(--radius-lg);
-  padding: 10px 18px;
-  box-shadow: var(--shadow-sm);
-}
-
-.metal-rates-title-box {
-  display: flex;
-  align-items: center;
+/* --------------------------------------------------------------------------
+   1. ROW 1: EXECUTIVE KPI CARDS (Matches Screenshot Left-Border Accent Cards)
+   -------------------------------------------------------------------------- */
+.erp-kpi-ribbon {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
   gap: 12px;
-  border-right: 1px solid #fde68a;
-  padding-right: 18px;
 }
 
-.metal-rates-emblem {
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-pill);
-  background: #fef3c7;
-  color: var(--color-gold);
+.erp-kpi-tile {
+  background: #ffffff;
+  border: 1px solid var(--color-border-default, #e2e5eb);
+  border-radius: 4px;
+  padding: 12px 14px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
-.metal-rates-title {
-  font-size: 13px;
-  font-weight: var(--font-weight-bold);
-  color: #92400e;
-  line-height: 1.2;
+.erp-kpi-tile:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
 }
 
-.metal-rates-updated {
+.border-accent-purple {
+  border-left: 4px solid #8b5cf6;
+}
+
+.border-accent-green {
+  border-left: 4px solid #10b981;
+}
+
+.border-accent-blue {
+  border-left: 4px solid #3b82f6;
+}
+
+.border-accent-red {
+  border-left: 4px solid #ef4444;
+}
+
+.border-accent-orange {
+  border-left: 4px solid #f59e0b;
+}
+
+.kpi-tile-header {
   font-size: 11px;
-  color: #b45309;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.kpi-tile-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1f2430;
+  margin: 4px 0 2px 0;
+  font-family: var(--font-family-mono, monospace);
   line-height: 1.2;
 }
 
-.metal-rates-items-group {
-  display: flex;
-  align-items: center;
-  gap: 24px;
+.kpi-tile-sub {
+  font-size: 11px;
+  color: #6b7280;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.metal-rate-item {
-  display: flex;
-  align-items: center;
+/* --------------------------------------------------------------------------
+   2. ROW 2: PASTEL QUICK ACTION LAUNCHPAD (Matches Screenshot Action Row)
+   -------------------------------------------------------------------------- */
+.erp-quick-launchpad {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
   gap: 10px;
 }
 
-.metal-icon-pill {
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  background: #fef3c7;
-  color: var(--color-gold);
+.launchpad-card {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  height: 64px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  user-select: none;
+  padding: 6px;
 }
 
-.metal-icon-pill.silver {
-  background: #f1f5f9;
-  color: var(--color-silver);
+.launchpad-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
 }
 
-.metal-item-label {
+.launchpad-icon {
+  font-size: 20px;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.launchpad-label {
   font-size: 12px;
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-secondary);
+  font-weight: 600;
+  text-align: center;
+  white-space: nowrap;
 }
 
-.metal-item-rate {
-  font-size: 15px;
-  font-weight: var(--font-weight-bold);
-  font-family: var(--font-family-mono);
-  color: var(--color-text-primary);
+/* Pastel Themes from Screenshot */
+.launchpad-gold {
+  background-color: #fef3c7;
+  border-color: #fde68a;
+  color: #92400e;
 }
 
-.metal-rate-settings-btn {
+.launchpad-purple {
+  background-color: #ede9fe;
+  border-color: #ddd6fe;
+  color: #5b21b6;
+}
+
+.launchpad-green {
+  background-color: #d1fae5;
+  border-color: #a7f3d0;
+  color: #065f46;
+}
+
+.launchpad-red {
+  background-color: #ffe4e6;
+  border-color: #fecdd3;
+  color: #9f1239;
+}
+
+.launchpad-blue {
+  background-color: #dbeafe;
+  border-color: #bfdbfe;
+  color: #1e40af;
+}
+
+.launchpad-pink {
+  background-color: #fce7f3;
+  border-color: #fbcfe8;
+  color: #9d174d;
+}
+
+.launchpad-teal {
+  background-color: #ccfbf1;
+  border-color: #99f6e4;
+  color: #115e59;
+}
+
+.launchpad-amber {
+  background-color: #fef3c7;
+  border-color: #fde68a;
+  color: #78350f;
+}
+
+.launchpad-orange {
+  background-color: #ffedd5;
+  border-color: #fed7aa;
+  color: #9a3412;
+}
+
+/* --------------------------------------------------------------------------
+   3. MAIN WORKSPACE: 2-COLUMN GRID (Center Content + Right Brand/Reminders)
+   -------------------------------------------------------------------------- */
+.erp-dashboard-body-grid {
+  display: flex;
+  gap: 12px;
+  flex: 1;
+  min-height: 0;
+}
+
+.body-center-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.body-right-column {
+  width: 260px;
+  min-width: 260px;
+  max-width: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Live Bullion Market Rates Strip */
+.dashboard-rates-strip {
+  background: #ffffff;
+  border: 1px solid var(--color-border-default, #e2e5eb);
+  border-radius: 4px;
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.rates-strip-badge {
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+.gold-gem-dot {
+  color: #d97706;
+  font-size: 10px;
+}
+
+.rates-strip-title {
   font-size: 12px;
-  font-weight: var(--font-weight-semibold);
+  font-weight: 700;
   color: #92400e;
-  background: #fef3c7;
-  border: 1px solid #fde68a;
-  border-radius: var(--radius-pill);
-  padding: 6px 14px;
-  cursor: pointer;
-  transition: all var(--duration-fast) var(--ease-default);
+  white-space: nowrap;
 }
 
-.metal-rate-settings-btn:hover {
-  background: #fde68a;
-}
-
-/* ==========================================================================
-   4. EXECUTIVE FINANCIAL KPIs ROW
-   ========================================================================== */
-.erp-kpis-grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: var(--space-4);
-}
-
-.erp-kpi-card {
-  background: var(--color-background-surface);
-  border: 1px solid var(--color-border-default);
-  border-radius: var(--radius-lg);
-  padding: 14px 16px;
-  box-shadow: var(--shadow-sm);
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  cursor: pointer;
-  transition: transform var(--duration-fast) var(--ease-default),
-              box-shadow var(--duration-fast) var(--ease-default),
-              border-color var(--duration-fast) var(--ease-default);
-}
-
-.erp-kpi-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-  border-color: var(--color-brand-primary);
-}
-
-.kpi-card-header {
+.rates-ticker-container {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 8px;
+  gap: 14px;
+  overflow-x: auto;
 }
 
-.kpi-icon-circle {
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-pill);
+.rate-ticker-pill {
   display: flex;
   align-items: center;
-  justify-content: center;
-}
-
-.kpi-icon-circle.sales {
-  background: #fef3c7;
-  color: #b45309;
-}
-
-.kpi-icon-circle.purchases {
-  background: #fee2e2;
-  color: #b91c1c;
-}
-
-.kpi-icon-circle.cash {
-  background: #fef9c3;
-  color: #a16207;
-}
-
-.kpi-icon-circle.receivables {
-  background: #ecfdf5;
-  color: #047857;
-}
-
-.kpi-icon-circle.payables {
-  background: #fef2f2;
-  color: #dc2626;
-}
-
-.kpi-title-text {
-  font-size: 13px;
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-secondary);
-}
-
-.kpi-value-text {
-  font-size: 24px;
-  font-weight: var(--font-weight-bold);
-  color: var(--color-text-primary);
-  font-family: var(--font-family-mono);
-  line-height: 1.2;
-  margin-bottom: 6px;
-}
-
-.kpi-trend-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 11px;
-  font-weight: var(--font-weight-semibold);
-  padding: 2px 6px;
-  border-radius: 4px;
-  margin-bottom: 8px;
-}
-
-.kpi-trend-pill.positive {
-  color: var(--color-success);
-  background: var(--color-success-soft);
-}
-
-.kpi-trend-pill.negative {
-  color: var(--color-error);
-  background: var(--color-error-soft);
-}
-
-.kpi-trend-pill.neutral {
-  color: var(--color-text-muted);
-  background: var(--color-background-muted);
-}
-
-.kpi-footer-meta {
+  gap: 5px;
   font-size: 12px;
-  color: var(--color-text-muted);
-  border-top: 1px solid var(--color-border-muted);
-  padding-top: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  white-space: nowrap;
 }
 
-/* ==========================================================================
-   5. MIDDLE ANALYTICS & OPERATIONAL ROW (3 COLUMNS)
-   ========================================================================== */
-.erp-middle-grid {
-  display: grid;
-  grid-template-columns: 1.6fr 1.1fr 0.9fr;
-  gap: var(--space-4);
+.rate-name {
+  color: #64748b;
+  font-weight: 500;
 }
 
-.erp-card-panel {
-  background: var(--color-background-surface);
-  border: 1px solid var(--color-border-default);
-  border-radius: var(--radius-lg);
-  padding: 16px;
-  box-shadow: var(--shadow-sm);
+.rate-value {
+  color: #1f2430;
+  font-weight: 700;
+  font-family: var(--font-family-mono, monospace);
+}
+
+.rates-refresh-btn {
+  font-size: 11px;
+  font-weight: 600;
+  color: #1a73e8;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 3px;
+  padding: 3px 8px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.rates-refresh-btn:hover {
+  background: #dbeafe;
+}
+
+/* Generic Panel Cards */
+.dashboard-panel-card {
+  background: #ffffff;
+  border: 1px solid var(--color-border-default, #e2e5eb);
+  border-radius: 4px;
+  padding: 12px 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
   display: flex;
   flex-direction: column;
 }
 
-.panel-header-row {
+.card-header-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
-.panel-title-wrap {
+.card-header-title {
   display: flex;
   align-items: center;
   gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #1f2430;
 }
 
-.panel-title-wrap svg {
-  color: var(--color-gold);
+.domain-verified-badge {
+  font-size: 10px;
+  font-weight: 600;
+  color: #059669;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  border-radius: 3px;
+  padding: 1px 6px;
 }
 
-.panel-title-text {
-  font-size: 15px;
-  font-weight: var(--font-weight-bold);
-  color: var(--color-text-primary);
-  margin: 0;
-}
-
-.panel-action-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 12px;
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-brand-primary);
-  background: none;
+.card-action-btn {
+  font-size: 11px;
+  font-weight: 600;
+  color: #1a73e8;
+  background: transparent;
   border: none;
   cursor: pointer;
-  padding: 0;
 }
 
-.panel-action-link:hover {
+.card-action-btn:hover {
   text-decoration: underline;
 }
 
-/* Tab filter pills for Sales Overview */
-.sales-time-filters {
-  display: flex;
-  background: var(--color-background-muted);
-  border-radius: var(--radius-pill);
-  padding: 2px;
-  border: 1px solid var(--color-border-muted);
-}
-
-.time-filter-btn {
-  font-size: 11px;
-  font-weight: var(--font-weight-medium);
-  padding: 4px 10px;
-  border-radius: var(--radius-pill);
-  border: none;
-  background: transparent;
-  color: var(--color-text-muted);
-  cursor: pointer;
-  transition: all var(--duration-fast) var(--ease-default);
-}
-
-.time-filter-btn.active {
-  background: var(--color-background-surface);
-  color: var(--color-brand-primary);
-  font-weight: var(--font-weight-bold);
-  box-shadow: var(--shadow-sm);
-}
-
-/* Chart Canvas Area */
-.sales-chart-wrapper {
-  position: relative;
-  width: 100%;
-  height: 190px;
-  margin-bottom: 12px;
-}
-
-.sales-chart-legend {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 16px;
-  margin-bottom: 4px;
-  font-size: 11px;
-  color: var(--color-text-muted);
-}
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.legend-indicator-bar {
-  width: 12px;
-  height: 8px;
-  background: #60a5fa;
-  border-radius: 2px;
-}
-
-.legend-indicator-line {
-  width: 16px;
-  height: 2px;
-  background: #1e3a8a;
-  position: relative;
-}
-
-.legend-indicator-line::after {
-  content: '';
-  position: absolute;
-  top: -3px;
-  left: 4px;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #1e3a8a;
-}
-
-.sales-summary-subgrid {
+/* Inventory Summary Metrics */
+.inventory-summary-metrics {
   display: grid;
-  grid-template-columns: 1fr 1fr 1.2fr 1.6fr;
-  gap: 12px;
-  border-top: 1px solid var(--color-border-muted);
-  padding-top: 12px;
-  align-items: center;
-}
-
-.metric-summary-box {
-  display: flex;
-  flex-direction: column;
-}
-
-.metric-summary-label {
-  font-size: 11px;
-  color: var(--color-text-muted);
-  margin-bottom: 2px;
-}
-
-.metric-summary-val {
-  font-size: 17px;
-  font-weight: var(--font-weight-bold);
-  font-family: var(--font-family-mono);
-  color: var(--color-text-primary);
-}
-
-.payment-methods-donut-wrap {
-  display: flex;
-  align-items: center;
+  grid-template-columns: repeat(5, 1fr);
   gap: 10px;
 }
 
-.donut-legend-list {
+.inv-metric-box {
+  background: #f8fafc;
+  border: 1px solid #f1f5f9;
+  border-radius: 4px;
+  padding: 8px 10px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  font-size: 10px;
-  color: var(--color-text-secondary);
 }
 
-.donut-legend-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.donut-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-}
-
-/* Inventory Health Specific */
-.inventory-weights-row {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.inventory-weight-tile {
-  background: var(--color-background-muted);
-  border: 1px solid var(--color-border-muted);
-  border-radius: var(--radius-sm);
-  padding: 8px;
-}
-
-.inv-tile-label {
+.inv-metric-label {
   font-size: 11px;
-  color: var(--color-text-muted);
+  color: #64748b;
   margin-bottom: 2px;
 }
 
-.inv-tile-val {
+.inv-metric-val {
   font-size: 14px;
-  font-weight: var(--font-weight-bold);
-  font-family: var(--font-family-mono);
-  color: var(--color-text-primary);
+  font-weight: 700;
+  color: #1f2430;
+  font-family: var(--font-family-mono, monospace);
 }
 
-.inventory-totals-row {
-  display: grid;
-  grid-template-columns: 1fr 1.3fr;
-  gap: 12px;
-  margin-bottom: 14px;
-}
-
-.inv-total-label {
-  font-size: 11px;
-  color: var(--color-text-muted);
-}
-
-.inv-total-val {
-  font-size: 22px;
-  font-weight: var(--font-weight-bold);
-  color: var(--color-text-primary);
-  font-family: var(--font-family-mono);
-}
-
-.inv-attention-alert-bar {
-  background: var(--color-warning-soft);
-  border: 1px solid #fed7aa;
-  border-radius: var(--radius-sm);
-  padding: 8px 12px;
+/* Operational Tabs */
+.desk-tabs-group {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 12px;
-}
-
-.inv-alert-message {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--color-warning);
-  font-weight: var(--font-weight-medium);
-}
-
-.inv-alert-link {
-  font-size: 11px;
-  font-weight: var(--font-weight-bold);
-  color: #9a3412;
-  background: none;
-  border: none;
-  cursor: pointer;
-}
-
-/* Today's Activity Stream Specific */
-.activity-stream-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  flex: 1;
-  overflow-y: auto;
-  max-height: 220px;
-}
-
-.activity-stream-row {
-  display: grid;
-  grid-template-columns: 56px 1fr 85px;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 8px;
-  border-radius: var(--radius-sm);
-  background: var(--color-background-muted);
-  border: 1px solid var(--color-border-muted);
-  font-size: 12px;
-}
-
-.activity-time {
-  font-size: 11px;
-  color: var(--color-text-muted);
-  font-family: var(--font-family-mono);
-}
-
-.activity-type-badge {
-  display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 11px;
-  font-weight: var(--font-weight-bold);
-  padding: 2px 6px;
-  border-radius: 4px;
 }
 
-.activity-type-badge.sale {
-  color: #1d4ed8;
-  background: #eff6ff;
-}
-
-.activity-type-badge.purchase {
-  color: #b91c1c;
-  background: #fef2f2;
-}
-
-.activity-type-badge.advance {
-  color: #047857;
-  background: #ecfdf5;
-}
-
-.activity-type-badge.order {
-  color: #7c3aed;
-  background: #f5f3ff;
-}
-
-.activity-type-badge.consignment {
-  color: #0284c7;
-  background: #f0f9ff;
-}
-
-.activity-type-badge.repair {
-  color: #d97706;
-  background: #fffbeb;
-}
-
-.activity-ref {
-  color: var(--color-text-secondary);
-  font-size: 11px;
-}
-
-.activity-amount {
-  font-weight: var(--font-weight-bold);
-  font-family: var(--font-family-mono);
-  text-align: right;
-  color: var(--color-text-primary);
+.desk-tab-btn {
   font-size: 12px;
-}
-
-.view-all-activity-foot {
-  text-align: center;
-  padding-top: 8px;
-  border-top: 1px solid var(--color-border-muted);
-}
-
-/* ==========================================================================
-   6. LOWER OPERATIONAL WORKSPACE (3 COLUMNS)
-   ========================================================================== */
-.erp-lower-grid {
-  display: grid;
-  grid-template-columns: 1.6fr 1.1fr 0.9fr;
-  gap: var(--space-4);
-}
-
-/* Operational Table Tabs */
-.workspace-tabs-strip {
-  display: flex;
-  gap: 8px;
-  border-bottom: 1px solid var(--color-border-default);
-  margin-bottom: 12px;
-}
-
-.workspace-tab-btn {
-  padding: 6px 14px;
-  font-size: 13px;
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-muted);
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
+  font-weight: 500;
+  color: #64748b;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  padding: 4px 10px;
   cursor: pointer;
-  transition: all var(--duration-fast) var(--ease-default);
 }
 
-.workspace-tab-btn.active {
-  color: var(--color-brand-primary);
-  font-weight: var(--font-weight-bold);
-  border-bottom-color: var(--color-brand-primary);
+.desk-tab-btn:hover {
+  background: #f1f5f9;
+  color: #1f2430;
 }
 
-.operational-erp-table {
+.desk-tab-btn.active {
+  background: #eff6ff;
+  color: #1a73e8;
+  border-color: #bfdbfe;
+  font-weight: 700;
+}
+
+.operational-table-wrap {
+  overflow-x: auto;
+}
+
+.desktop-erp-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 12px;
 }
 
-.operational-erp-table th {
-  background: var(--color-background-muted);
-  color: var(--color-text-muted);
-  font-weight: var(--font-weight-semibold);
+.desktop-erp-table th {
+  background: #f8fafc;
+  color: #475569;
+  font-weight: 600;
   text-align: left;
-  padding: 8px 10px;
-  border-bottom: 1px solid var(--color-border-default);
+  padding: 7px 10px;
+  border-bottom: 1px solid #e2e5eb;
+  white-space: nowrap;
 }
 
-.operational-erp-table td {
-  padding: 8px 10px;
-  border-bottom: 1px solid var(--color-border-muted);
-  color: var(--color-text-primary);
-  vertical-align: middle;
+.desktop-erp-table td {
+  padding: 7px 10px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #1f2430;
+  white-space: nowrap;
 }
 
-.operational-erp-table tr:hover td {
-  background: var(--color-background-muted);
+.customer-cell {
+  font-weight: 600;
 }
 
-.table-status-pill {
-  display: inline-flex;
+.reference-cell {
+  font-family: var(--font-family-mono, monospace);
+  color: #64748b;
+}
+
+.value-cell {
+  font-family: var(--font-family-mono, monospace);
+  font-weight: 600;
+}
+
+.date-cell {
+  color: #64748b;
+  font-size: 11px;
+}
+
+.erp-status-pill {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.erp-status-pill.in-progress {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.erp-status-pill.ready {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.erp-status-pill.pending {
+  background: #fffbeb;
+  color: #b45309;
+}
+
+.erp-status-pill.partial {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.table-view-btn {
+  font-size: 11px;
+  font-weight: 600;
+  color: #1a73e8;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 3px;
+  padding: 2px 8px;
+  cursor: pointer;
+}
+
+.table-view-btn:hover {
+  background: #dbeafe;
+}
+
+.empty-table-state {
+  padding: 24px 0;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+/* Activity Stream */
+.activity-stream-container {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.activity-stream-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 8px;
+  background: #f8fafc;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.activity-time {
+  font-size: 11px;
+  color: #64748b;
+  width: 65px;
+}
+
+.activity-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+
+.activity-badge.sale {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.activity-badge.purchase {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.activity-badge.advance {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.activity-badge.order {
+  background: #f3e8ff;
+  color: #6b21a8;
+}
+
+.activity-ref {
+  font-family: var(--font-family-mono, monospace);
+  color: #475569;
+  flex: 1;
+  margin: 0 10px;
+}
+
+.activity-amount {
+  font-family: var(--font-family-mono, monospace);
+  font-weight: 600;
+  color: #1f2430;
+}
+
+/* --------------------------------------------------------------------------
+   4. RIGHT COLUMN (Matches User Reference Brand & Reminders Cards)
+   -------------------------------------------------------------------------- */
+.right-brand-showcase-card {
+  background: #ffffff;
+  border: 1px solid var(--color-border-default, #e2e5eb);
+  border-radius: 4px;
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 3px 8px;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.brand-diamond-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.brand-showcase-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: #0284c7;
+  letter-spacing: 0.12em;
+  margin: 0;
+}
+
+.brand-showcase-subtitle {
   font-size: 11px;
-  font-weight: var(--font-weight-semibold);
-  border-radius: var(--radius-pill);
+  color: #64748b;
+  margin: 2px 0 0 0;
 }
 
-.table-status-pill.in-progress {
-  color: #1d4ed8;
-  background: #eff6ff;
+.right-reminders-card {
+  background: #ffffff;
+  border: 1px solid var(--color-border-default, #e2e5eb);
+  border-radius: 4px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
 }
 
-.table-status-pill.pending {
-  color: #b45309;
-  background: #fef3c7;
+.reminders-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #f1f5f9;
+  padding-bottom: 8px;
+  margin-bottom: 10px;
 }
 
-.table-status-pill.partial {
-  color: #7c3aed;
-  background: #f5f3ff;
+.reminders-heading {
+  font-size: 11px;
+  font-weight: 700;
+  color: #0284c7;
+  letter-spacing: 0.04em;
 }
 
-.table-status-pill.ready {
-  color: #047857;
-  background: #ecfdf5;
-}
-
-.table-status-pill.expiring {
-  color: #dc2626;
-  background: #fef2f2;
-}
-
-.table-action-view-btn {
-  color: var(--color-brand-primary);
-  font-weight: var(--font-weight-semibold);
-  background: none;
+.reminders-view-all-link {
+  font-size: 11px;
+  font-weight: 600;
+  color: #1a73e8;
+  background: transparent;
   border: none;
   cursor: pointer;
-  padding: 2px 6px;
 }
 
-.table-action-view-btn:hover {
+.reminders-view-all-link:hover {
   text-decoration: underline;
 }
 
-/* Consignment Overview Specific */
-.consignment-metrics-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-bottom: 14px;
-}
-
-.consignment-metric-cell {
-  background: var(--color-background-muted);
-  border: 1px solid var(--color-border-muted);
-  border-radius: var(--radius-sm);
-  padding: 10px;
-}
-
-.cons-cell-val {
-  font-size: 18px;
-  font-weight: var(--font-weight-bold);
-  font-family: var(--font-family-mono);
-  color: var(--color-text-primary);
-}
-
-.cons-cell-val.overdue-alert {
-  color: var(--color-error);
-}
-
-.cons-cell-label {
-  font-size: 11px;
-  color: var(--color-text-muted);
-  margin-top: 2px;
-}
-
-/* Attention & Alerts Center Specific */
-.alerts-card-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+.reminders-body {
   flex: 1;
 }
 
-.alert-item-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 10px;
-  border-radius: var(--radius-sm);
-  background: var(--color-background-muted);
-  border: 1px solid var(--color-border-muted);
+.no-reminders-text {
   font-size: 12px;
+  color: #9ca3af;
+  padding-top: 8px;
 }
 
-.alert-item-info {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.alert-dot-icon {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.alert-dot-icon.red {
-  background: var(--color-error);
-  box-shadow: 0 0 6px rgba(220, 38, 38, 0.4);
-}
-
-.alert-dot-icon.orange {
-  background: #f97316;
-}
-
-.alert-dot-icon.green {
-  background: var(--color-success);
-}
-
-.alert-dot-icon.yellow {
-  background: #eab308;
-}
-
-.alert-text-block {
+.reminders-list {
   display: flex;
   flex-direction: column;
-}
-
-.alert-title-main {
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-primary);
-  font-size: 12px;
-}
-
-.alert-desc-sub {
-  font-size: 11px;
-  color: var(--color-text-muted);
-}
-
-.alert-view-action-btn {
-  font-size: 11px;
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-brand-primary);
-  background: var(--color-background-surface);
-  border: 1px solid var(--color-border-default);
-  border-radius: var(--radius-sm);
-  padding: 3px 8px;
-  cursor: pointer;
-  transition: all var(--duration-fast) var(--ease-default);
-}
-
-.alert-view-action-btn:hover {
-  background: var(--color-brand-soft);
-  border-color: var(--color-brand-primary);
-}
-
-/* ==========================================================================
-   7. BOTTOM COMMAND STRIP (QUICK ACTIONS)
-   ========================================================================== */
-.erp-bottom-command-strip {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: var(--color-background-surface);
-  border: 1px solid var(--color-border-default);
-  border-radius: var(--radius-lg);
-  padding: 10px 16px;
-  box-shadow: var(--shadow-sm);
-}
-
-.command-strip-label {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  font-weight: var(--font-weight-bold);
-  color: var(--color-text-primary);
-  padding-right: 12px;
-  border-right: 1px solid var(--color-border-default);
-  white-space: nowrap;
-}
-
-.command-strip-label svg {
-  color: var(--color-gold);
-}
-
-.command-buttons-scroll {
-  display: flex;
-  align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
 }
 
-.quick-action-pill-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 32px;
-  padding: 0 12px;
+.reminder-item-row {
+  display: flex;
+  flex-direction: column;
+  background: #f8fafc;
+  border-radius: 4px;
+  padding: 6px 10px;
+}
+
+.reminder-item-title {
   font-size: 12px;
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-primary);
-  background: var(--color-background-surface);
-  border: 1px solid var(--color-border-default);
-  border-radius: var(--radius-pill);
-  cursor: pointer;
-  transition: all var(--duration-fast) var(--ease-default);
-  white-space: nowrap;
+  font-weight: 600;
+  color: #1f2430;
 }
 
-.quick-action-pill-btn:hover {
-  background: var(--color-background-muted);
-  border-color: var(--color-brand-primary);
-  color: var(--color-brand-primary);
-}
-
-.quick-action-pill-btn.primary {
-  background: var(--color-brand-primary);
-  color: var(--color-text-inverse);
-  border-color: var(--color-brand-primary);
-}
-
-.quick-action-pill-btn.primary:hover {
-  background: var(--color-brand-primary-hover);
-}
-
-/* ==========================================================================
-   8. DESKTOP SYSTEM FOOTER
-   ========================================================================== */
-.erp-system-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 12px;
-  font-size: 11px;
-  color: var(--color-text-muted);
-  border-top: 1px solid var(--color-border-default);
-  margin-top: var(--space-2);
-}
-
-.footer-system-status {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--color-success);
-  font-weight: var(--font-weight-medium);
-}
-
-.status-green-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--color-success);
-  box-shadow: 0 0 6px rgba(5, 150, 105, 0.4);
-}
-
-.footer-tagline {
-  letter-spacing: 0.08em;
-  font-weight: var(--font-weight-semibold);
-  color: #94a3b8;
-}
-
-/* ==========================================================================
-   9. RESPONSIVE BREAKPOINTS (1366px, 1440px, 1920px)
-   ========================================================================== */
-@media (max-width: 1400px) {
-  .erp-middle-grid,
-  .erp-lower-grid {
-    grid-template-columns: 1.5fr 1fr 1fr;
-  }
-  
-  .erp-kpis-grid {
-    gap: 8px;
-  }
-  
-  .kpi-value-text {
-    font-size: 20px;
-  }
-}
-
-@media (max-width: 1200px) {
-  .erp-middle-grid,
-  .erp-lower-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .erp-kpis-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
+.reminder-item-date {
+  font-size: 10px;
+  color: #64748b;
 }

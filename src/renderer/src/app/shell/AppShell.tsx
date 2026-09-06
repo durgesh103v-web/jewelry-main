@@ -3,8 +3,7 @@ import './AppShell.css'
 import AppAlert from '../../components/ui/AppAlert'
 import { getFriendlyErrorMessage } from '../../utils/getFriendlyErrorMessage'
 import { getVisibleScreenIds } from '../navigation/menu.config'
-import { AppSidebar } from './AppSidebar'
-import { AppCommandBar } from './AppCommandBar'
+import { AppTopNavbar } from './AppTopNavbar'
 import { AppWorkspace } from './AppWorkspace'
 import { useAlert } from '@renderer/hooks'
 import type { AppMenuChild } from '../../types/menu'
@@ -36,8 +35,8 @@ export function AppShell({ session, onLogout }: AppShellProps): React.JSX.Elemen
 
   const [tabs, setTabs] = useState<WorkspaceTab[]>([dashboardTab])
   const [activeTabId, setActiveTabId] = useState('dashboard')
-  const [topFirmName, setTopFirmName] = useState('Sri Lakshmi Jewellers')
-  const [, setLastBackupLabel] = useState('-')
+  const [topFirmName, setTopFirmName] = useState('Shree Jewellery')
+  const [lastBackupLabel, setLastBackupLabel] = useState('-')
   const [capturingScreenshot, setCapturingScreenshot] = useState(false)
 
   const { alert, showAlert, clearAlert } = useAlert()
@@ -49,10 +48,10 @@ export function AppShell({ session, onLogout }: AppShellProps): React.JSX.Elemen
         window.api.backup.getLast()
       ])
 
-      setTopFirmName(firm?.firmName || 'Sri Lakshmi Jewellers')
+      setTopFirmName(firm?.firmName || 'Shree Jewellery')
       setLastBackupLabel(formatTopBarDateTime(lastBackup?.backupAt || ''))
     } catch {
-      setTopFirmName('Sri Lakshmi Jewellers')
+      setTopFirmName('Shree Jewellery')
       setLastBackupLabel('-')
     }
   }, [])
@@ -77,7 +76,7 @@ export function AppShell({ session, onLogout }: AppShellProps): React.JSX.Elemen
   }, [loadTopBarInfo])
 
   const openScreen = useCallback(
-    (screen: AppMenuChild): void => {
+    (screen: { id: string; label: string; module: AppMenuChild['module'] | 'home' }): void => {
       if (screen.id !== 'dashboard' && !visibleScreenIds.has(screen.id)) {
         return
       }
@@ -120,7 +119,7 @@ export function AppShell({ session, onLogout }: AppShellProps): React.JSX.Elemen
   )
 
   const openQuickScreen = useCallback(
-    (id: string, label: string, module: AppMenuChild['module']): void => {
+    (id: string, label: string, module: AppMenuChild['module'] | 'home'): void => {
       openScreen({ id, label, module })
     },
     [openScreen]
@@ -139,50 +138,40 @@ export function AppShell({ session, onLogout }: AppShellProps): React.JSX.Elemen
   }
 
   return (
-    <div className="erp-app-layout">
-      {/* 1. Permanent Left Showroom Sidebar (240px) */}
-      <AppSidebar
+    <div className="erp-desktop-layout">
+      {/* 1. Full-Width Desktop Top Navigation Bar (Zero Left Sidebar) */}
+      <AppTopNavbar
         activeScreenId={activeTabId}
         onNavigate={openQuickScreen}
         visibleScreenIds={visibleScreenIds}
         firmName={topFirmName}
+        lastBackupLabel={lastBackupLabel}
+        username={session.username}
+        role={session.role || 'Administrator'}
+        businessType={session.businessType}
+        onLogout={onLogout}
+        onOpenWhatsApp={() => openQuickScreen('whatsapp', 'WhatsApp', 'utility')}
+        onOpenSettings={() => openQuickScreen('settings', 'Settings', 'utility')}
+        onQuickScreenshot={() => void handleQuickScreenshot()}
+        capturingScreenshot={capturingScreenshot}
       />
 
-      {/* 2. Main Application Region */}
-      <div className="erp-app-main-region">
-        {/* Persistent Top Command Bar */}
-        <div className="erp-app-topbar-wrapper">
-          <AppCommandBar
-            onNewSale={() => openQuickScreen('pos-billing', 'POS Billing', 'transaction')}
-            onOpenSettings={() => openQuickScreen('settings', 'Settings', 'utility')}
-            onOpenNotifications={() => openQuickScreen('reminder', 'Reminder', 'utility')}
-            onOpenWhatsApp={() => openQuickScreen('whatsapp', 'WhatsApp', 'utility')}
-            onQuickScreenshot={() => void handleQuickScreenshot()}
-            capturingScreenshot={capturingScreenshot}
-            onLogout={onLogout}
-            username={session.username}
-            role={session.role || 'Administrator'}
-            branchName={`${topFirmName} • Main Branch`}
-          />
+      {alert && (
+        <div className="header-toast">
+          <AppAlert type={alert.type} message={alert.message} onClose={clearAlert} />
         </div>
+      )}
 
-        {alert && (
-          <div className="header-toast">
-            <AppAlert type={alert.type} message={alert.message} onClose={clearAlert} />
-          </div>
-        )}
-
-        {/* Central Workspace for Tabs & Active Screens */}
-        <div className="erp-app-workspace-wrapper">
-          <AppWorkspace
-            tabs={tabs}
-            activeTabId={activeTabId}
-            setActiveTabId={setActiveTabId}
-            onCloseTab={closeTab}
-            onNavigate={openQuickScreen}
-            visibleScreenIds={visibleScreenIds}
-          />
-        </div>
+      {/* 2. Main Full-Screen Workspace (Zero Footer) */}
+      <div className="erp-desktop-workspace-container">
+        <AppWorkspace
+          tabs={tabs}
+          activeTabId={activeTabId}
+          setActiveTabId={setActiveTabId}
+          onCloseTab={closeTab}
+          onNavigate={openQuickScreen}
+          visibleScreenIds={visibleScreenIds}
+        />
       </div>
     </div>
   )
