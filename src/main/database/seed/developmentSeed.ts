@@ -23,7 +23,6 @@ import { purchaseInvoiceService } from '../../services/purchaseInvoice.service'
 import { customerOrderService } from '../../services/customerOrder.service'
 import { quotationService } from '../../services/quotation.service'
 import { advanceService } from '../../services/advance.service'
-import { inventoryMovementService } from '../../services/inventoryMovement.service'
 import { roundNumber } from '../../../shared/jewelleryFormula'
 
 export interface SeedSummaryReport {
@@ -34,10 +33,14 @@ export interface SeedSummaryReport {
   itemsCount: number
   stockItemsCount: number
   openingStockPcs: number
-  purchaseInvoicesCount: number
+  totalPurchaseInvoices: number
+  todayPurchaseInvoices: number
   todayPurchasesAmount: number
-  salesInvoicesCount: number
+  totalSalesInvoices: number
+  todaySalesInvoices: number
   todaySalesAmount: number
+  purchaseInvoicesCount: number
+  salesInvoicesCount: number
   customerOrdersCount: number
   quotationsCount: number
   customerAdvancesCount: number
@@ -496,88 +499,12 @@ export async function seedDevelopmentData(): Promise<SeedSummaryReport> {
   }
 
   // ==========================================================================
-  // 8. STOCK LEDGER OPENING INVENTORY (Healthy Positive Showroom Stock)
-  // ==========================================================================
-  console.log('Populating Stock Ledger Opening Balances...')
-  const openingStockQuantities: Record<string, { pcs: number; gross: number; fine: number }> = {
-    'item-22k-ring': { pcs: 140, gross: 490.0, fine: 448.84 },
-    'item-22k-bangle': { pcs: 65, gross: 1592.5, fine: 1458.73 },
-    'item-22k-chain': { pcs: 80, gross: 1160.0, fine: 1062.56 },
-    'item-22k-bridal-neck': { pcs: 25, gross: 1205.0, fine: 1103.78 },
-    'item-22k-temple-choker': { pcs: 30, gross: 1158.0, fine: 1060.728 },
-    'item-22k-jhumka': { pcs: 90, gross: 882.0, fine: 807.912 },
-    'item-22k-studs': { pcs: 110, gross: 462.0, fine: 423.192 },
-    'item-22k-pendant': { pcs: 85, gross: 544.0, fine: 498.304 },
-    'item-22k-bracelet': { pcs: 45, gross: 990.0, fine: 906.84 },
-    'item-22k-mangalsutra': { pcs: 40, gross: 740.0, fine: 677.84 },
-    'item-22k-nosepin': { pcs: 120, gross: 102.0, fine: 93.432 },
-    'item-24k-coin': { pcs: 75, gross: 600.0, fine: 599.4 },
-    'item-18k-dia-ring': { pcs: 55, gross: 226.6, fine: 169.95 },
-    'item-18k-dia-pendant': { pcs: 45, gross: 146.25, fine: 109.68 },
-    'item-18k-dia-bracelet': { pcs: 25, gross: 320.0, fine: 240.0 },
-    'item-925-slv-bracelet': { pcs: 120, gross: 2250.0, fine: 2081.25 },
-    'item-925-slv-payal': { pcs: 80, gross: 3080.0, fine: 2849.0 }
-  }
-
-  for (const [itemId, q] of Object.entries(openingStockQuantities)) {
-    const existingMovement = db
-      .prepare(`SELECT id FROM stock_ledger WHERE source_type = 'OPENING_STOCK' AND item_id = ?`)
-      .get(itemId)
-
-    if (!existingMovement) {
-      const itemMaster = itemsSeedData.find((i) => i.id === itemId)
-      inventoryMovementService.postMovement({
-        sourceType: 'OPENING_STOCK',
-        sourceId: `seed-op-${itemId}`,
-        movementType: 'OPENING_STOCK',
-        locationId: 'loc-showroom',
-        entryDate: today,
-        itemId,
-        stampId: itemMaster?.stamp,
-        designId: itemMaster?.design,
-        metalType: itemMaster?.metal || 'Gold',
-        pcsDelta: q.pcs,
-        grossWeightDelta: q.gross,
-        netWeightDelta: q.gross,
-        fineDelta: q.fine,
-        narration: 'Baseline showroom opening stock balance'
-      })
-    }
-  }
-
-  // Ensure every item in the items table has healthy positive inventory in stock_ledger
-  const allItems = db.prepare(`SELECT id, item_name, metal_type, default_stamp_id, default_design_id FROM items WHERE deleted_at IS NULL`).all() as any[]
-  for (const itm of allItems) {
-    const bal = db.prepare(
-      `SELECT COALESCE(SUM(pcs_delta), 0) as pcs, COALESCE(SUM(gross_weight_delta), 0) as gw FROM stock_ledger WHERE item_id = ?`
-    ).get(itm.id) as any
-    if (bal.pcs <= 0 || bal.gw <= 0) {
-      const topUpPcs = Math.max(15, Math.abs(bal.pcs) + 15)
-      const topUpGross = Math.max(50.0, Math.abs(bal.gw) + 50.0)
-      const topUpFine = roundNumber(topUpGross * 0.916, 3)
-      const adjId = `sl-open-adj-${itm.id.replace(/[^a-zA-Z0-9]/g, '').slice(0, 16)}`
-      const existingAdj = db.prepare(`SELECT id FROM stock_ledger WHERE id = ?`).get(adjId)
-      if (!existingAdj) {
-        db.prepare(
-          `INSERT INTO stock_ledger (
-            id, source_type, source_id, entry_date, item_id,
-            stamp_id, design_id, metal_type,
-            pcs_delta, gross_weight_delta, net_weight_delta, fine_delta,
-            location_id, movement_type, narration, created_at
-          ) VALUES (?, 'OPENING_STOCK', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'loc-showroom', 'OPENING_STOCK', 'Baseline positive opening balance', ?)`
-        ).run(adjId, adjId, today, itm.id, itm.default_stamp_id || null, itm.default_design_id || null, itm.metal_type || 'Gold', topUpPcs, topUpGross, topUpGross, topUpFine, now)
-      } else {
-        db.prepare(
-          `UPDATE stock_ledger SET pcs_delta = pcs_delta + ?, gross_weight_delta = gross_weight_delta + ?, net_weight_delta = net_weight_delta + ?, fine_delta = fine_delta + ? WHERE id = ?`
-        ).run(topUpPcs, topUpGross, topUpGross, topUpFine, adjId)
-      }
-    }
-  }
-
-  // ==========================================================================
-  // 9. SERIALIZED PHYSICAL STOCK (110 Barcoded Jewellery Pieces)
+  // 8. SERIALIZED PHYSICAL STOCK (Barcoded Showroom Jewellery Pieces)
   // ==========================================================================
   console.log('Seeding Serialized Jewellery Physical Stock...')
+  // Temporarily prefix existing demo stock barcodes, serial numbers, QR and RFID to prevent unique constraint collisions during upsert
+  db.prepare("UPDATE jewellery_stock_items SET serial_number = 'TMP-' || id, barcode = 'TMP-' || id, qr_code = 'TMP-' || id, rfid_epc = 'TMP-' || id, stock_item_code = 'TMP-' || id WHERE id LIKE 'seed-stk-%'").run()
+
   const insertStockItemStmt = db.prepare(
     `INSERT INTO jewellery_stock_items (
       id, stock_item_code, item_id, barcode, qr_code, rfid_epc, serial_number,
@@ -585,6 +512,14 @@ export async function seedDevelopmentData(): Promise<SeedSummaryReport> {
       status, location, counter, tray, tag_status, last_scanned_at, created_at, updated_at
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', ?, ?, ?)
     ON CONFLICT(id) DO UPDATE SET
+      stock_item_code = excluded.stock_item_code,
+      barcode = excluded.barcode,
+      qr_code = excluded.qr_code,
+      rfid_epc = excluded.rfid_epc,
+      serial_number = excluded.serial_number,
+      gross_weight = excluded.gross_weight,
+      net_weight = excluded.net_weight,
+      fine_weight = excluded.fine_weight,
       status = excluded.status,
       location = excluded.location,
       counter = excluded.counter,
@@ -592,35 +527,66 @@ export async function seedDevelopmentData(): Promise<SeedSummaryReport> {
       updated_at = excluded.updated_at`
   )
 
-  let barcodeSeq = 1001
   const stockCounters = ['Gold Counter 1', 'Gold Counter 2', 'Bridal Lounge', 'Silver Section', 'Diamond Lounge']
   const stockTrays = ['Tray A1', 'Tray A2', 'Tray B1', 'Tray B2', 'Tray C1', 'Showcase Display']
 
-  for (let i = 0; i < itemsSeedData.length; i++) {
-    const item = itemsSeedData[i]
-    // Seed 6 pieces per item master (~102 pieces total)
-    for (let p = 1; p <= 6; p++) {
-      const stockId = `seed-stk-${item.id}-${p}`
-      const barcode = `JWL2026${barcodeSeq}`
-      const qrCode = `QR-STK-2026-${barcodeSeq}`
-      const rfidEpc = `E28011${barcodeSeq}00001`
-      const serialNumber = `SN-2026-${barcodeSeq}`
+  const plannedTxMap: Record<string, number> = {
+    'item-22k-ring': 0,
+    'item-22k-bangle': -3,
+    'item-22k-chain': 1,
+    'item-22k-bridal-neck': -1,
+    'item-22k-temple-choker': -1,
+    'item-22k-jhumka': 3,
+    'item-22k-studs': 2,
+    'item-22k-pendant': -1,
+    'item-22k-bracelet': 0,
+    'item-22k-mangalsutra': -1,
+    'item-22k-nosepin': -2,
+    'item-24k-coin': 4,
+    'item-18k-dia-ring': 1,
+    'item-18k-dia-pendant': -1,
+    'item-18k-dia-bracelet': -1,
+    'item-925-slv-bracelet': 3,
+    'item-925-slv-payal': -2
+  }
 
-      // Slight natural variance in weight
-      const weightDelta = (p - 3) * 0.05
-      const gross = roundNumber(item.wt + weightDelta, 3)
-      const net = gross
-      const fine = roundNumber((net * item.tanch) / 100, 3)
+  const allDbItems = db.prepare(`SELECT id, item_name, metal_type, default_stamp_id, default_design_id, default_tanch, fixed_weight_per_pcs FROM items WHERE deleted_at IS NULL`).all() as any[]
+
+  for (let i = 0; i < allDbItems.length; i++) {
+    const item = allDbItems[i]
+    const seedItem = itemsSeedData.find((s) => s.id === item.id)
+    const wt = seedItem ? seedItem.wt : item.fixed_weight_per_pcs || 15.0
+    const tanch = seedItem ? seedItem.tanch : item.default_tanch || 91.6
+    const stampName = item.metal_type === 'Gold' ? (tanch > 95 ? '24K' : tanch > 85 ? '22K' : '18K') : 'Silver 925'
+    const plannedTx = plannedTxMap[item.id] ?? (item.id === '75624507-88b0-4fcf-a531-9e03698601e7' ? -2 : 0)
+
+    const inStockCount = Math.max(4, 4 + plannedTx)
+    const totalPiecesToSeed = inStockCount + 2 // +1 for CONSIGNMENT, +1 for SOLD
+
+    for (let p = 1; p <= totalPiecesToSeed; p++) {
+      const stockId = `seed-stk-${item.id}-${p}`
+      const uniqueSeq = (i + 1) * 100 + p
+      const barcode = `JWL${String(100000 + uniqueSeq)}`
+      const qrCode = `QR-STK-2026-${uniqueSeq}`
+      const rfidEpc = `E28011${String(100000 + uniqueSeq)}`
+      const serialNumber = `SN-2026-${String(10000 + uniqueSeq)}`
+      const stockCode = `STK-2026-${String(10000 + uniqueSeq)}`
+
+      const weightDelta = roundNumber((p - 3) * 0.05, 3)
+      const gross = roundNumber(wt + weightDelta, 3)
+      const isDiamond = item.metal_type === 'Diamond' || item.item_name.includes('Diamond')
+      const less = isDiamond ? 0.15 : 0.0
+      const net = roundNumber(gross - less, 3)
+      const fine = roundNumber((net * tanch) / 100, 3)
 
       const counter = stockCounters[(i + p) % stockCounters.length]
       const tray = stockTrays[(i * 2 + p) % stockTrays.length]
 
-      // Pieces 1-4 IN_STOCK, Piece 5 CONSIGNMENT, Piece 6 SOLD
-      const status = p === 5 ? 'CONSIGNMENT' : p === 6 ? 'SOLD' : 'IN_STOCK'
+      const status = p <= inStockCount ? 'IN_STOCK' : p === inStockCount + 1 ? 'CONSIGNMENT' : 'SOLD'
 
       insertStockItemStmt.run(
         stockId,
-        `STK-2026-${barcodeSeq}`,
+        stockCode,
         item.id,
         barcode,
         qrCode,
@@ -629,8 +595,8 @@ export async function seedDevelopmentData(): Promise<SeedSummaryReport> {
         gross,
         net,
         fine,
-        item.stamp === stamp916Id ? '22K' : item.stamp === stamp750Id ? '18K' : 'Silver 925',
-        item.tanch,
+        stampName,
+        tanch,
         status,
         'loc-showroom',
         counter,
@@ -639,8 +605,6 @@ export async function seedDevelopmentData(): Promise<SeedSummaryReport> {
         now,
         now
       )
-
-      barcodeSeq++
     }
   }
 
@@ -1233,37 +1197,92 @@ export async function seedDevelopmentData(): Promise<SeedSummaryReport> {
     }
   }
 
-  // Final check: Guarantee strictly positive inventory for all items in stock ledger
-  const allFinalItems = db.prepare(`SELECT id, metal_type, default_stamp_id, default_design_id FROM items WHERE deleted_at IS NULL`).all() as any[]
+  // ==========================================================================
+  // 20. STOCK LEDGER OPENING BALANCE RECONCILIATION
+  // ==========================================================================
+  console.log('Reconciling Stock Ledger with Physical Showroom Inventory...')
+
+  // Delete any temporary adjustment entries from previous runs so opening stock is canonical
+  db.prepare(`DELETE FROM stock_ledger WHERE id LIKE 'sl-open-adj-%' OR id LIKE 'sl-post-adj-%'`).run()
+
+  const allFinalItems = db.prepare(`SELECT id, item_name, metal_type, default_stamp_id, default_design_id FROM items WHERE deleted_at IS NULL`).all() as any[]
+
   for (const itm of allFinalItems) {
-    const bal = db.prepare(
-      `SELECT COALESCE(SUM(pcs_delta), 0) as pcs, COALESCE(SUM(gross_weight_delta), 0) as gw FROM stock_ledger WHERE item_id = ?`
-    ).get(itm.id) as any
-    if (bal.pcs <= 0 || bal.gw <= 0) {
-      const topUpPcs = Math.max(15, Math.abs(bal.pcs) + 15)
-      const topUpGross = Math.max(50.0, Math.abs(bal.gw) + 50.0)
-      const topUpFine = roundNumber(topUpGross * 0.916, 3)
-      const adjId = `sl-post-adj-${itm.id.replace(/[^a-zA-Z0-9]/g, '').slice(0, 16)}`
-      const existingAdj = db.prepare(`SELECT id FROM stock_ledger WHERE id = ?`).get(adjId)
-      if (!existingAdj) {
-        db.prepare(
-          `INSERT INTO stock_ledger (
-            id, source_type, source_id, entry_date, item_id,
-            stamp_id, design_id, metal_type,
-            pcs_delta, gross_weight_delta, net_weight_delta, fine_delta,
-            location_id, movement_type, narration, created_at
-          ) VALUES (?, 'OPENING_STOCK', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'loc-showroom', 'OPENING_STOCK', 'Balancing positive showroom stock', ?)`
-        ).run(adjId, adjId, today, itm.id, itm.default_stamp_id || null, itm.default_design_id || null, itm.metal_type || 'Gold', topUpPcs, topUpGross, topUpGross, topUpFine, now)
-      } else {
-        db.prepare(
-          `UPDATE stock_ledger SET pcs_delta = pcs_delta + ?, gross_weight_delta = gross_weight_delta + ?, net_weight_delta = net_weight_delta + ?, fine_delta = fine_delta + ? WHERE id = ?`
-        ).run(topUpPcs, topUpGross, topUpGross, topUpFine, adjId)
-      }
+    // 1. Get physical in-stock targets from jewellery_stock_items
+    const physicalTargets = db.prepare(`
+      SELECT 
+        COUNT(*) as pcs,
+        COALESCE(SUM(gross_weight), 0) as gross,
+        COALESCE(SUM(net_weight), 0) as net,
+        COALESCE(SUM(fine_weight), 0) as fine
+      FROM jewellery_stock_items
+      WHERE item_id = ? AND status = 'IN_STOCK' AND deleted_at IS NULL
+    `).get(itm.id) as any
+
+    // 2. Get non-opening transaction totals from stock_ledger
+    const tx = db.prepare(`
+      SELECT 
+        COALESCE(SUM(pcs_delta), 0) as pcs,
+        COALESCE(SUM(gross_weight_delta), 0) as gross,
+        COALESCE(SUM(net_weight_delta), 0) as net,
+        COALESCE(SUM(fine_delta), 0) as fine
+      FROM stock_ledger
+      WHERE item_id = ? AND source_type != 'OPENING_STOCK'
+    `).get(itm.id) as any
+
+    // 3. Opening stock required so that Closing Stock === Physical In-Stock Showroom Pieces
+    const openingPcs = physicalTargets.pcs - tx.pcs
+    const openingGross = roundNumber(physicalTargets.gross - tx.gross, 3)
+    const openingNet = roundNumber(physicalTargets.net - tx.net, 3)
+    const openingFine = roundNumber(physicalTargets.fine - tx.fine, 3)
+
+    const opId = `seed-op-${itm.id}`
+    const existingOp = db.prepare(`SELECT id FROM stock_ledger WHERE source_type = 'OPENING_STOCK' AND item_id = ?`).get(itm.id) as any
+
+    if (!existingOp) {
+      db.prepare(`
+        INSERT INTO stock_ledger (
+          id, source_type, source_id, entry_date, item_id,
+          stamp_id, design_id, metal_type,
+          pcs_delta, gross_weight_delta, net_weight_delta, fine_delta,
+          location_id, movement_type, narration, created_at
+        ) VALUES (?, 'OPENING_STOCK', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'loc-showroom', 'OPENING_STOCK', 'Baseline showroom opening stock balance', ?)
+      `).run(
+        opId,
+        opId,
+        today,
+        itm.id,
+        itm.default_stamp_id || null,
+        itm.default_design_id || null,
+        itm.metal_type || 'Gold',
+        openingPcs,
+        openingGross,
+        openingNet,
+        openingFine,
+        now
+      )
+    } else {
+      db.prepare(`
+        UPDATE stock_ledger
+        SET pcs_delta = ?,
+            gross_weight_delta = ?,
+            net_weight_delta = ?,
+            fine_delta = ?,
+            metal_type = ?
+        WHERE id = ?
+      `).run(
+        openingPcs,
+        openingGross,
+        openingNet,
+        openingFine,
+        itm.metal_type || 'Gold',
+        existingOp.id
+      )
     }
   }
 
   // ==========================================================================
-  // 20. CONSISTENCY VERIFICATION & METRICS EXTRACTION
+  // 21. CONSISTENCY VERIFICATION & METRICS EXTRACTION
   // ==========================================================================
   console.log('Calculating Post-Seed Verification Metrics...')
 
@@ -1345,10 +1364,14 @@ export async function seedDevelopmentData(): Promise<SeedSummaryReport> {
     itemsCount,
     stockItemsCount,
     openingStockPcs: stockLedgerTotals.pcs,
-    purchaseInvoicesCount: purchaseCount,
+    totalPurchaseInvoices: purchaseCount,
+    todayPurchaseInvoices: todayPurchases.count,
     todayPurchasesAmount: todayPurchases.amt,
-    salesInvoicesCount: salesCount,
+    purchaseInvoicesCount: purchaseCount,
+    totalSalesInvoices: salesCount,
+    todaySalesInvoices: todaySales.count,
     todaySalesAmount: todaySales.amt,
+    salesInvoicesCount: salesCount,
     customerOrdersCount: ordersCount,
     quotationsCount: quotationsCount,
     customerAdvancesCount: advancesCount,

@@ -104,6 +104,8 @@ export const dailyReportService = {
           COALESCE(SUM(amt), 0) AS amountTotal
         FROM (
           SELECT
+            id,
+            sale_no AS doc_no,
             item_fine_total AS fine,
             item_majuri_total AS majuri,
             (taxable_amount + cgst_amount + sgst_amount + igst_amount) AS amt
@@ -111,15 +113,18 @@ export const dailyReportService = {
           WHERE sale_date = ? AND deleted_at IS NULL
           UNION ALL
           SELECT
+            id,
+            invoice_number AS doc_no,
             fine_weight AS fine,
             0 AS majuri,
             grand_total AS amt
           FROM sales_invoices
           WHERE invoice_date = ? AND deleted_at IS NULL AND status != 'CANCELLED'
+            AND invoice_number NOT IN (SELECT sale_no FROM sale_headers WHERE sale_date = ? AND deleted_at IS NULL)
         )
       `
       )
-      .get(date, date) as HeaderAmountRow
+      .get(date, date, date) as HeaderAmountRow
 
     const purchasesRow = db
       .prepare(
@@ -131,6 +136,8 @@ export const dailyReportService = {
           COALESCE(SUM(amt), 0) AS amountTotal
         FROM (
           SELECT
+            id,
+            purchase_no AS doc_no,
             item_fine_total AS fine,
             item_majuri_total AS majuri,
             (taxable_amount + cgst_amount + sgst_amount + igst_amount) AS amt
@@ -138,15 +145,18 @@ export const dailyReportService = {
           WHERE purchase_date = ? AND deleted_at IS NULL
           UNION ALL
           SELECT
+            id,
+            invoice_number AS doc_no,
             fine_weight AS fine,
             0 AS majuri,
             grand_total AS amt
           FROM purchase_invoices
           WHERE invoice_date = ? AND deleted_at IS NULL AND status != 'CANCELLED'
+            AND invoice_number NOT IN (SELECT purchase_no FROM purchase_headers WHERE purchase_date = ? AND deleted_at IS NULL)
         )
       `
       )
-      .get(date, date) as HeaderAmountRow
+      .get(date, date, date) as HeaderAmountRow
 
     const saleReturnsRow = db
       .prepare(
