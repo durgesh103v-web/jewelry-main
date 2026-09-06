@@ -178,8 +178,8 @@ export const PosBillingScreen: React.FC<PosBillingScreenProps> = ({ onClose }) =
   return (
     <div className="h-full flex flex-col bg-background text-foreground overflow-hidden">
       {/* Top POS Header */}
-      <header className="h-13 px-4 border-b border-border bg-card flex items-center justify-between shadow-sm shrink-0">
-        <div className="flex items-center gap-3">
+      <header className="min-h-[48px] py-2 px-4 border-b border-border bg-card flex flex-wrap items-center justify-between gap-2 shadow-sm shrink-0">
+        <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2">
             <span className="text-xl">💎</span>
             <div>
@@ -218,7 +218,7 @@ export const PosBillingScreen: React.FC<PosBillingScreenProps> = ({ onClose }) =
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="text-[11px] text-muted-foreground flex items-center gap-2 font-mono">
+          <div className="hidden sm:flex text-[11px] text-muted-foreground items-center gap-2 font-mono">
             <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
               Scanner Ready
@@ -264,10 +264,10 @@ export const PosBillingScreen: React.FC<PosBillingScreenProps> = ({ onClose }) =
         </div>
       )}
 
-      {/* Main Workspace Layout (2 Columns) */}
-      <div className="flex-1 flex gap-4 p-4 overflow-hidden">
+      {/* Main Workspace Layout (2 Columns, responsive stacking on smaller screens) */}
+      <div className="flex-1 flex flex-col xl:flex-row gap-4 p-3 lg:p-4 overflow-y-auto xl:overflow-hidden">
         {/* Left Column: Items, Barcode, Breakdown, Credits */}
-        <div className="flex-1 flex flex-col gap-3 min-w-0 overflow-hidden">
+        <div className="flex-1 flex flex-col gap-3 min-w-0 xl:overflow-hidden">
           {/* Barcode & Search Bar */}
           <div className="bg-card p-3 rounded-xl border border-border shadow-sm shrink-0">
             <BarcodeInput
@@ -285,7 +285,7 @@ export const PosBillingScreen: React.FC<PosBillingScreenProps> = ({ onClose }) =
           />
 
           {/* Bottom Left Panels (Breakdown, Advances, Exchanges) */}
-          <div className="grid grid-cols-3 gap-3 shrink-0">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 shrink-0">
             <PricingBreakdownPanel summary={summary} />
             <AdvancePanel
               advances={availableAdvances}
@@ -301,7 +301,7 @@ export const PosBillingScreen: React.FC<PosBillingScreenProps> = ({ onClose }) =
         </div>
 
         {/* Right Column: Customer Context, Payments, Summary, Checkout */}
-        <div className="w-80 flex flex-col gap-3 shrink-0 overflow-y-auto pr-0.5">
+        <div className="w-full xl:w-80 flex flex-col gap-3 shrink-0 overflow-y-auto pr-0.5">
           {/* Customer Selection */}
           <div className="bg-card p-3 rounded-xl border border-border shadow-sm space-y-2">
             <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">

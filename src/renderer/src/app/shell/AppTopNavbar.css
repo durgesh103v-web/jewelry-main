@@ -1,6 +1,7 @@
 /* ==========================================================================
-   DESKTOP TOP NAVBAR STYLES
-   Pixel-perfect match to user reference screenshot for Jewellery ERP
+   PRODUCTION JEWELLERY ERP TOP NAVBAR STYLES
+   Minimalist, Modern, High-Performance Desktop Shell Header
+   Zero Outlines / Frameless Ghost Buttons with Interactive Hover Backgrounds
    ========================================================================== */
 
 .desktop-top-navbar {
@@ -13,14 +14,25 @@
   align-items: center;
   justify-content: space-between;
   padding: 0 16px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
   position: relative;
   z-index: 1000;
   user-select: none;
 }
 
+/* Remove all focus outlines on top navbar buttons */
+.desktop-top-navbar button {
+  outline: none !important;
+  box-shadow: none;
+}
+
+.desktop-top-navbar button:focus,
+.desktop-top-navbar button:focus-visible {
+  outline: none !important;
+}
+
 /* --------------------------------------------------------------------------
-   1. LEFT CLUSTER: BRAND & MENUS
+   1. LEFT CLUSTER: NAVIGATION MENUS
    -------------------------------------------------------------------------- */
 .navbar-left-cluster {
   display: flex;
@@ -29,30 +41,63 @@
   height: 100%;
 }
 
-.navbar-brand-cluster {
-  display: flex;
+.nav-menu-btn {
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding-right: 14px;
-  margin-right: 6px;
-  border-right: 1px solid var(--color-border-muted, #f0f2f5);
-  cursor: pointer;
+  gap: 6px;
   height: 32px;
-}
-
-.navbar-brand-gem {
-  color: var(--color-brand-primary, #1a73e8);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.navbar-app-title {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--color-text-primary, #1f2430);
-  letter-spacing: -0.01em;
+  padding: 0 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-primary, #1e293b);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm, 6px);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
   white-space: nowrap;
+}
+
+.nav-menu-btn:hover {
+  background-color: #e0edff;
+  color: #1a73e8;
+}
+
+.nav-dashboard-btn {
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.nav-dashboard-btn .nav-home-icon {
+  color: var(--color-brand-primary, #1a73e8);
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+
+.nav-dashboard-btn:hover {
+  background-color: #e0edff;
+  color: #1a73e8;
+}
+
+.nav-dashboard-btn:hover .nav-home-icon {
+  transform: scale(1.12);
+  color: #1a73e8;
+}
+
+.nav-menu-btn.active-home {
+  background-color: #dbeafe;
+  color: #1d4ed8;
+  font-weight: 600;
+}
+
+.nav-menu-btn.menu-open {
+  background-color: #dbeafe;
+  color: #1d4ed8;
+}
+
+.nav-menu-btn.child-active {
+  font-weight: 600;
+  color: #1a73e8;
+  background-color: #eff6ff;
 }
 
 .navbar-menu-items {
@@ -69,53 +114,8 @@
   align-items: center;
 }
 
-.nav-menu-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 32px;
-  padding: 0 12px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--color-text-primary, #1f2430);
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: var(--radius-sm, 4px);
-  cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease;
-  white-space: nowrap;
-}
-
-.nav-menu-btn:hover {
-  background-color: var(--color-background-muted, #f4f6f9);
-  color: var(--color-brand-primary, #1a73e8);
-}
-
-.nav-menu-btn.active-home {
-  background-color: #e8f0fe;
-  color: #1a73e8;
-  font-weight: 600;
-}
-
-.nav-menu-btn.menu-open {
-  background-color: #e8f0fe;
-  color: #1a73e8;
-  border-color: #c7d2fe;
-}
-
-.nav-menu-btn.child-active {
-  font-weight: 600;
-  color: #1a73e8;
-}
-
-.nav-menu-caret {
-  font-size: 10px;
-  color: var(--color-text-muted, #6b7280);
-  margin-left: 2px;
-}
-
 /* --------------------------------------------------------------------------
-   CLASSIC WINDOWS DESKTOP DROPDOWN PANE
+   CLASSIC DESKTOP DROPDOWN PANE
    -------------------------------------------------------------------------- */
 .desktop-dropdown-pane {
   position: absolute;
@@ -125,8 +125,8 @@
   max-width: 320px;
   background: #ffffff;
   border: 1px solid #d1d5db;
-  border-radius: 4px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14), 0 2px 6px rgba(0, 0, 0, 0.06);
+  border-radius: 6px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
   padding: 4px 0;
   z-index: 2000;
   animation: dropdownFadeIn 0.12s ease-out;
@@ -144,7 +144,7 @@
 }
 
 .dropdown-scroll-body {
-  max-height: 420px;
+  max-height: 440px;
   overflow-y: auto;
 }
 
@@ -152,22 +152,22 @@
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   padding: 7px 16px;
   font-size: 13px;
   font-weight: 400;
-  color: #1f2430;
+  color: #334155;
   background: transparent;
   border: none;
   text-align: left;
   cursor: pointer;
-  transition: background-color 0.12s ease, color 0.12s ease;
+  transition: all 0.12s ease;
   white-space: nowrap;
 }
 
 .dropdown-menu-item:hover {
-  background-color: #f3f4f6;
-  color: #1a73e8;
+  background-color: #eff6ff;
+  color: #1d4ed8;
 }
 
 .dropdown-menu-item.selected-item {
@@ -178,43 +178,60 @@
 
 .item-bullet {
   font-size: 14px;
-  color: #9ca3af;
+  color: #94a3b8;
 }
 
 .dropdown-menu-item:hover .item-bullet {
-  color: #1a73e8;
+  color: #1d4ed8;
 }
 
 /* --------------------------------------------------------------------------
-   2. RIGHT CLUSTER: SEARCH, FIRM, BACKUP, WHATSAPP, USER, LOGOUT
+   2. RIGHT CLUSTER: SEARCH BAR & ICON SUITE
    -------------------------------------------------------------------------- */
 .navbar-right-cluster {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   height: 100%;
 }
 
-/* Search Box */
+/* Proper Modern Search Bar */
 .navbar-search-box {
   display: flex;
   align-items: center;
-  gap: 6px;
-  height: 30px;
+  gap: 8px;
+  height: 32px;
   padding: 0 10px;
   background: #f8fafc;
-  border: 1px solid var(--color-border-default, #e2e5eb);
-  border-radius: 4px;
-  width: 170px;
-  transition: all 0.15s ease;
-  color: var(--color-text-secondary, #4b5563);
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  width: 250px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  color: #64748b;
+  position: relative;
+}
+
+.navbar-search-box:hover {
+  border-color: #cbd5e1;
+  background: #f1f5f9;
 }
 
 .navbar-search-box.search-active {
-  width: 220px;
+  width: 310px;
   background: #ffffff;
-  border-color: var(--color-brand-primary, #1a73e8);
-  box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.15);
+  border-color: #1a73e8;
+  box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.15);
+  color: #1e293b;
+}
+
+.navbar-search-box .search-icon {
+  flex-shrink: 0;
+  color: #94a3b8;
+  transition: color 0.15s ease;
+}
+
+.navbar-search-box.search-active .search-icon {
+  color: #1a73e8;
 }
 
 .navbar-search-input {
@@ -223,185 +240,105 @@
   outline: none;
   font-size: 12px;
   width: 100%;
-  color: var(--color-text-primary, #1f2430);
+  color: #0f172a;
 }
 
 .navbar-search-input::placeholder {
-  color: var(--color-text-muted, #9ca3af);
+  color: #94a3b8;
 }
 
 .search-shortcut-badge {
   font-size: 10px;
   font-weight: 600;
+  font-family: var(--font-family-mono, monospace);
   color: #64748b;
   background: #e2e8f0;
-  padding: 1px 5px;
-  border-radius: 3px;
+  padding: 2px 6px;
+  border-radius: 4px;
   flex-shrink: 0;
+  letter-spacing: 0.02em;
 }
 
-/* Firm Selector */
-.navbar-firm-selector {
-  position: relative;
+.search-clear-btn {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 11px;
+  padding: 2px 4px;
+  border-radius: 3px;
+  line-height: 1;
 }
 
-.firm-select-btn {
+.search-clear-btn:hover {
+  color: #0f172a;
+  background: #e2e8f0;
+}
+
+/* Action Icons Suite (Frameless Ghost Icon Buttons with Distinct Hover Colors) */
+.navbar-actions-suite {
   display: flex;
   align-items: center;
-  gap: 6px;
-  height: 30px;
-  padding: 0 10px;
-  background: #ffffff;
-  border: 1px solid #d1d5db;
-  border-radius: 4px;
-  font-size: 12px;
-  color: #1f2430;
-  cursor: pointer;
-  transition: all 0.15s ease;
+  gap: 4px;
 }
 
-.firm-select-btn:hover {
-  background: #f9fafb;
-  border-color: #9ca3af;
-}
-
-.firm-label-prefix {
-  color: #6b7280;
-  font-weight: 500;
-}
-
-.firm-name-text {
-  font-weight: 600;
-  max-width: 120px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.firm-caret {
-  font-size: 9px;
-  color: #6b7280;
-}
-
-.firm-dropdown-menu {
-  position: absolute;
-  top: calc(100% + 4px);
-  right: 0;
-  min-width: 220px;
-  background: #ffffff;
-  border: 1px solid #d1d5db;
-  border-radius: 4px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
-  padding: 6px 0;
-  z-index: 2000;
-}
-
-.firm-dropdown-header {
-  padding: 6px 12px;
-  font-size: 11px;
-  font-weight: 600;
-  color: #6b7280;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.firm-dropdown-item {
-  width: 100%;
-  padding: 6px 14px;
-  font-size: 12px;
-  color: #1f2430;
+.navbar-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
   background: transparent;
   border: none;
-  text-align: left;
+  border-radius: 6px;
+  color: #64748b;
   cursor: pointer;
+  position: relative;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
-.firm-dropdown-item:hover {
-  background: #f3f4f6;
+.navbar-icon-btn:hover {
+  background-color: #e2e8f0;
+  color: #0f172a;
 }
 
-.firm-dropdown-item.active {
-  color: #1a73e8;
-  font-weight: 600;
+.navbar-icon-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
-.firm-dropdown-divider {
-  height: 1px;
-  background: #e5e7eb;
-  margin: 4px 0;
+/* Backup Icon Button Hover */
+.backup-icon-btn:hover {
+  background-color: #ede9fe;
+  color: #6d28d9;
 }
 
-/* Last Backup Button */
-.navbar-backup-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  height: 30px;
-  padding: 0 10px;
-  background: #ede9fe;
-  border: 1px solid #ddd6fe;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 500;
-  color: #5b21b6;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  white-space: nowrap;
+/* WhatsApp Icon Button Hover */
+.whatsapp-icon-btn:hover {
+  background-color: #d1fae5;
+  color: #059669;
 }
 
-.navbar-backup-btn:hover {
-  background: #ddd6fe;
+/* Badge Dots on Icons */
+.icon-badge-dot {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  border: 1.5px solid #ffffff;
 }
 
-/* WhatsApp Button */
-.navbar-whatsapp-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  height: 30px;
-  padding: 0 10px;
-  background: #ecfdf5;
-  border: 1px solid #a7f3d0;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #065f46;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.navbar-whatsapp-btn:hover {
-  background: #d1fae5;
+.backup-dot {
+  background-color: #8b5cf6;
 }
 
 .whatsapp-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #10b981;
+  background-color: #10b981;
 }
 
-/* Screenshot & Settings Tool Buttons */
-.navbar-tool-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  background: #f8fafc;
-  border: 1px solid #e2e5eb;
-  border-radius: 4px;
-  color: #4b5563;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.navbar-tool-btn:hover {
-  background: #f1f5f9;
-  color: #1f2430;
-}
-
-/* User Profile Badge */
+/* User Profile Badge (Frameless Ghost Button with Hover) */
 .navbar-user-container {
   position: relative;
 }
@@ -410,24 +347,25 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  height: 30px;
+  height: 32px;
   padding: 0 10px;
-  background: #f1f5f9;
-  border: 1px solid #e2e5eb;
-  border-radius: 4px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
   font-size: 12px;
   font-weight: 600;
-  color: #1f2430;
+  color: #334155;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 .navbar-user-btn:hover {
-  background: #e2e8f0;
+  background-color: #e2e8f0;
+  color: #0f172a;
 }
 
 .navbar-username {
-  max-width: 100px;
+  max-width: 110px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -437,65 +375,140 @@
   position: absolute;
   top: calc(100% + 4px);
   right: 0;
-  min-width: 180px;
+  min-width: 190px;
   background: #ffffff;
   border: 1px solid #d1d5db;
-  border-radius: 4px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+  border-radius: 6px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
   padding: 6px 0;
   z-index: 2000;
 }
 
 .user-menu-header {
-  padding: 6px 14px;
+  padding: 8px 14px;
   display: flex;
   flex-direction: column;
 }
 
+.user-menu-header strong {
+  font-size: 13px;
+  color: #0f172a;
+}
+
 .user-menu-role {
   font-size: 11px;
-  color: #6b7280;
+  color: #64748b;
+  margin-top: 2px;
 }
 
 .user-menu-divider {
   height: 1px;
-  background: #e5e7eb;
+  background: #e2e8f0;
   margin: 4px 0;
 }
 
 .user-menu-item {
   width: 100%;
-  padding: 6px 14px;
+  padding: 7px 14px;
   font-size: 12px;
-  color: #1f2430;
+  color: #334155;
   background: transparent;
   border: none;
   text-align: left;
   cursor: pointer;
+  transition: all 0.12s ease;
 }
 
 .user-menu-item:hover {
-  background: #f3f4f6;
+  background-color: #eff6ff;
   color: #1a73e8;
 }
 
-/* Logout Button (Solid Red Accent from User Reference) */
+/* Logout Button */
 .navbar-logout-btn {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  height: 30px;
-  padding: 0 14px;
+  gap: 5px;
+  height: 32px;
+  padding: 0 12px;
   background: #dc2626;
   color: #ffffff;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.15s ease;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+  white-space: nowrap;
 }
 
 .navbar-logout-btn:hover {
-  background: #b91c1c;
+  background-color: #b91c1c;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.4);
+}
+
+/* ==========================================================================
+   RESPONSIVE TOP NAVBAR BREAKPOINTS
+   ========================================================================== */
+
+/* 1200px - Standard Laptops */
+@media (max-width: 1200px) {
+  .navbar-search-box {
+    width: 200px;
+  }
+  .navbar-search-box.search-active {
+    width: 260px;
+  }
+}
+
+/* 980px - Compact Screens */
+@media (max-width: 980px) {
+  .navbar-search-box {
+    width: 150px;
+  }
+  .navbar-search-box.search-active {
+    width: 220px;
+  }
+  .search-shortcut-badge {
+    display: none;
+  }
+  .nav-menu-btn {
+    padding: 0 8px;
+    font-size: 12px;
+  }
+}
+
+/* 768px - Tablets & Touch Terminals */
+@media (max-width: 768px) {
+  .desktop-top-navbar {
+    padding: 0 10px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .desktop-top-navbar::-webkit-scrollbar {
+    display: none;
+  }
+  .navbar-left-cluster {
+    flex-shrink: 0;
+  }
+  .navbar-right-cluster {
+    flex-shrink: 0;
+    gap: 6px;
+  }
+  .navbar-search-box {
+    display: none;
+  }
+  .navbar-username {
+    display: none;
+  }
+  .navbar-user-btn {
+    padding: 0 6px;
+  }
+  .navbar-logout-btn span {
+    display: none;
+  }
+  .navbar-logout-btn {
+    padding: 0 8px;
+  }
 }

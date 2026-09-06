@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react'
+import dayjs from 'dayjs'
 import './DashboardScreen.css'
 import type { AppMenuChild } from '../../types/menu'
 import { formatCurrency, formatWeight } from '../../utils/formatters'
@@ -6,6 +7,8 @@ import type { GoldRateRecord } from '@shared/types/goldRate'
 import type { CustomerOrderRecord } from '@shared/types/customerOrder'
 import type { QuotationRecord } from '@shared/types/quotation'
 import type { CustomerAdvanceRecord } from '@shared/types/advance'
+import type { SalesInvoiceRecord } from '@shared/types/salesInvoice'
+import type { PurchaseInvoiceRecord } from '@shared/types/purchaseInvoice'
 
 export interface DashboardScreenProps {
   openQuickScreen: (id: string, label: string, module: AppMenuChild['module']) => void
@@ -27,10 +30,26 @@ interface OperationalTableRow {
 interface ActivityItem {
   id: string
   time: string
-  type: 'Sale' | 'Purchase' | 'Advance' | 'Order' | 'Consignment' | 'Repair'
-  typeClass: 'sale' | 'purchase' | 'advance' | 'order' | 'consignment' | 'repair'
+  type: 'Sale' | 'Purchase' | 'Advance' | 'Order'
+  typeClass: 'sale' | 'purchase' | 'advance' | 'order'
   reference: string
+  partyName: string
   amountOrDetail: string
+  timestamp: number
+}
+
+function formatActivityTime(dateStr?: string | null): string {
+  if (!dateStr) return 'Today'
+  const d = dayjs(dateStr)
+  if (!d.isValid()) return String(dateStr).slice(0, 10)
+  const now = dayjs()
+  if (d.isSame(now, 'day')) {
+    if (dateStr.includes('T') || dateStr.includes(' ') || dateStr.includes(':')) {
+      return d.format('hh:mm A')
+    }
+    return 'Today'
+  }
+  return d.format('DD MMM')
 }
 
 export function DashboardScreen({
@@ -43,8 +62,9 @@ export function DashboardScreen({
   const [loading, setLoading] = useState<boolean>(true)
   const [refreshing, setRefreshing] = useState<boolean>(false)
   const [deskTab, setDeskTab] = useState<'orders' | 'quotations' | 'advances'>('orders')
+  const [lastSynced, setLastSynced] = useState<Date>(new Date())
 
-  // Real backend raw states
+  // Canonical backend raw states
   const [dailySummary, setDailySummary] = useState<DailySummaryResult | null>(null)
   const [outstanding, setOutstanding] = useState<OutstandingReportResult | null>(null)
   const [goldRates, setGoldRates] = useState<GoldRateRecord[]>([])
@@ -52,8 +72,12 @@ export function DashboardScreen({
   const [quotations, setQuotations] = useState<QuotationRecord[]>([])
   const [advances, setAdvances] = useState<CustomerAdvanceRecord[]>([])
   const [itemStock, setItemStock] = useState<ItemStockReportRecord[]>([])
-  const [reminders, setReminders] = useState<any[]>([])
+  const [reminders, setReminders] = useState<ReminderRecord[]>([])
   const [firmName, setFirmName] = useState<string>('Shree Jewellery')
+  const [salesInvoices, setSalesInvoices] = useState<SalesInvoiceRecord[]>([])
+  const [salesHeaders, setSalesHeaders] = useState<SaleRegisterRecord[]>([])
+  const [purchaseInvoices, setPurchaseInvoices] = useState<PurchaseInvoiceRecord[]>([])
+  const [purchaseHeaders, setPurchaseHeaders] = useState<PurchaseRegisterRecord[]>([])
 
   // --------------------------------------------------------------------------
   // 2. DATA FETCHING (Isolated Promise.allSettled for maximum UI resilience)
@@ -75,7 +99,11 @@ export function DashboardScreen({
         window.api.advances.list(),
         window.api.reports.itemStock(),
         window.api.firm.get(),
-        window.api.reminder.list()
+        window.api.reminder.list(),
+        window.api.salesInvoices.list(),
+        window.api.sales.list(),
+        window.api.purchaseInvoices.list(),
+        window.api.purchases.list()
       ])
 
       if (results[0].status === 'fulfilled' && results[0].value) {
@@ -105,6 +133,20 @@ export function DashboardScreen({
       if (results[8].status === 'fulfilled' && Array.isArray(results[8].value)) {
         setReminders(results[8].value)
       }
+      if (results[9].status === 'fulfilled' && Array.isArray(results[9].value)) {
+        setSalesInvoices(results[9].value)
+      }
+      if (results[10].status === 'fulfilled' && Array.isArray(results[10].value)) {
+        setSalesHeaders(results[10].value)
+      }
+      if (results[11].status === 'fulfilled' && Array.isArray(results[11].value)) {
+        setPurchaseInvoices(results[11].value)
+      }
+      if (results[12].status === 'fulfilled' && Array.isArray(results[12].value)) {
+        setPurchaseHeaders(results[12].value)
+      }
+
+      setLastSynced(new Date())
     } catch {
       // Dashboard gracefully displays available data
     } finally {
@@ -154,7 +196,7 @@ export function DashboardScreen({
 
     const cashClosing = dailySummary?.cash?.closingBalance ?? 0
     const cashOpening = dailySummary?.cash?.openingBalance ?? 0
-    const cashNet = cashClosing - cashOpening
+    const cashNet = dailySummary?.cash?.netMovement ?? (cashClosing - cashOpening)
 
     const totalReceivable = outstanding?.receivableTotals?.cash ?? 0
     const receivableCount = outstanding?.receivable?.length ?? 0
@@ -171,114 +213,278 @@ export function DashboardScreen({
     }
   }, [dailySummary, outstanding])
 
+  // Reminders metrics & list
+  const { overdueCount, upcomingCount, upcomingList } = useMemo(() => {
+    let overdue = 0
+    let upcoming = 0
+    const list: Array<{
+      id: string
+      title: string
+      date: string
+      isOverdue: boolean
+      type: string
+      amountText: string
+    }> = []
+
+    const todayStr = dayjs().format('YYYY-MM-DD')
+
+    for (const r of reminders) {
+      const reminderDate = r.reminderDate ? r.reminderDate.slice(0, 10) : ''
+      const isOverdue = Boolean(r.isOverdue || (reminderDate && reminderDate < todayStr))
+      if (isOverdue) {
+        overdue++
+      } else {
+        upcoming++
+      }
+
+      let amountText = ''
+      if (r.fineAmount && r.fineAmount > 0) {
+        amountText = formatWeight(r.fineAmount)
+      } else if (r.majuriAmount && r.majuriAmount > 0) {
+        amountText = formatCurrency(r.majuriAmount, true)
+      }
+
+      list.push({
+        id: r.id || `${r.billNo || 'rem'}-${Math.random()}`,
+        title: r.accountName || `${r.type || 'Showroom'} Reminder`,
+        date: reminderDate || 'Today',
+        isOverdue,
+        type: r.type || 'General',
+        amountText
+      })
+    }
+
+    return { overdueCount: overdue, upcomingCount: upcoming, upcomingList: list }
+  }, [reminders])
+
   // Inventory Health: Strict Gross >= Net >= Fine Domain Integrity
   const inventoryHealth = useMemo(() => {
     if (itemStock && itemStock.length > 0) {
-      let gross = itemStock.reduce((acc, i) => acc + (i.grossWeight || 0), 0)
-      let net = itemStock.reduce((acc, i) => acc + (i.netWeight || 0), 0)
-      let fine = itemStock.reduce((acc, i) => acc + (i.fine || 0), 0)
-      const pcs = itemStock.reduce((acc, i) => acc + (i.pcs || 0), 0)
+      let gross = itemStock.reduce((acc, i) => acc + (Number(i.grossWeight) || 0), 0)
+      let net = itemStock.reduce((acc, i) => acc + (Number(i.netWeight) || 0), 0)
+      let fine = itemStock.reduce((acc, i) => acc + (Number(i.fine) || 0), 0)
+      const pcs = itemStock.reduce((acc, i) => acc + (Number(i.pcs) || 0), 0)
 
       // Guarantee domain physical integrity: Gross >= Net >= Fine
       if (net > gross) gross = net
       if (fine > net) fine = net
 
-      const valuation = fine * (liveRatesDisplay.gold24k || 7485)
+      const valuation = Math.round(fine * (liveRatesDisplay.gold24k || 7485))
 
       return {
         grossWeight: gross,
         netWeight: net,
         fineWeight: fine,
         totalPieces: pcs,
-        valuation: valuation || 84200000
+        valuation
       }
     }
 
     return {
-      grossWeight: 15873.07,
-      netWeight: 15220.45,
-      fineWeight: 14110.82,
-      totalPieces: 87,
-      valuation: 105619487
+      grossWeight: 0,
+      netWeight: 0,
+      fineWeight: 0,
+      totalPieces: 0,
+      valuation: 0
     }
   }, [itemStock, liveRatesDisplay.gold24k])
 
   // Operational Workspace Table Data
   const operationalRows = useMemo((): OperationalTableRow[] => {
     if (deskTab === 'orders') {
-      return orders.slice(0, 5).map((o, idx) => ({
-        id: o.id || `ord-${idx}`,
+      return orders.slice(0, 6).map((o) => ({
+        id: o.id,
         customer: o.customerName || o.accountName || 'Customer',
-        reference: o.orderNumber || `ORD-2026-${String(idx + 1).padStart(3, '0')}`,
+        reference: o.orderNumber || '-',
         item: o.metalType ? `${o.metalType} Jewellery` : 'Jewellery Article',
-        value: o.grandTotal || 0,
-        status: o.status === 'IN_PROGRESS' ? 'In Progress' : o.status === 'READY' ? 'Ready' : o.status || 'Confirmed',
-        statusType: o.status === 'IN_PROGRESS' ? 'in-progress' : o.status === 'READY' ? 'ready' : 'pending',
+        value: Number(o.grandTotal || 0),
+        status:
+          o.status === 'IN_PROGRESS'
+            ? 'In Progress'
+            : o.status === 'READY'
+              ? 'Ready'
+              : o.status === 'COMPLETED'
+                ? 'Completed'
+                : o.status || 'Confirmed',
+        statusType:
+          o.status === 'IN_PROGRESS'
+            ? 'in-progress'
+            : o.status === 'READY' || o.status === 'COMPLETED'
+              ? 'ready'
+              : 'pending',
         dueDate: o.expectedDeliveryDate ? o.expectedDeliveryDate.slice(0, 10) : '-',
         type: 'order'
       }))
     } else if (deskTab === 'quotations') {
-      return quotations.slice(0, 5).map((q, idx) => ({
-        id: q.id || `qtn-${idx}`,
+      return quotations.slice(0, 6).map((q) => ({
+        id: q.id,
         customer: q.customerName || q.accountName || 'Customer',
-        reference: q.quotationNumber || `QTN-2026-${String(idx + 1).padStart(3, '0')}`,
+        reference: q.quotationNumber || '-',
         item: 'Quoted Pieces',
-        value: q.grandTotal || 0,
-        status: q.status === 'ACCEPTED' ? 'Accepted' : q.status === 'CONVERTED' ? 'Converted' : 'Pending',
-        statusType: q.status === 'ACCEPTED' ? 'ready' : 'pending',
+        value: Number(q.grandTotal || 0),
+        status:
+          q.status === 'ACCEPTED'
+            ? 'Accepted'
+            : q.status === 'CONVERTED'
+              ? 'Converted'
+              : q.status === 'EXPIRED'
+                ? 'Expired'
+                : q.status || 'Pending',
+        statusType:
+          q.status === 'ACCEPTED' || q.status === 'CONVERTED'
+            ? 'ready'
+            : q.status === 'EXPIRED'
+              ? 'expiring'
+              : 'pending',
         dueDate: q.validUntil ? q.validUntil.slice(0, 10) : '-',
         type: 'quotation'
       }))
     } else {
-      return advances.slice(0, 5).map((a, idx) => ({
-        id: a.id || `adv-${idx}`,
+      return advances.slice(0, 6).map((a) => ({
+        id: a.id,
         customer: a.customerName || a.accountName || 'Customer',
-        reference: a.advanceNumber || `ADV-2026-${String(idx + 1).padStart(3, '0')}`,
+        reference: a.advanceNumber || '-',
         item: `Advance (${a.paymentMethod || 'CASH'})`,
-        value: a.amount || 0,
-        status: a.status === 'FULLY_ALLOCATED' ? 'Allocated' : a.status === 'PARTIALLY_ALLOCATED' ? 'Partial' : 'Available',
-        statusType: a.status === 'FULLY_ALLOCATED' ? 'ready' : a.status === 'PARTIALLY_ALLOCATED' ? 'partial' : 'in-progress',
+        value: Number(a.amount || 0),
+        status:
+          a.status === 'FULLY_ALLOCATED'
+            ? 'Allocated'
+            : a.status === 'PARTIALLY_ALLOCATED'
+              ? 'Partial'
+              : 'Available',
+        statusType:
+          a.status === 'FULLY_ALLOCATED'
+            ? 'ready'
+            : a.status === 'PARTIALLY_ALLOCATED'
+              ? 'partial'
+              : 'in-progress',
         dueDate: a.advanceDate ? a.advanceDate.slice(0, 10) : '-',
         type: 'advance'
       }))
     }
   }, [deskTab, orders, quotations, advances])
 
-  // Recent Activity Feed
-  const activityStream = useMemo((): ActivityItem[] => [
-    {
-      id: 'act-1',
-      time: '11:42 AM',
-      type: 'Sale',
-      typeClass: 'sale',
-      reference: 'INV-2026-0124',
-      amountOrDetail: '₹ 84,500'
-    },
-    {
-      id: 'act-2',
-      time: '10:15 AM',
-      type: 'Purchase',
-      typeClass: 'purchase',
-      reference: 'PINV-2026-0018',
-      amountOrDetail: '₹ 1,65,000'
-    },
-    {
-      id: 'act-3',
-      time: '09:32 AM',
-      type: 'Advance',
-      typeClass: 'advance',
-      reference: 'ADV-2026-0034',
-      amountOrDetail: '₹ 1,00,000'
-    },
-    {
-      id: 'act-4',
-      time: '09:15 AM',
-      type: 'Order',
-      typeClass: 'order',
-      reference: 'ORD-2026-0042',
-      amountOrDetail: '₹ 42,000'
+  // Unified Dynamic Recent Activity Feed from backend
+  const activityStream = useMemo((): ActivityItem[] => {
+    const stream: ActivityItem[] = []
+
+    // 1. Sales Invoices
+    for (const inv of salesInvoices) {
+      const ts = inv.createdAt
+        ? new Date(inv.createdAt).getTime()
+        : inv.invoiceDate
+          ? new Date(inv.invoiceDate).getTime()
+          : 0
+      stream.push({
+        id: `sinv-${inv.id}`,
+        time: formatActivityTime(inv.createdAt || inv.invoiceDate),
+        type: 'Sale',
+        typeClass: 'sale',
+        reference: inv.invoiceNumber || 'INV',
+        partyName: inv.customerName || 'Customer',
+        amountOrDetail: formatCurrency(Number(inv.grandTotal || 0), true),
+        timestamp: ts
+      })
     }
-  ], [])
+
+    // 2. Sales Headers (Counter Sales)
+    for (const s of salesHeaders) {
+      if (stream.some((it) => it.reference === s.sale_no)) continue
+      const ts = s.sale_date ? new Date(s.sale_date).getTime() : 0
+      stream.push({
+        id: `sale-${s.id}`,
+        time: formatActivityTime(s.sale_date),
+        type: 'Sale',
+        typeClass: 'sale',
+        reference: s.sale_no || 'SALE',
+        partyName: s.account_name || 'Customer',
+        amountOrDetail: formatCurrency(
+          Number(s.payment_cash_jama_total || s.item_majuri_total || 0),
+          true
+        ),
+        timestamp: ts
+      })
+    }
+
+    // 3. Purchase Invoices
+    for (const pinv of purchaseInvoices) {
+      const ts = pinv.createdAt
+        ? new Date(pinv.createdAt).getTime()
+        : pinv.invoiceDate
+          ? new Date(pinv.invoiceDate).getTime()
+          : 0
+      stream.push({
+        id: `pinv-${pinv.id}`,
+        time: formatActivityTime(pinv.createdAt || pinv.invoiceDate),
+        type: 'Purchase',
+        typeClass: 'purchase',
+        reference: pinv.invoiceNumber || 'PINV',
+        partyName: pinv.supplierName || 'Supplier',
+        amountOrDetail: formatCurrency(Number(pinv.grandTotal || 0), true),
+        timestamp: ts
+      })
+    }
+
+    // 4. Purchase Headers
+    for (const p of purchaseHeaders) {
+      if (stream.some((it) => it.reference === p.purchaseNo)) continue
+      const ts = p.purchaseDate ? new Date(p.purchaseDate).getTime() : 0
+      stream.push({
+        id: `pur-${p.id}`,
+        time: formatActivityTime(p.purchaseDate),
+        type: 'Purchase',
+        typeClass: 'purchase',
+        reference: p.purchaseNo || 'PUR',
+        partyName: p.accountName || 'Supplier',
+        amountOrDetail: formatCurrency(
+          Number(p.paymentCashNaveTotal || p.itemMajuriTotal || 0),
+          true
+        ),
+        timestamp: ts
+      })
+    }
+
+    // 5. Customer Advances
+    for (const adv of advances) {
+      const ts = adv.createdAt
+        ? new Date(adv.createdAt).getTime()
+        : adv.advanceDate
+          ? new Date(adv.advanceDate).getTime()
+          : 0
+      stream.push({
+        id: `adv-${adv.id}`,
+        time: formatActivityTime(adv.createdAt || adv.advanceDate),
+        type: 'Advance',
+        typeClass: 'advance',
+        reference: adv.advanceNumber || 'ADV',
+        partyName: adv.customerName || adv.accountName || 'Customer',
+        amountOrDetail: formatCurrency(Number(adv.amount || 0), true),
+        timestamp: ts
+      })
+    }
+
+    // 6. Customer Orders
+    for (const ord of orders) {
+      const ts = ord.createdAt
+        ? new Date(ord.createdAt).getTime()
+        : ord.orderDate
+          ? new Date(ord.orderDate).getTime()
+          : 0
+      stream.push({
+        id: `ord-${ord.id}`,
+        time: formatActivityTime(ord.createdAt || ord.orderDate),
+        type: 'Order',
+        typeClass: 'order',
+        reference: ord.orderNumber || 'ORD',
+        partyName: ord.customerName || ord.accountName || 'Customer',
+        amountOrDetail: formatCurrency(Number(ord.grandTotal || 0), true),
+        timestamp: ts
+      })
+    }
+
+    stream.sort((a, b) => b.timestamp - a.timestamp)
+    return stream.slice(0, 6)
+  }, [salesInvoices, salesHeaders, purchaseInvoices, purchaseHeaders, advances, orders])
 
   if (loading && !dailySummary) {
     return (
@@ -291,20 +497,37 @@ export function DashboardScreen({
 
   return (
     <div className="erp-dashboard-container">
-      {/* 1. EXECUTIVE KPI CARDS ROW (Direct Match to User Reference Screenshot) */}
+      {/* 1. EXECUTIVE KPI CARDS ROW (6 Dynamic KPI Cards) */}
       <section className="erp-kpi-ribbon" aria-label="Executive KPI Overview">
-        {/* KPI 1: TODAY'S PURCHASE */}
+        {/* KPI 1: TODAY'S SALE */}
         <div
           className="erp-kpi-tile border-accent-purple"
+          onClick={() => openQuickScreen('sale-register', 'Sale Register', 'reports')}
+          title="Click to view Sale Register"
+        >
+          <div className="kpi-tile-header">TODAY&apos;S SALE</div>
+          <div className="kpi-tile-value">{kpis.sales.count} Bills</div>
+          <div className="kpi-tile-sub">
+            {kpis.sales.fineWeight > 0 ? `${formatWeight(kpis.sales.fineWeight)} fine • ` : ''}
+            {formatCurrency(kpis.sales.amount, true)}
+          </div>
+        </div>
+
+        {/* KPI 2: TODAY'S PURCHASE */}
+        <div
+          className="erp-kpi-tile border-accent-blue"
           onClick={() => openQuickScreen('purchase-register', 'Purchase Register', 'reports')}
           title="Click to view Purchase Register"
         >
           <div className="kpi-tile-header">TODAY&apos;S PURCHASE</div>
           <div className="kpi-tile-value">{kpis.purchases.count} Bills</div>
-          <div className="kpi-tile-sub">Majuri Rs. 0 &bull; {formatCurrency(kpis.purchases.amount, true)}</div>
+          <div className="kpi-tile-sub">
+            {kpis.purchases.fineWeight > 0 ? `${formatWeight(kpis.purchases.fineWeight)} fine • ` : ''}
+            {formatCurrency(kpis.purchases.amount, true)}
+          </div>
         </div>
 
-        {/* KPI 2: CASH IN HAND */}
+        {/* KPI 3: CASH IN HAND */}
         <div
           className="erp-kpi-tile border-accent-green"
           onClick={() => openQuickScreen('cash-book', 'Cash Book', 'reports')}
@@ -312,21 +535,25 @@ export function DashboardScreen({
         >
           <div className="kpi-tile-header">CASH IN HAND</div>
           <div className="kpi-tile-value">Rs. {Math.round(kpis.cash.closing).toLocaleString('en-IN')}</div>
-          <div className="kpi-tile-sub">Today&apos;s net Rs. {Math.round(kpis.cash.net).toLocaleString('en-IN')}</div>
+          <div className="kpi-tile-sub">
+            Today&apos;s net Rs. {Math.round(kpis.cash.net).toLocaleString('en-IN')}
+          </div>
         </div>
 
-        {/* KPI 3: RECEIVABLE */}
+        {/* KPI 4: RECEIVABLE */}
         <div
-          className="erp-kpi-tile border-accent-blue"
+          className="erp-kpi-tile border-accent-navy"
           onClick={() => openQuickScreen('outstanding', 'Outstanding', 'reports')}
           title="Click to view Customer Receivables"
         >
           <div className="kpi-tile-header">RECEIVABLE</div>
           <div className="kpi-tile-value">{kpis.receivables.count} A/c</div>
-          <div className="kpi-tile-sub">Accounts owing the firm ({formatCurrency(kpis.receivables.amount, true)})</div>
+          <div className="kpi-tile-sub">
+            Accounts owing ({formatCurrency(kpis.receivables.amount, true)})
+          </div>
         </div>
 
-        {/* KPI 4: PAYABLE */}
+        {/* KPI 5: PAYABLE */}
         <div
           className="erp-kpi-tile border-accent-red"
           onClick={() => openQuickScreen('outstanding', 'Outstanding', 'reports')}
@@ -334,22 +561,24 @@ export function DashboardScreen({
         >
           <div className="kpi-tile-header">PAYABLE</div>
           <div className="kpi-tile-value">{kpis.payables.count} A/c</div>
-          <div className="kpi-tile-sub">Accounts the firm owes ({formatCurrency(kpis.payables.amount, true)})</div>
+          <div className="kpi-tile-sub">
+            Accounts owed ({formatCurrency(kpis.payables.amount, true)})
+          </div>
         </div>
 
-        {/* KPI 5: REMINDERS */}
+        {/* KPI 6: REMINDERS */}
         <div
           className="erp-kpi-tile border-accent-orange"
           onClick={() => openQuickScreen('reminder', 'Reminder', 'utility')}
           title="Click to view Reminders"
         >
           <div className="kpi-tile-header">REMINDERS</div>
-          <div className="kpi-tile-value">0 Overdue</div>
-          <div className="kpi-tile-sub">{reminders.length} upcoming</div>
+          <div className="kpi-tile-value">{overdueCount} Overdue</div>
+          <div className="kpi-tile-sub">{upcomingCount} upcoming</div>
         </div>
       </section>
 
-      {/* 2. PASTEL QUICK ACTION LAUNCHPAD (Direct Match to User Reference Screenshot) */}
+      {/* 2. PASTEL QUICK ACTION LAUNCHPAD */}
       <section className="erp-quick-launchpad" aria-label="Quick Navigation Launchpad">
         {/* Quick 1: Sale */}
         <button
@@ -442,7 +671,7 @@ export function DashboardScreen({
         </button>
       </section>
 
-      {/* 3. MAIN WORKSPACE: 2-COLUMN LAYOUT (CENTER DESK + RIGHT BRAND/REMINDERS) */}
+      {/* 3. MAIN WORKSPACE: 2-COLUMN LAYOUT */}
       <section className="erp-dashboard-body-grid">
         {/* LEFT / CENTER REGION */}
         <div className="body-center-column">
@@ -479,8 +708,9 @@ export function DashboardScreen({
               className="rates-refresh-btn"
               onClick={() => void loadDashboardData(true)}
               disabled={refreshing}
+              title={`Last synced: ${dayjs(lastSynced).format('hh:mm:ss A')}`}
             >
-              {refreshing ? '⟳' : '↻ Refresh'}
+              {refreshing ? '⟳ Syncing...' : '↻ Refresh'}
             </button>
           </div>
 
@@ -649,31 +879,65 @@ export function DashboardScreen({
             </div>
 
             <div className="activity-stream-container">
-              {activityStream.map((item) => (
-                <div key={item.id} className="activity-stream-item">
-                  <span className="activity-time">{item.time}</span>
-                  <span className={`activity-badge ${item.typeClass}`}>{item.type}</span>
-                  <span className="activity-ref">{item.reference}</span>
-                  <span className="activity-amount">{item.amountOrDetail}</span>
+              {activityStream.length === 0 ? (
+                <div className="activity-empty-state">
+                  <span>No recent transactions recorded in the showroom.</span>
                 </div>
-              ))}
+              ) : (
+                activityStream.map((item) => (
+                  <div
+                    key={item.id}
+                    className="activity-stream-item"
+                    onClick={() =>
+                      openQuickScreen(
+                        item.type === 'Sale'
+                          ? 'sale-register'
+                          : item.type === 'Purchase'
+                            ? 'purchase-register'
+                            : item.type === 'Advance'
+                              ? 'customer-advances'
+                              : 'customer-orders',
+                        item.type === 'Sale'
+                          ? 'Sale Register'
+                          : item.type === 'Purchase'
+                            ? 'Purchase Register'
+                            : item.type === 'Advance'
+                              ? 'Customer Advances'
+                              : 'Customer Orders',
+                        item.type === 'Sale' || item.type === 'Purchase' ? 'reports' : 'transaction'
+                      )
+                    }
+                    title="Click to view details"
+                  >
+                    <span className="activity-time">{item.time}</span>
+                    <span className={`activity-badge ${item.typeClass}`}>{item.type}</span>
+                    <span className="activity-ref">{item.reference}</span>
+                    <span className="activity-party">{item.partyName}</span>
+                    <span className="activity-amount">{item.amountOrDetail}</span>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>
 
-        {/* RIGHT SIDEBAR COLUMN (Direct Match to User Reference Screenshot) */}
+        {/* RIGHT SIDEBAR COLUMN */}
         <div className="body-right-column">
           {/* Brand Showcase Card */}
           <div className="right-brand-showcase-card">
             <div className="brand-diamond-icon">
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#0284c7" strokeWidth="1.8">
+              <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#0284c7" strokeWidth="1.8">
                 <path d="M6 3h12l4 6-10 13L2 9z" />
                 <path d="M12 22V9" />
                 <path d="m2 9 8 4 2-4 2 4 8-4" />
               </svg>
             </div>
-            <h2 className="brand-showcase-title">{firmName ? firmName.toUpperCase() : 'JEWELLERY'}</h2>
-            <p className="brand-showcase-subtitle">ERP Desktop Software</p>
+            <h2 className="brand-showcase-title">{firmName ? firmName.toUpperCase() : 'JEWELLERY ERP'}</h2>
+            <p className="brand-showcase-subtitle">Showroom POS & Inventory Management</p>
+            <div className="system-status-indicator">
+              <span className="status-live-dot" />
+              <span>System Active • Live Database</span>
+            </div>
           </div>
 
           {/* Upcoming Reminders Card */}
@@ -685,19 +949,34 @@ export function DashboardScreen({
                 className="reminders-view-all-link"
                 onClick={() => openQuickScreen('reminder', 'Reminder', 'utility')}
               >
-                View All
+                View All &rarr;
               </button>
             </div>
 
             <div className="reminders-body">
-              {reminders.length === 0 ? (
-                <div className="no-reminders-text">No reminders scheduled.</div>
+              {upcomingList.length === 0 ? (
+                <div className="no-reminders-text">No pending reminders scheduled.</div>
               ) : (
                 <div className="reminders-list">
-                  {reminders.slice(0, 5).map((r, i) => (
-                    <div key={r.id || i} className="reminder-item-row">
-                      <div className="reminder-item-title">{r.title || r.narration || 'Reminder'}</div>
-                      <div className="reminder-item-date">{r.reminderDate || 'Today'}</div>
+                  {upcomingList.slice(0, 5).map((r) => (
+                    <div
+                      key={r.id}
+                      className="reminder-item-row"
+                      onClick={() => openQuickScreen('reminder', 'Reminder', 'utility')}
+                      title="Click to manage reminder"
+                    >
+                      <div className="reminder-item-header">
+                        <span className="reminder-item-title">{r.title}</span>
+                        {r.isOverdue ? (
+                          <span className="reminder-overdue-tag">Overdue</span>
+                        ) : (
+                          <span className="reminder-type-tag">{r.type}</span>
+                        )}
+                      </div>
+                      <div className="reminder-meta-row">
+                        <span className="reminder-item-date">{r.date}</span>
+                        {r.amountText && <span className="reminder-item-amount">{r.amountText}</span>}
+                      </div>
                     </div>
                   ))}
                 </div>

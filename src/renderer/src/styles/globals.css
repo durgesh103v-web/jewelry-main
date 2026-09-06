@@ -230,3 +230,50 @@ button {
   font-family: var(--font-family-mono);
   font-variant-numeric: tabular-nums;
 }
+
+/* ==========================================================================
+   8. UNIVERSAL RESPONSIVE SHOWROOM UTILITIES
+   ========================================================================== */
+.erp-table-wrap,
+.erp-table-container {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 1024px) {
+  .erp-page-container {
+    padding: var(--space-3) var(--space-4) var(--space-5) var(--space-4);
+    gap: var(--space-3);
+  }
+
+  .erp-card-panel {
+    padding: var(--space-3);
+  }
+}
+
+@media (max-width: 768px) {
+  .erp-page-container {
+    padding: 8px 10px 14px 10px;
+    gap: 8px;
+  }
+
+  .erp-card-panel-header {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .sales-time-filters,
+  .erp-filter-strip {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .erp-table th,
+  .erp-table td {
+    padding: 6px 8px;
+    font-size: 11px;
+  }
+}
+

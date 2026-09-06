@@ -1,7 +1,7 @@
 /* ==========================================================================
    PRODUCTION JEWELLERY ERP DASHBOARD STYLES
-   Exact match to user reference screenshot
-   Clean, precise desktop ERP software (White surfaces, light-gray bg, zero footer)
+   Pixel-perfect desktop ERP software (White surfaces, light-gray bg, zero footer)
+   100% Fully Responsive Layout across Desktop, Laptops, Tablets, and Compact Screens
    ========================================================================== */
 
 .erp-dashboard-container {
@@ -13,10 +13,17 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 14px 16px 20px 16px;
+  padding: 12px 16px 20px 16px;
   box-sizing: border-box;
   overflow-y: auto;
   overflow-x: hidden;
+}
+
+@media (max-width: 768px) {
+  .erp-dashboard-container {
+    padding: 8px 10px 16px 10px;
+    gap: 10px;
+  }
 }
 
 .erp-dashboard-loading-state {
@@ -51,21 +58,43 @@
    -------------------------------------------------------------------------- */
 .erp-kpi-ribbon {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 12px;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 10px;
+}
+
+@media (max-width: 1540px) {
+  .erp-kpi-ribbon {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+}
+
+@media (max-width: 960px) {
+  .erp-kpi-ribbon {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+}
+
+@media (max-width: 520px) {
+  .erp-kpi-ribbon {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
 }
 
 .erp-kpi-tile {
   background: #ffffff;
   border: 1px solid var(--color-border-default, #e2e5eb);
   border-radius: 4px;
-  padding: 12px 14px;
+  padding: 10px 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   cursor: pointer;
   transition: transform 0.12s ease, box-shadow 0.12s ease;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  min-width: 0;
 }
 
 .erp-kpi-tile:hover {
@@ -85,6 +114,10 @@
   border-left: 4px solid #3b82f6;
 }
 
+.border-accent-navy {
+  border-left: 4px solid #0284c7;
+}
+
 .border-accent-red {
   border-left: 4px solid #ef4444;
 }
@@ -99,15 +132,21 @@
   color: #64748b;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .kpi-tile-value {
-  font-size: 20px;
+  font-size: clamp(16px, 1.4vw, 20px);
   font-weight: 700;
   color: #1f2430;
-  margin: 4px 0 2px 0;
+  margin: 3px 0 1px 0;
   font-family: var(--font-family-mono, monospace);
   line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .kpi-tile-sub {
@@ -124,7 +163,33 @@
 .erp-quick-launchpad {
   display: grid;
   grid-template-columns: repeat(9, 1fr);
-  gap: 10px;
+  gap: 8px;
+}
+
+@media (max-width: 1400px) {
+  .erp-quick-launchpad {
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  }
+}
+
+@media (max-width: 960px) {
+  .erp-quick-launchpad {
+    grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+    gap: 6px;
+  }
+}
+
+@media (max-width: 620px) {
+  .erp-quick-launchpad {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+}
+
+@media (max-width: 380px) {
+  .erp-quick-launchpad {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 .launchpad-card {
@@ -132,13 +197,14 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 64px;
+  height: clamp(54px, 5.2vw, 64px);
   border-radius: 6px;
   border: 1px solid transparent;
   cursor: pointer;
   transition: transform 0.12s ease, box-shadow 0.12s ease;
   user-select: none;
-  padding: 6px;
+  padding: 4px;
+  min-width: 0;
 }
 
 .launchpad-card:hover {
@@ -147,16 +213,19 @@
 }
 
 .launchpad-icon {
-  font-size: 20px;
+  font-size: clamp(16px, 1.6vw, 20px);
   line-height: 1;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 .launchpad-label {
-  font-size: 12px;
+  font-size: clamp(10px, 0.9vw, 12px);
   font-weight: 600;
   text-align: center;
   white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Pastel Themes from Screenshot */
@@ -233,12 +302,27 @@
 }
 
 .body-right-column {
-  width: 260px;
-  min-width: 260px;
-  max-width: 260px;
+  width: 270px;
+  min-width: 270px;
+  max-width: 270px;
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+@media (max-width: 1180px) {
+  .erp-dashboard-body-grid {
+    flex-direction: column;
+  }
+
+  .body-right-column {
+    width: 100%;
+    min-width: 100%;
+    max-width: 100%;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 12px;
+  }
 }
 
 /* Live Bullion Market Rates Strip */
@@ -246,18 +330,20 @@
   background: #ffffff;
   border: 1px solid var(--color-border-default, #e2e5eb);
   border-radius: 4px;
-  padding: 8px 14px;
+  padding: 8px 12px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  flex-wrap: wrap;
 }
 
 .rates-strip-badge {
   display: flex;
   align-items: center;
   gap: 6px;
+  flex-shrink: 0;
 }
 
 .gold-gem-dot {
@@ -275,8 +361,9 @@
 .rates-ticker-container {
   display: flex;
   align-items: center;
-  gap: 14px;
-  overflow-x: auto;
+  gap: 12px;
+  flex-wrap: wrap;
+  flex: 1;
 }
 
 .rate-ticker-pill {
@@ -308,10 +395,26 @@
   padding: 3px 8px;
   cursor: pointer;
   white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 0.12s ease;
 }
 
 .rates-refresh-btn:hover {
   background: #dbeafe;
+}
+
+@media (max-width: 860px) {
+  .dashboard-rates-strip {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .rates-ticker-container {
+    gap: 8px;
+  }
+  .rates-refresh-btn {
+    align-self: flex-start;
+  }
 }
 
 /* Generic Panel Cards */
@@ -319,7 +422,7 @@
   background: #ffffff;
   border: 1px solid var(--color-border-default, #e2e5eb);
   border-radius: 4px;
-  padding: 12px 16px;
+  padding: 12px 14px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
   display: flex;
   flex-direction: column;
@@ -330,6 +433,8 @@
   align-items: center;
   justify-content: space-between;
   margin-bottom: 10px;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .card-header-title {
@@ -339,6 +444,7 @@
   font-size: 13px;
   font-weight: 700;
   color: #1f2430;
+  flex-wrap: wrap;
 }
 
 .domain-verified-badge {
@@ -349,6 +455,7 @@
   border: 1px solid #a7f3d0;
   border-radius: 3px;
   padding: 1px 6px;
+  white-space: nowrap;
 }
 
 .card-action-btn {
@@ -358,6 +465,7 @@
   background: transparent;
   border: none;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .card-action-btn:hover {
@@ -371,6 +479,25 @@
   gap: 10px;
 }
 
+@media (max-width: 1240px) {
+  .inventory-summary-metrics {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .inventory-summary-metrics {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .inventory-summary-metrics {
+    grid-template-columns: 1fr;
+  }
+}
+
 .inv-metric-box {
   background: #f8fafc;
   border: 1px solid #f1f5f9;
@@ -378,19 +505,26 @@
   padding: 8px 10px;
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 .inv-metric-label {
   font-size: 11px;
   color: #64748b;
   margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .inv-metric-val {
-  font-size: 14px;
+  font-size: clamp(13px, 1.2vw, 15px);
   font-weight: 700;
   color: #1f2430;
   font-family: var(--font-family-mono, monospace);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Operational Tabs */
@@ -398,6 +532,7 @@
   display: flex;
   align-items: center;
   gap: 4px;
+  flex-wrap: wrap;
 }
 
 .desk-tab-btn {
@@ -407,8 +542,9 @@
   background: transparent;
   border: 1px solid transparent;
   border-radius: 3px;
-  padding: 4px 10px;
+  padding: 4px 8px;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .desk-tab-btn:hover {
@@ -425,10 +561,13 @@
 
 .operational-table-wrap {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
 }
 
 .desktop-erp-table {
   width: 100%;
+  min-width: 600px;
   border-collapse: collapse;
   font-size: 12px;
 }
@@ -495,6 +634,11 @@
 }
 
 .erp-status-pill.partial {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.erp-status-pill.expiring {
   background: #fef2f2;
   color: #b91c1c;
 }
@@ -532,16 +676,26 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 5px 8px;
+  padding: 6px 10px;
   background: #f8fafc;
+  border: 1px solid #f1f5f9;
   border-radius: 4px;
   font-size: 12px;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
+  min-width: 0;
+}
+
+.activity-stream-item:hover {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
 }
 
 .activity-time {
   font-size: 11px;
   color: #64748b;
-  width: 65px;
+  width: 68px;
+  flex-shrink: 0;
 }
 
 .activity-badge {
@@ -550,6 +704,7 @@
   padding: 1px 6px;
   border-radius: 3px;
   text-transform: uppercase;
+  flex-shrink: 0;
 }
 
 .activity-badge.sale {
@@ -575,14 +730,53 @@
 .activity-ref {
   font-family: var(--font-family-mono, monospace);
   color: #475569;
-  flex: 1;
   margin: 0 10px;
+  flex-shrink: 0;
+}
+
+.activity-party {
+  font-size: 11px;
+  color: #475569;
+  font-weight: 500;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-right: 12px;
+  min-width: 60px;
 }
 
 .activity-amount {
   font-family: var(--font-family-mono, monospace);
   font-weight: 600;
   color: #1f2430;
+  flex-shrink: 0;
+}
+
+.activity-empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px 0;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+@media (max-width: 600px) {
+  .activity-stream-item {
+    flex-wrap: wrap;
+    gap: 4px 8px;
+    padding: 8px;
+  }
+  .activity-party {
+    order: 3;
+    width: 100%;
+    margin-right: 0;
+  }
+  .activity-amount {
+    margin-left: auto;
+  }
 }
 
 /* --------------------------------------------------------------------------
@@ -592,7 +786,7 @@
   background: #ffffff;
   border: 1px solid var(--color-border-default, #e2e5eb);
   border-radius: 4px;
-  padding: 24px 16px;
+  padding: 20px 16px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -620,6 +814,24 @@
   font-size: 11px;
   color: #64748b;
   margin: 2px 0 0 0;
+}
+
+.system-status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  font-size: 11px;
+  color: #10b981;
+  font-weight: 600;
+}
+
+.status-live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #10b981;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
 }
 
 .right-reminders-card {
@@ -682,17 +894,70 @@
   display: flex;
   flex-direction: column;
   background: #f8fafc;
+  border: 1px solid #f1f5f9;
   border-radius: 4px;
-  padding: 6px 10px;
+  padding: 8px 10px;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.reminder-item-row:hover {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+}
+
+.reminder-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
 }
 
 .reminder-item-title {
   font-size: 12px;
   font-weight: 600;
   color: #1f2430;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.reminder-overdue-tag {
+  font-size: 9px;
+  font-weight: 700;
+  color: #ef4444;
+  background: #fee2e2;
+  padding: 1px 5px;
+  border-radius: 2px;
+  text-transform: uppercase;
+}
+
+.reminder-type-tag {
+  font-size: 9px;
+  font-weight: 700;
+  color: #0284c7;
+  background: #e0f2fe;
+  padding: 1px 5px;
+  border-radius: 2px;
+  text-transform: uppercase;
+}
+
+.reminder-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+  font-size: 11px;
+  color: #64748b;
 }
 
 .reminder-item-date {
-  font-size: 10px;
+  font-size: 11px;
   color: #64748b;
+}
+
+.reminder-item-amount {
+  font-size: 11px;
+  font-weight: 600;
+  color: #1f2430;
 }
