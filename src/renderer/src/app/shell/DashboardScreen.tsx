@@ -497,86 +497,91 @@ export function DashboardScreen({
 
   return (
     <div className="erp-dashboard-container">
-      {/* 1. EXECUTIVE KPI CARDS ROW (6 Dynamic KPI Cards) */}
-      <section className="erp-kpi-ribbon" aria-label="Executive KPI Overview">
+      {/* 1. EXECUTIVE KPI CARDS ROW — 6 compact cards in a single row */}
+      <div className="flex gap-2 w-full" aria-label="Executive KPI Overview">
+
         {/* KPI 1: TODAY'S SALE */}
         <div
-          className="erp-kpi-tile border-accent-purple"
+          className="flex-1 min-w-0 bg-white border border-gray-200 border-l-4 border-l-violet-500 rounded px-3 py-2 cursor-pointer hover:-translate-y-px hover:shadow-md transition-all duration-150"
           onClick={() => openQuickScreen('sale-register', 'Sale Register', 'reports')}
           title="Click to view Sale Register"
         >
-          <div className="kpi-tile-header">TODAY&apos;S SALE</div>
-          <div className="kpi-tile-value">{kpis.sales.count} Bills</div>
-          <div className="kpi-tile-sub">
-            {kpis.sales.fineWeight > 0 ? `${formatWeight(kpis.sales.fineWeight)} fine • ` : ''}
+          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest truncate">Today&apos;s Sale</div>
+          <div className="text-base font-bold text-slate-800 leading-tight mt-0.5 truncate">{kpis.sales.count} Bills</div>
+          <div className="text-[11px] text-slate-500 truncate mt-0.5">
+            {kpis.sales.fineWeight > 0 ? `${formatWeight(kpis.sales.fineWeight)} fine · ` : ''}
             {formatCurrency(kpis.sales.amount, true)}
           </div>
         </div>
 
         {/* KPI 2: TODAY'S PURCHASE */}
         <div
-          className="erp-kpi-tile border-accent-blue"
+          className="flex-1 min-w-0 bg-white border border-gray-200 border-l-4 border-l-blue-500 rounded px-3 py-2 cursor-pointer hover:-translate-y-px hover:shadow-md transition-all duration-150"
           onClick={() => openQuickScreen('purchase-register', 'Purchase Register', 'reports')}
           title="Click to view Purchase Register"
         >
-          <div className="kpi-tile-header">TODAY&apos;S PURCHASE</div>
-          <div className="kpi-tile-value">{kpis.purchases.count} Bills</div>
-          <div className="kpi-tile-sub">
-            {kpis.purchases.fineWeight > 0 ? `${formatWeight(kpis.purchases.fineWeight)} fine • ` : ''}
+          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest truncate">Today&apos;s Purchase</div>
+          <div className="text-base font-bold text-slate-800 leading-tight mt-0.5 truncate">{kpis.purchases.count} Bills</div>
+          <div className="text-[11px] text-slate-500 truncate mt-0.5">
+            {kpis.purchases.fineWeight > 0 ? `${formatWeight(kpis.purchases.fineWeight)} fine · ` : ''}
             {formatCurrency(kpis.purchases.amount, true)}
           </div>
         </div>
 
         {/* KPI 3: CASH IN HAND */}
         <div
-          className="erp-kpi-tile border-accent-green"
+          className="flex-1 min-w-0 bg-white border border-gray-200 border-l-4 border-l-emerald-500 rounded px-3 py-2 cursor-pointer hover:-translate-y-px hover:shadow-md transition-all duration-150"
           onClick={() => openQuickScreen('cash-book', 'Cash Book', 'reports')}
           title="Click to view Cash Book"
         >
-          <div className="kpi-tile-header">CASH IN HAND</div>
-          <div className="kpi-tile-value">Rs. {Math.round(kpis.cash.closing).toLocaleString('en-IN')}</div>
-          <div className="kpi-tile-sub">
-            Today&apos;s net Rs. {Math.round(kpis.cash.net).toLocaleString('en-IN')}
+          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest truncate">Cash in Hand</div>
+          <div className="text-base font-bold text-slate-800 leading-tight mt-0.5 truncate">
+            ₹{Math.round(kpis.cash.closing).toLocaleString('en-IN')}
+          </div>
+          <div className="text-[11px] text-slate-500 truncate mt-0.5">
+            Today&apos;s net ₹{Math.round(kpis.cash.net).toLocaleString('en-IN')}
           </div>
         </div>
 
         {/* KPI 4: RECEIVABLE */}
         <div
-          className="erp-kpi-tile border-accent-navy"
+          className="flex-1 min-w-0 bg-white border border-gray-200 border-l-4 border-l-sky-600 rounded px-3 py-2 cursor-pointer hover:-translate-y-px hover:shadow-md transition-all duration-150"
           onClick={() => openQuickScreen('outstanding', 'Outstanding', 'reports')}
           title="Click to view Customer Receivables"
         >
-          <div className="kpi-tile-header">RECEIVABLE</div>
-          <div className="kpi-tile-value">{kpis.receivables.count} A/c</div>
-          <div className="kpi-tile-sub">
-            Accounts owing ({formatCurrency(kpis.receivables.amount, true)})
+          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest truncate">Receivable</div>
+          <div className="text-base font-bold text-slate-800 leading-tight mt-0.5 truncate">{kpis.receivables.count} A/c</div>
+          <div className="text-[11px] text-slate-500 truncate mt-0.5">
+            Owing {formatCurrency(kpis.receivables.amount, true)}
           </div>
         </div>
 
         {/* KPI 5: PAYABLE */}
         <div
-          className="erp-kpi-tile border-accent-red"
+          className="flex-1 min-w-0 bg-white border border-gray-200 border-l-4 border-l-rose-500 rounded px-3 py-2 cursor-pointer hover:-translate-y-px hover:shadow-md transition-all duration-150"
           onClick={() => openQuickScreen('outstanding', 'Outstanding', 'reports')}
           title="Click to view Supplier Payables"
         >
-          <div className="kpi-tile-header">PAYABLE</div>
-          <div className="kpi-tile-value">{kpis.payables.count} A/c</div>
-          <div className="kpi-tile-sub">
-            Accounts owed ({formatCurrency(kpis.payables.amount, true)})
+          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest truncate">Payable</div>
+          <div className="text-base font-bold text-slate-800 leading-tight mt-0.5 truncate">{kpis.payables.count} A/c</div>
+          <div className="text-[11px] text-slate-500 truncate mt-0.5">
+            Owed {formatCurrency(kpis.payables.amount, true)}
           </div>
         </div>
 
         {/* KPI 6: REMINDERS */}
         <div
-          className="erp-kpi-tile border-accent-orange"
+          className="flex-1 min-w-0 bg-white border border-gray-200 border-l-4 border-l-amber-500 rounded px-3 py-2 cursor-pointer hover:-translate-y-px hover:shadow-md transition-all duration-150"
           onClick={() => openQuickScreen('reminder', 'Reminder', 'utility')}
           title="Click to view Reminders"
         >
-          <div className="kpi-tile-header">REMINDERS</div>
-          <div className="kpi-tile-value">{overdueCount} Overdue</div>
-          <div className="kpi-tile-sub">{upcomingCount} upcoming</div>
+          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest truncate">Reminders</div>
+          <div className="text-base font-bold text-slate-800 leading-tight mt-0.5 truncate">{overdueCount} Overdue</div>
+          <div className="text-[11px] text-slate-500 truncate mt-0.5">{upcomingCount} upcoming</div>
         </div>
-      </section>
+
+      </div>
+
 
       {/* 2. PASTEL QUICK ACTION LAUNCHPAD */}
       <section className="erp-quick-launchpad" aria-label="Quick Navigation Launchpad">

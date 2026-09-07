@@ -24,7 +24,7 @@ export const AppTopNavbar: React.FC<AppTopNavbarProps> = ({
   onNavigate,
   visibleScreenIds,
   firmName: _firmName = 'Shree Jewellery',
-  lastBackupLabel = '-',
+  lastBackupLabel: _lastBackupLabel = '-',
   username = 'Durgesh_12',
   role = 'Administrator',
   businessType = 'RETAIL',
@@ -158,7 +158,7 @@ export const AppTopNavbar: React.FC<AppTopNavbarProps> = ({
                             onClick={() => handleItemSelect(child)}
                             role="menuitem"
                           >
-                            <span className="item-bullet">•</span>
+                            
                             <span className="item-label">{child.label}</span>
                           </button>
                         )
@@ -209,6 +209,9 @@ export const AppTopNavbar: React.FC<AppTopNavbarProps> = ({
             </button>
           ) : ""}
         </div>
+
+        {/* Divider */}
+        <div className="navbar-divider" />
 
         {/* Action Icon Suite */}
         <div className="navbar-actions-suite">
@@ -271,10 +274,9 @@ export const AppTopNavbar: React.FC<AppTopNavbarProps> = ({
             onClick={() => setUserMenuOpen((prev) => !prev)}
             title={`Logged in as ${username} (${role})`}
           >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
+            <span className="navbar-user-avatar">
+              {username.slice(0, 2).toUpperCase()}
+            </span>
             <span className="navbar-username">{username}</span>
           </button>
 
@@ -318,13 +320,13 @@ export const AppTopNavbar: React.FC<AppTopNavbarProps> = ({
             className="navbar-logout-btn"
             onClick={onLogout}
             title="Sign out of Jewellery ERP"
+            aria-label="Logout"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
               <polyline points="16 17 21 12 16 7" />
               <line x1="21" y1="12" x2="9" y2="12" />
             </svg>
-            <span>Logout</span>
           </button>
         )}
       </div>

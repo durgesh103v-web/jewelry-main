@@ -1,5 +1,5 @@
 import React from 'react'
-import { Input, Select, Textarea, Button, FormSection, FormActions } from '@components/ui'
+import { FormActions } from '@components/ui'
 
 export const ACCOUNT_TYPES = [
   'Wholesale Customer',
@@ -71,209 +71,315 @@ export function AccountForm({
     updateForm(field, value)
   }
 
+  const inputClass = "w-full h-9 px-3 text-xs bg-slate-50 border border-slate-200 rounded-md focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-slate-800 transition-all placeholder:text-slate-400"
+
   return (
-    <div className="bg-background border border-border rounded-sm p-4 space-y-4">
-      <div className="flex items-center justify-between border-b border-border pb-3">
-        <div>
-          <h3 className="text-base font-bold text-foreground">
-            {editingId ? 'Edit Account' : 'Add New Account'}
-          </h3>
-          <p className="text-xs text-foreground-muted">
-            Enter account details, opening balance, limits, and contact information.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="primary" onClick={onSave} loading={saving}>
-            {saving ? 'Saving...' : editingId ? 'Update Account' : 'Save Account'}
-          </Button>
-          <Button variant="outline" onClick={onCancel} disabled={saving}>
-            Cancel
-          </Button>
+    <div className="flex flex-col h-full bg-white">
+      {/* Header Bar */}
+      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50/50 shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-sm shadow-sm border border-amber-200">
+            {editingId ? '✎' : '+'}
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-slate-900 tracking-tight">
+              {editingId ? 'Edit Account' : 'Add New Account'}
+            </h3>
+            <p className="text-[11px] text-slate-500">
+              Manage account details, opening balances, and contact info.
+            </p>
+          </div>
         </div>
       </div>
 
-      <FormSection title="Basic Details">
-        <div className="grid grid-cols-4 gap-3">
-          <Input
-            label="Name"
-            ref={accountNameRef}
-            value={form.accountName}
-            onChange={(e) => updateForm('accountName', e.target.value)}
-            placeholder="Enter account name"
-            required
-          />
+      <div className="flex-1 overflow-y-auto p-6 space-y-8">
+        
+        {/* 1. Basic Details */}
+        <section>
+          <div className="flex items-center gap-2 pb-2 mb-4 border-b border-slate-100">
+            <div className="w-1.5 h-4 bg-amber-500 rounded-full" />
+            <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Basic Details</h4>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-[11px] font-bold text-slate-600 mb-1.5 uppercase tracking-wide">
+                Account Name <span className="text-rose-500">*</span>
+              </label>
+              <input
+                ref={accountNameRef}
+                type="text"
+                value={form.accountName}
+                onChange={(e) => updateForm('accountName', e.target.value)}
+                placeholder="e.g. Ramesh Jewellers"
+                className={inputClass}
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Other Name</label>
+              <input
+                type="text"
+                value={form.otherName}
+                onChange={(e) => updateForm('otherName', e.target.value)}
+                placeholder="e.g. Ramesh Bhai"
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Account Type</label>
+              <select
+                value={form.accountType}
+                onChange={(e) => updateForm('accountType', e.target.value)}
+                className={`${inputClass} cursor-pointer`}
+              >
+                {ACCOUNT_TYPES.map((t) => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[11px] font-bold text-slate-600 mb-1.5 uppercase tracking-wide">
+                Account Group <span className="text-rose-500">*</span>
+              </label>
+              <select
+                value={form.accountGroupId}
+                onChange={(e) => updateForm('accountGroupId', e.target.value)}
+                className={`${inputClass} cursor-pointer`}
+                required
+              >
+                <option value="">Select Group</option>
+                {activeGroups.map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.groupName} - {g.groupType}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </section>
 
-          <Input
-            label="Other Name"
-            value={form.otherName}
-            onChange={(e) => updateForm('otherName', e.target.value)}
-            placeholder="Optional"
-          />
-
-          <Select
-            label="Account Type"
-            value={form.accountType}
-            onChange={(e) => updateForm('accountType', e.target.value)}
-            options={ACCOUNT_TYPES}
-          />
-
-          <Select
-            label="Account Group"
-            value={form.accountGroupId}
-            onChange={(e) => updateForm('accountGroupId', e.target.value)}
-            options={[
-              { label: 'Select Group', value: '' },
-              ...activeGroups.map((g) => ({
-                label: `${g.groupName} - ${g.groupType}`,
-                value: g.id
-              }))
-            ]}
-            required
-          />
-        </div>
-      </FormSection>
-
-      <FormSection title="Opening Balance">
-        <div className="grid grid-cols-4 gap-3">
-          <Input
-            label="Gold Fine"
-            value={form.openingGoldFine}
-            inputMode="decimal"
-            onChange={(e) => updateAmountField('openingGoldFine', e.target.value)}
-            placeholder="0 or -8000"
-          />
-
-          <Input
-            label="Silver Fine"
-            value={form.openingSilverFine}
-            inputMode="decimal"
-            onChange={(e) => updateAmountField('openingSilverFine', e.target.value)}
-            placeholder="0 or -8000"
-          />
-
-          <Input
-            label="Cash"
-            value={form.openingCash}
-            inputMode="decimal"
-            onChange={(e) => updateAmountField('openingCash', e.target.value)}
-            placeholder="0 or -8000"
-          />
-
-          <Input
-            label="Anamat"
-            value={form.openingAnamat}
-            inputMode="decimal"
-            onChange={(e) => updateAmountField('openingAnamat', e.target.value)}
-            placeholder="0"
-          />
-
-          <Input
-            label="Bank"
-            value={form.openingBank}
-            inputMode="decimal"
-            onChange={(e) => updateAmountField('openingBank', e.target.value)}
-            placeholder="0"
-          />
-
-          <Input
-            label="Last Date"
-            type="date"
-            value={form.lastDate}
-            onChange={(e) => updateForm('lastDate', e.target.value)}
-          />
-
-          <Input
-            label="Gold Fine Limit"
-            value={form.goldFineLimit}
-            inputMode="decimal"
-            onChange={(e) => updateAmountField('goldFineLimit', e.target.value)}
-            placeholder="0"
-          />
-
-          <Input
-            label="Silver Fine Limit"
-            value={form.silverFineLimit}
-            inputMode="decimal"
-            onChange={(e) => updateAmountField('silverFineLimit', e.target.value)}
-            placeholder="0"
-          />
-        </div>
-      </FormSection>
-
-      <FormSection title="Contact Details">
-        <div className="grid grid-cols-4 gap-3">
-          <Input
-            label="WhatsApp Number"
-            value={form.whatsappNumber}
-            onChange={(e) => updateForm('whatsappNumber', e.target.value)}
-          />
-
-          <Input
-            label="Phone 2"
-            value={form.phone2}
-            onChange={(e) => updateForm('phone2', e.target.value)}
-          />
-
-          <div className="col-span-2">
-            <Textarea
-              label="Address"
-              rows={2}
-              value={form.address}
-              onChange={(e) => updateForm('address', e.target.value)}
-              placeholder="Full address"
-            />
+        {/* 2. Opening Balance & Limits */}
+        <section>
+          <div className="flex items-center justify-between pb-2 mb-4 border-b border-slate-100">
+            <div className="flex items-center gap-2">
+              <div className="w-1.5 h-4 bg-amber-500 rounded-full" />
+              <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Opening Balances &amp; Limits</h4>
+            </div>
+            <span className="text-[11px] font-medium text-amber-700 bg-amber-50 px-2 py-1 rounded border border-amber-100">
+              Use positive for payable, negative (e.g. -5000) for receivable
+            </span>
           </div>
 
-          <Input
-            label="City"
-            value={form.city}
-            onChange={(e) => updateForm('city', e.target.value)}
-          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-[11px] font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Gold Fine (g)</label>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={form.openingGoldFine}
+                onChange={(e) => updateAmountField('openingGoldFine', e.target.value)}
+                placeholder="0.000 or -8000"
+                className={`${inputClass} tabular-nums font-medium`}
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Silver Fine (g)</label>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={form.openingSilverFine}
+                onChange={(e) => updateAmountField('openingSilverFine', e.target.value)}
+                placeholder="0.000 or -8000"
+                className={`${inputClass} tabular-nums font-medium`}
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Cash (₹)</label>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={form.openingCash}
+                onChange={(e) => updateAmountField('openingCash', e.target.value)}
+                placeholder="0.00 or -8000"
+                className={`${inputClass} tabular-nums font-medium`}
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Anamat (₹)</label>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={form.openingAnamat}
+                onChange={(e) => updateAmountField('openingAnamat', e.target.value)}
+                placeholder="0.00"
+                className={`${inputClass} tabular-nums font-medium`}
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Bank (₹)</label>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={form.openingBank}
+                onChange={(e) => updateAmountField('openingBank', e.target.value)}
+                placeholder="0.00"
+                className={`${inputClass} tabular-nums font-medium`}
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Last Date</label>
+              <input
+                type="date"
+                value={form.lastDate}
+                onChange={(e) => updateForm('lastDate', e.target.value)}
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Gold Fine Limit (g)</label>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={form.goldFineLimit}
+                onChange={(e) => updateAmountField('goldFineLimit', e.target.value)}
+                placeholder="0.000"
+                className={`${inputClass} tabular-nums font-medium`}
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Silver Fine Limit (g)</label>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={form.silverFineLimit}
+                onChange={(e) => updateAmountField('silverFineLimit', e.target.value)}
+                placeholder="0.000"
+                className={`${inputClass} tabular-nums font-medium`}
+              />
+            </div>
+          </div>
+        </section>
 
-          <Input
-            label="State"
-            value={form.state}
-            onChange={(e) => updateForm('state', e.target.value)}
-          />
-        </div>
-      </FormSection>
+        {/* 3. Contact & Address */}
+        <section>
+          <div className="flex items-center gap-2 pb-2 mb-4 border-b border-slate-100">
+            <div className="w-1.5 h-4 bg-amber-500 rounded-full" />
+            <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Contact &amp; Location</h4>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-[11px] font-bold text-slate-600 mb-1.5 uppercase tracking-wide">WhatsApp Number</label>
+              <input
+                type="text"
+                value={form.whatsappNumber}
+                onChange={(e) => updateForm('whatsappNumber', e.target.value)}
+                placeholder="10 digit mobile"
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Phone 2</label>
+              <input
+                type="text"
+                value={form.phone2}
+                onChange={(e) => updateForm('phone2', e.target.value)}
+                placeholder="Alternative phone"
+                className={inputClass}
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-[11px] font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Address</label>
+              <input
+                type="text"
+                value={form.address}
+                onChange={(e) => updateForm('address', e.target.value)}
+                placeholder="Shop/House no, Street, Landmark"
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-bold text-slate-600 mb-1.5 uppercase tracking-wide">City</label>
+              <input
+                type="text"
+                value={form.city}
+                onChange={(e) => updateForm('city', e.target.value)}
+                placeholder="City"
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-bold text-slate-600 mb-1.5 uppercase tracking-wide">State</label>
+              <input
+                type="text"
+                value={form.state}
+                onChange={(e) => updateForm('state', e.target.value)}
+                placeholder="State"
+                className={inputClass}
+              />
+            </div>
+          </div>
+        </section>
 
-      <FormSection title="Tax / Other Details">
-        <div className="grid grid-cols-4 gap-3">
-          <Input
-            label="GST No."
-            value={form.gstNo}
-            onChange={(e) => updateForm('gstNo', e.target.value.toUpperCase())}
-          />
+        {/* 4. Tax & Statutory Details */}
+        <section>
+          <div className="flex items-center gap-2 pb-2 mb-4 border-b border-slate-100">
+            <div className="w-1.5 h-4 bg-amber-500 rounded-full" />
+            <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Tax &amp; Statutory Details</h4>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-[11px] font-bold text-slate-600 mb-1.5 uppercase tracking-wide">GSTIN</label>
+              <input
+                type="text"
+                value={form.gstNo}
+                onChange={(e) => updateForm('gstNo', e.target.value.toUpperCase())}
+                placeholder="27AAAAA0000A1Z5"
+                className={`${inputClass} uppercase`}
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-bold text-slate-600 mb-1.5 uppercase tracking-wide">PAN No.</label>
+              <input
+                type="text"
+                value={form.panNo}
+                onChange={(e) => updateForm('panNo', e.target.value.toUpperCase())}
+                placeholder="ABCDE1234F"
+                className={`${inputClass} uppercase`}
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Notification / Notes</label>
+              <input
+                type="text"
+                value={form.notification}
+                onChange={(e) => updateForm('notification', e.target.value)}
+                placeholder="Reminder or account note"
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Status</label>
+              <select
+                value={form.active ? 'Yes' : 'No'}
+                onChange={(e) => updateForm('active', e.target.value === 'Yes')}
+                className={`${inputClass} cursor-pointer font-medium ${form.active ? 'text-emerald-700' : 'text-slate-500'}`}
+              >
+                <option value="Yes">Active</option>
+                <option value="No">Inactive</option>
+              </select>
+            </div>
+          </div>
+        </section>
+      </div>
 
-          <Input
-            label="PAN No."
-            value={form.panNo}
-            onChange={(e) => updateForm('panNo', e.target.value.toUpperCase())}
-          />
-
-          <Input
-            label="Notification"
-            value={form.notification}
-            onChange={(e) => updateForm('notification', e.target.value)}
-            placeholder="Reminder or note"
-          />
-
-          <Select
-            label="Active"
-            value={form.active ? 'Yes' : 'No'}
-            onChange={(e) => updateForm('active', e.target.value === 'Yes')}
-            options={['Yes', 'No']}
-          />
-        </div>
-      </FormSection>
-
-      <FormActions
-        onSave={onSave}
-        saveLabel={editingId ? 'Update Account' : 'Save Account'}
-        loading={saving}
-        onCancel={onCancel}
-      />
+      <div className="shrink-0 border-t border-slate-200 bg-slate-50">
+        <FormActions
+          onSave={onSave}
+          saveLabel={editingId ? 'Update Account' : 'Save Account'}
+          loading={saving}
+          onCancel={onCancel}
+        />
+      </div>
     </div>
   )
 }

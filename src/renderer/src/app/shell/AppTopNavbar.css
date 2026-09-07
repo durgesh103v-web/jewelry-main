@@ -1,105 +1,106 @@
 /* ==========================================================================
-   PRODUCTION JEWELLERY ERP TOP NAVBAR STYLES
-   Minimalist, Modern, High-Performance Desktop Shell Header
-   Zero Outlines / Frameless Ghost Buttons with Interactive Hover Backgrounds
+   JEWELLERY ERP â€” TOP NAVBAR
+   Premium, minimalist desktop shell header
    ========================================================================== */
 
+/* â”€â”€ Shell â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .desktop-top-navbar {
-  height: 50px;
-  min-height: 50px;
-  max-height: 50px;
-  background-color: #ffffff;
-  border-bottom: 1px solid var(--color-border-default, #e2e5eb);
+  height: 48px;
+  min-height: 48px;
+  max-height: 48px;
+  background: #fff;
+  border-bottom: 1px solid #e8ecf0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 16px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  padding: 0 12px 0 10px;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
   position: relative;
   z-index: 1000;
   user-select: none;
+  gap: 8px;
 }
 
-/* Remove all focus outlines on top navbar buttons */
-.desktop-top-navbar button {
+
+/* kill all focus rings inside nav */
+.desktop-top-navbar *:focus,
+.desktop-top-navbar *:focus-visible {
   outline: none !important;
-  box-shadow: none;
+  box-shadow: none !important;
 }
 
-.desktop-top-navbar button:focus,
-.desktop-top-navbar button:focus-visible {
-  outline: none !important;
-}
-
-/* --------------------------------------------------------------------------
-   1. LEFT CLUSTER: NAVIGATION MENUS
-   -------------------------------------------------------------------------- */
+/* â”€â”€ LEFT CLUSTER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .navbar-left-cluster {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
   height: 100%;
+  flex-shrink: 0;
 }
 
+/* Base nav button */
 .nav-menu-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   height: 32px;
-  padding: 0 12px;
+  padding: 0 11px;
   font-size: 13px;
   font-weight: 500;
-  color: var(--color-text-primary, #1e293b);
+  letter-spacing: 0.01em;
+  color: #3d4350;
   background: transparent;
   border: none;
-  border-radius: var(--radius-sm, 6px);
+  border-radius: 6px;
   cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+  transition: background 0.14s ease, color 0.14s ease;
   white-space: nowrap;
 }
 
 .nav-menu-btn:hover {
-  background-color: #e0edff;
-  color: #1a73e8;
+  background: #fdf3d8;
+  color: #92650a;
 }
 
+/* Dashboard button */
 .nav-dashboard-btn {
   font-weight: 600;
   color: #1e293b;
+  gap: 6px;
 }
 
 .nav-dashboard-btn .nav-home-icon {
-  color: var(--color-brand-primary, #1a73e8);
-  transition: transform 0.15s ease, color 0.15s ease;
-}
-
-.nav-dashboard-btn:hover {
-  background-color: #e0edff;
-  color: #1a73e8;
+  color: #b8860b;
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
 }
 
 .nav-dashboard-btn:hover .nav-home-icon {
-  transform: scale(1.12);
-  color: #1a73e8;
+  transform: scale(1.1);
 }
 
+/* Active states */
 .nav-menu-btn.active-home {
-  background-color: #dbeafe;
-  color: #1d4ed8;
+  background: #fdf3d8;
+  color: #7a4f0a;
   font-weight: 600;
+}
+
+.nav-menu-btn.active-home .nav-home-icon {
+  color: #b8860b;
 }
 
 .nav-menu-btn.menu-open {
-  background-color: #dbeafe;
-  color: #1d4ed8;
+  background: #fdf3d8;
+  color: #7a4f0a;
 }
 
 .nav-menu-btn.child-active {
+  color: #92650a;
   font-weight: 600;
-  color: #1a73e8;
-  background-color: #eff6ff;
 }
 
+/* Menu item container */
 .navbar-menu-items {
   display: flex;
   align-items: center;
@@ -114,33 +115,25 @@
   align-items: center;
 }
 
-/* --------------------------------------------------------------------------
-   CLASSIC DESKTOP DROPDOWN PANE
-   -------------------------------------------------------------------------- */
+/* â”€â”€ DROPDOWN PANE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .desktop-dropdown-pane {
   position: absolute;
-  top: calc(100% - 4px);
+  top: calc(100% + 2px);
   left: 0;
-  min-width: 230px;
-  max-width: 320px;
-  background: #ffffff;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
-  padding: 4px 0;
+  min-width: 210px;
+  max-width: 300px;
+  background: #fff;
+  border: 1px solid #e2e6ec;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1), 0 2px 6px rgba(0, 0, 0, 0.05);
+  padding: 4px;
   z-index: 2000;
-  animation: dropdownFadeIn 0.12s ease-out;
+  animation: ddFadeIn 0.1s ease-out;
 }
 
-@keyframes dropdownFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+@keyframes ddFadeIn {
+  from { opacity: 0; transform: translateY(-6px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .dropdown-scroll-body {
@@ -153,133 +146,137 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 7px 16px;
+  padding: 7px 10px;
   font-size: 13px;
   font-weight: 400;
-  color: #334155;
+  color: #374151;
   background: transparent;
   border: none;
+  border-radius: 5px;
   text-align: left;
   cursor: pointer;
-  transition: all 0.12s ease;
+  transition: background 0.1s ease, color 0.1s ease;
   white-space: nowrap;
 }
 
 .dropdown-menu-item:hover {
-  background-color: #eff6ff;
-  color: #1d4ed8;
+  background: #fdf3d8;
+  color: #7a4f0a;
 }
 
 .dropdown-menu-item.selected-item {
-  background-color: #eff6ff;
-  color: #1d4ed8;
+  background: #fdf3d8;
+  color: #7a4f0a;
   font-weight: 600;
 }
 
 .item-bullet {
-  font-size: 14px;
-  color: #94a3b8;
+  font-size: 8px;
+  color: #d1d5db;
+  line-height: 1;
+  flex-shrink: 0;
 }
 
-.dropdown-menu-item:hover .item-bullet {
-  color: #1d4ed8;
+.dropdown-menu-item:hover .item-bullet,
+.dropdown-menu-item.selected-item .item-bullet {
+  color: #d4a843;
 }
 
-/* --------------------------------------------------------------------------
-   2. RIGHT CLUSTER: SEARCH BAR & ICON SUITE
-   -------------------------------------------------------------------------- */
+/* â”€â”€ RIGHT CLUSTER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .navbar-right-cluster {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
   height: 100%;
+  flex-shrink: 0;
 }
 
-/* Proper Modern Search Bar */
+/* â”€â”€ SEARCH BOX â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .navbar-search-box {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
   height: 32px;
   padding: 0 10px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  width: 250px;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  color: #64748b;
-  position: relative;
+  background: #f5f7fa;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  width: 220px;
+  transition: width 0.22s ease, border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+  color: #94a3b8;
 }
 
 .navbar-search-box:hover {
-  border-color: #cbd5e1;
-  background: #f1f5f9;
+  background: #eef1f6;
+  border-color: #d1d9e0;
 }
 
 .navbar-search-box.search-active {
-  width: 310px;
-  background: #ffffff;
-  border-color: #1a73e8;
-  box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.15);
+  width: 290px;
+  background: #fff;
+  border-color: #c49a2a;
+  box-shadow: 0 0 0 3px rgba(184, 134, 11, 0.12);
   color: #1e293b;
 }
 
-.navbar-search-box .search-icon {
+.search-icon {
   flex-shrink: 0;
   color: #94a3b8;
   transition: color 0.15s ease;
 }
 
 .navbar-search-box.search-active .search-icon {
-  color: #1a73e8;
+  color: #b8860b;
 }
 
 .navbar-search-input {
+  flex: 1;
   border: none;
   background: transparent;
   outline: none;
-  font-size: 12px;
-  width: 100%;
-  color: #0f172a;
+  font-size: 12.5px;
+  color: #1e293b;
+  min-width: 0;
 }
 
 .navbar-search-input::placeholder {
-  color: #94a3b8;
-}
-
-.search-shortcut-badge {
-  font-size: 10px;
-  font-weight: 600;
-  font-family: var(--font-family-mono, monospace);
-  color: #64748b;
-  background: #e2e8f0;
-  padding: 2px 6px;
-  border-radius: 4px;
-  flex-shrink: 0;
-  letter-spacing: 0.02em;
+  color: #a3aebf;
 }
 
 .search-clear-btn {
-  background: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  background: #e2e8f0;
   border: none;
-  color: #94a3b8;
+  border-radius: 50%;
+  color: #64748b;
   cursor: pointer;
-  font-size: 11px;
-  padding: 2px 4px;
-  border-radius: 3px;
-  line-height: 1;
+  font-size: 9px;
+  flex-shrink: 0;
+  transition: background 0.12s ease;
 }
 
 .search-clear-btn:hover {
+  background: #cbd5e1;
   color: #0f172a;
-  background: #e2e8f0;
 }
 
-/* Action Icons Suite (Frameless Ghost Icon Buttons with Distinct Hover Colors) */
+/* â”€â”€ DIVIDER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.navbar-divider {
+  width: 1px;
+  height: 20px;
+  background: #e8ecf0;
+  flex-shrink: 0;
+}
+
+/* â”€â”€ ICON BUTTONS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .navbar-actions-suite {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
 }
 
 .navbar-icon-btn {
@@ -290,55 +287,57 @@
   height: 32px;
   background: transparent;
   border: none;
-  border-radius: 6px;
+  border-radius: 7px;
   color: #64748b;
   cursor: pointer;
   position: relative;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition: background 0.14s ease, color 0.14s ease;
+  flex-shrink: 0;
 }
 
 .navbar-icon-btn:hover {
-  background-color: #e2e8f0;
-  color: #0f172a;
+  background: #f1f5f9;
+  color: #334155;
 }
 
 .navbar-icon-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
-/* Backup Icon Button Hover */
-.backup-icon-btn:hover {
-  background-color: #ede9fe;
-  color: #6d28d9;
-}
-
-/* WhatsApp Icon Button Hover */
+/* WhatsApp specific hover */
 .whatsapp-icon-btn:hover {
-  background-color: #d1fae5;
-  color: #059669;
+  background: #dcfce7;
+  color: #16a34a;
 }
 
-/* Badge Dots on Icons */
+/* Backup specific hover */
+.backup-icon-btn:hover {
+  background: #ede9fe;
+  color: #7c3aed;
+}
+
+/* Screenshot specific hover */
+.screenshot-icon-btn:hover {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+/* Badge dots */
 .icon-badge-dot {
   position: absolute;
-  top: 5px;
-  right: 5px;
-  width: 6px;
-  height: 6px;
+  top: 6px;
+  right: 6px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
-  border: 1.5px solid #ffffff;
+  border: 1.5px solid #fff;
 }
 
-.backup-dot {
-  background-color: #8b5cf6;
-}
+.whatsapp-dot { background: #22c55e; }
+.backup-dot   { background: #8b5cf6; }
 
-.whatsapp-dot {
-  background-color: #10b981;
-}
-
-/* User Profile Badge (Frameless Ghost Button with Hover) */
+/* â”€â”€ USER SECTION â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .navbar-user-container {
   position: relative;
 }
@@ -348,167 +347,146 @@
   align-items: center;
   gap: 6px;
   height: 32px;
-  padding: 0 10px;
+  padding: 0 8px 0 6px;
   background: transparent;
   border: none;
-  border-radius: 6px;
-  font-size: 12px;
+  border-radius: 7px;
+  font-size: 12.5px;
   font-weight: 600;
-  color: #334155;
+  color: #374151;
   cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition: background 0.14s ease, color 0.14s ease;
 }
 
 .navbar-user-btn:hover {
-  background-color: #e2e8f0;
-  color: #0f172a;
+  background: #f1f5f9;
+  color: #111827;
+}
+
+/* Gradient avatar circle */
+.navbar-user-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #c49a2a 0%, #8b6508 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+  letter-spacing: 0;
 }
 
 .navbar-username {
-  max-width: 110px;
+  max-width: 90px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+/* User dropdown */
 .user-dropdown-menu {
   position: absolute;
-  top: calc(100% + 4px);
+  top: calc(100% + 5px);
   right: 0;
-  min-width: 190px;
-  background: #ffffff;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
-  padding: 6px 0;
+  min-width: 180px;
+  background: #fff;
+  border: 1px solid #e2e6ec;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1), 0 2px 6px rgba(0, 0, 0, 0.05);
+  padding: 4px;
   z-index: 2000;
+  animation: ddFadeIn 0.1s ease-out;
 }
 
 .user-menu-header {
-  padding: 8px 14px;
+  padding: 8px 10px 6px;
   display: flex;
   flex-direction: column;
+  gap: 2px;
 }
 
 .user-menu-header strong {
-  font-size: 13px;
-  color: #0f172a;
+  font-size: 12.5px;
+  color: #111827;
+  font-weight: 600;
 }
 
 .user-menu-role {
   font-size: 11px;
-  color: #64748b;
-  margin-top: 2px;
+  color: #6b7280;
 }
 
 .user-menu-divider {
   height: 1px;
-  background: #e2e8f0;
-  margin: 4px 0;
+  background: #f0f2f5;
+  margin: 2px 0;
 }
 
 .user-menu-item {
   width: 100%;
-  padding: 7px 14px;
-  font-size: 12px;
-  color: #334155;
+  padding: 7px 10px;
+  font-size: 12.5px;
+  color: #374151;
   background: transparent;
   border: none;
+  border-radius: 5px;
   text-align: left;
   cursor: pointer;
-  transition: all 0.12s ease;
+  transition: background 0.1s ease, color 0.1s ease;
 }
 
 .user-menu-item:hover {
-  background-color: #eff6ff;
-  color: #1a73e8;
+  background: #fdf3d8;
+  color: #7a4f0a;
 }
 
-/* Logout Button */
+/* â”€â”€ LOGOUT â€” ghost icon button (red on hover only) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .navbar-logout-btn {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  justify-content: center;
+  width: 32px;
   height: 32px;
-  padding: 0 12px;
-  background: #dc2626;
-  color: #ffffff;
+  background: transparent;
   border: none;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 600;
+  border-radius: 7px;
+  color: #94a3b8;
   cursor: pointer;
-  transition: background-color 0.15s ease, box-shadow 0.15s ease;
-  white-space: nowrap;
+  transition: background 0.14s ease, color 0.14s ease;
+  flex-shrink: 0;
 }
 
 .navbar-logout-btn:hover {
-  background-color: #b91c1c;
-  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.4);
+  background: #fee2e2;
+  color: #dc2626;
 }
 
-/* ==========================================================================
-   RESPONSIVE TOP NAVBAR BREAKPOINTS
-   ========================================================================== */
-
-/* 1200px - Standard Laptops */
+/* â”€â”€ RESPONSIVE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 @media (max-width: 1200px) {
-  .navbar-search-box {
-    width: 200px;
-  }
-  .navbar-search-box.search-active {
-    width: 260px;
-  }
+  .navbar-search-box { width: 180px; }
+  .navbar-search-box.search-active { width: 240px; }
 }
 
-/* 980px - Compact Screens */
 @media (max-width: 980px) {
-  .navbar-search-box {
-    width: 150px;
-  }
-  .navbar-search-box.search-active {
-    width: 220px;
-  }
-  .search-shortcut-badge {
-    display: none;
-  }
-  .nav-menu-btn {
-    padding: 0 8px;
-    font-size: 12px;
-  }
+  .navbar-search-box { width: 130px; }
+  .navbar-search-box.search-active { width: 200px; }
+  .nav-menu-btn { padding: 0 8px; font-size: 12px; }
 }
 
-/* 768px - Tablets & Touch Terminals */
 @media (max-width: 768px) {
   .desktop-top-navbar {
-    padding: 0 10px;
+    padding: 0 8px;
     overflow-x: auto;
     scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
   }
-  .desktop-top-navbar::-webkit-scrollbar {
-    display: none;
-  }
-  .navbar-left-cluster {
-    flex-shrink: 0;
-  }
-  .navbar-right-cluster {
-    flex-shrink: 0;
-    gap: 6px;
-  }
-  .navbar-search-box {
-    display: none;
-  }
-  .navbar-username {
-    display: none;
-  }
-  .navbar-user-btn {
-    padding: 0 6px;
-  }
-  .navbar-logout-btn span {
-    display: none;
-  }
-  .navbar-logout-btn {
-    padding: 0 8px;
-  }
+  .desktop-top-navbar::-webkit-scrollbar { display: none; }
+  .navbar-left-cluster { flex-shrink: 0; }
+  .navbar-right-cluster { flex-shrink: 0; gap: 4px; }
+  .navbar-search-box { display: none; }
+  .navbar-divider { display: none; }
+  .navbar-username { display: none; }
+  .navbar-user-btn { padding: 0 6px; }
 }

@@ -2,8 +2,8 @@
 
 :root {
   /* Color tokens - modern flat/minimal palette */
-  --color-primary: #1a73e8;
-  --color-primary-dark: #1557b0;
+  --color-primary: #d97706;
+  --color-primary-dark: #b45309;
   --color-bg-app: #eef1f5;
   --color-bg-panel: #ffffff;
   --color-bg-subtle: #f4f6f9;
@@ -82,8 +82,8 @@ input:focus,
 select:focus,
 textarea:focus {
   outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.15);
+  border-color: #f59e0b;
+  /* box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2); */
 }
 
 .app {
