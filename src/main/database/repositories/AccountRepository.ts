@@ -14,8 +14,14 @@ export interface AccountRow {
   address: string | null
   city: string | null
   state: string | null
+  pincode: string | null
+  email: string | null
   gst_no: string | null
   pan_no: string | null
+  bank_name: string | null
+  bank_account_number: string | null
+  bank_ifsc: string | null
+  bank_branch: string | null
   last_date: string | null
   opening_gold_fine: number
   opening_silver_fine: number
@@ -24,6 +30,7 @@ export interface AccountRow {
   opening_bank: number
   gold_fine_limit: number
   silver_fine_limit: number
+  credit_limit: number
   notification: string | null
   active: number
   created_at: string
@@ -45,8 +52,14 @@ const accountSelectSql = `
     a.address,
     a.city,
     a.state,
+    a.pincode,
+    a.email,
     a.gst_no,
     a.pan_no,
+    a.bank_name,
+    a.bank_account_number,
+    a.bank_ifsc,
+    a.bank_branch,
     a.last_date,
     a.opening_gold_fine,
     a.opening_silver_fine,
@@ -55,6 +68,7 @@ const accountSelectSql = `
     a.opening_bank,
     a.gold_fine_limit,
     a.silver_fine_limit,
+    a.credit_limit,
     a.notification,
     a.active,
     a.created_at,
@@ -128,27 +142,34 @@ export class AccountRepository extends BaseRepository {
   insert(data: {
     id: string
     accountName: string
-    otherName: string
-    accountType: string
+    otherName?: string
+    accountType?: string
     accountGroupId: string
-    mobileNumber: string
-    whatsappNumber: string
-    phone2: string
-    address: string
-    city: string
-    state: string
-    gstNo: string
-    panNo: string
-    lastDate: string
-    openingGoldFine: number
-    openingSilverFine: number
-    openingCash: number
-    openingAnamat: number
-    openingBank: number
-    goldFineLimit: number
-    silverFineLimit: number
-    notification: string
-    active: boolean
+    mobileNumber?: string
+    whatsappNumber?: string
+    phone2?: string
+    address?: string
+    city?: string
+    state?: string
+    pincode?: string
+    email?: string
+    gstNo?: string
+    panNo?: string
+    bankName?: string
+    bankAccountNumber?: string
+    bankIfsc?: string
+    bankBranch?: string
+    lastDate?: string
+    openingGoldFine?: number
+    openingSilverFine?: number
+    openingCash?: number
+    openingAnamat?: number
+    openingBank?: number
+    goldFineLimit?: number
+    silverFineLimit?: number
+    creditLimit?: number
+    notification?: string
+    active?: boolean
     createdAt: string
     updatedAt: string
   }): void {
@@ -158,37 +179,45 @@ export class AccountRepository extends BaseRepository {
         INSERT INTO accounts (
           id, account_name, other_name, account_type, account_group_id,
           mobile_number, whatsapp_number, phone2, address, city, state,
-          gst_no, pan_no, last_date, opening_gold_fine, opening_silver_fine,
+          pincode, email, gst_no, pan_no, bank_name, bank_account_number,
+          bank_ifsc, bank_branch, last_date, opening_gold_fine, opening_silver_fine,
           opening_cash, opening_anamat, opening_bank, gold_fine_limit,
-          silver_fine_limit, notification, active, created_at, updated_at
+          silver_fine_limit, credit_limit, notification, active, created_at, updated_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `
       )
       .run(
         data.id,
         data.accountName,
-        data.otherName,
-        data.accountType,
+        data.otherName ?? '',
+        data.accountType ?? 'Wholesale Customer',
         data.accountGroupId,
-        data.mobileNumber,
-        data.whatsappNumber,
-        data.phone2,
-        data.address,
-        data.city,
-        data.state,
-        data.gstNo,
-        data.panNo,
-        data.lastDate,
-        data.openingGoldFine,
-        data.openingSilverFine,
-        data.openingCash,
-        data.openingAnamat,
-        data.openingBank,
-        data.goldFineLimit,
-        data.silverFineLimit,
-        data.notification,
-        data.active ? 1 : 0,
+        data.mobileNumber ?? '',
+        data.whatsappNumber ?? '',
+        data.phone2 ?? '',
+        data.address ?? '',
+        data.city ?? '',
+        data.state ?? '',
+        data.pincode ?? '',
+        data.email ?? '',
+        data.gstNo ?? '',
+        data.panNo ?? '',
+        data.bankName ?? '',
+        data.bankAccountNumber ?? '',
+        data.bankIfsc ?? '',
+        data.bankBranch ?? '',
+        data.lastDate ?? '',
+        data.openingGoldFine ?? 0,
+        data.openingSilverFine ?? 0,
+        data.openingCash ?? 0,
+        data.openingAnamat ?? 0,
+        data.openingBank ?? 0,
+        data.goldFineLimit ?? 0,
+        data.silverFineLimit ?? 0,
+        data.creditLimit ?? 0,
+        data.notification ?? '',
+        data.active !== false ? 1 : 0,
         data.createdAt,
         data.updatedAt
       )
@@ -198,27 +227,34 @@ export class AccountRepository extends BaseRepository {
     id: string,
     data: {
       accountName: string
-      otherName: string
-      accountType: string
+      otherName?: string
+      accountType?: string
       accountGroupId: string
-      mobileNumber: string
-      whatsappNumber: string
-      phone2: string
-      address: string
-      city: string
-      state: string
-      gstNo: string
-      panNo: string
-      lastDate: string
-      openingGoldFine: number
-      openingSilverFine: number
-      openingCash: number
-      openingAnamat: number
-      openingBank: number
-      goldFineLimit: number
-      silverFineLimit: number
-      notification: string
-      active: boolean
+      mobileNumber?: string
+      whatsappNumber?: string
+      phone2?: string
+      address?: string
+      city?: string
+      state?: string
+      pincode?: string
+      email?: string
+      gstNo?: string
+      panNo?: string
+      bankName?: string
+      bankAccountNumber?: string
+      bankIfsc?: string
+      bankBranch?: string
+      lastDate?: string
+      openingGoldFine?: number
+      openingSilverFine?: number
+      openingCash?: number
+      openingAnamat?: number
+      openingBank?: number
+      goldFineLimit?: number
+      silverFineLimit?: number
+      creditLimit?: number
+      notification?: string
+      active?: boolean
       updatedAt: string
     }
   ): void {
@@ -229,35 +265,43 @@ export class AccountRepository extends BaseRepository {
         SET
           account_name = ?, other_name = ?, account_type = ?, account_group_id = ?,
           mobile_number = ?, whatsapp_number = ?, phone2 = ?, address = ?, city = ?,
-          state = ?, gst_no = ?, pan_no = ?, last_date = ?, opening_gold_fine = ?,
+          state = ?, pincode = ?, email = ?, gst_no = ?, pan_no = ?, bank_name = ?,
+          bank_account_number = ?, bank_ifsc = ?, bank_branch = ?, last_date = ?, opening_gold_fine = ?,
           opening_silver_fine = ?, opening_cash = ?, opening_anamat = ?, opening_bank = ?,
-          gold_fine_limit = ?, silver_fine_limit = ?, notification = ?, active = ?, updated_at = ?
+          gold_fine_limit = ?, silver_fine_limit = ?, credit_limit = ?, notification = ?, active = ?, updated_at = ?
         WHERE id = ?
       `
       )
       .run(
         data.accountName,
-        data.otherName,
-        data.accountType,
+        data.otherName ?? '',
+        data.accountType ?? 'Wholesale Customer',
         data.accountGroupId,
-        data.mobileNumber,
-        data.whatsappNumber,
-        data.phone2,
-        data.address,
-        data.city,
-        data.state,
-        data.gstNo,
-        data.panNo,
-        data.lastDate,
-        data.openingGoldFine,
-        data.openingSilverFine,
-        data.openingCash,
-        data.openingAnamat,
-        data.openingBank,
-        data.goldFineLimit,
-        data.silverFineLimit,
-        data.notification,
-        data.active ? 1 : 0,
+        data.mobileNumber ?? '',
+        data.whatsappNumber ?? '',
+        data.phone2 ?? '',
+        data.address ?? '',
+        data.city ?? '',
+        data.state ?? '',
+        data.pincode ?? '',
+        data.email ?? '',
+        data.gstNo ?? '',
+        data.panNo ?? '',
+        data.bankName ?? '',
+        data.bankAccountNumber ?? '',
+        data.bankIfsc ?? '',
+        data.bankBranch ?? '',
+        data.lastDate ?? '',
+        data.openingGoldFine ?? 0,
+        data.openingSilverFine ?? 0,
+        data.openingCash ?? 0,
+        data.openingAnamat ?? 0,
+        data.openingBank ?? 0,
+        data.goldFineLimit ?? 0,
+        data.silverFineLimit ?? 0,
+        data.creditLimit ?? 0,
+        data.notification ?? '',
+        data.active !== false ? 1 : 0,
         data.updatedAt,
         id
       )

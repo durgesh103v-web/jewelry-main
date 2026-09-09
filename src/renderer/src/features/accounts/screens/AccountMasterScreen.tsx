@@ -29,18 +29,27 @@ export function AccountMasterScreen({ onClose }: AccountMasterScreenProps): Reac
     setSearchText,
     accountTypeFilter,
     setAccountTypeFilter,
+    accountGroupFilter,
+    setAccountGroupFilter,
+    statusFilter,
+    setStatusFilter,
+    balanceFilter,
+    setBalanceFilter,
+    hasActiveFilters,
+    handleClearFilters,
+    accountGroups,
     activeGroups,
     filteredAccounts,
     activeCount,
     openEditForm,
     openNewForm,
     closeForm,
-    handleToolbarEdit,
-    handleToolbarDelete,
+    requestDelete,
     handleSave,
     handleConfirmDelete,
     handleCancelDelete,
     handlePrint,
+    handleExportCsv,
     accountNameRef
   } = useAccountMaster()
 
@@ -50,7 +59,16 @@ export function AccountMasterScreen({ onClose }: AccountMasterScreenProps): Reac
       <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-slate-200 shadow-sm shrink-0 z-10">
         <div className="flex items-center gap-3.5">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-100 to-amber-50 border border-amber-200 flex items-center justify-center shadow-inner shrink-0">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#b45309" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#b45309"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
               <circle cx="9" cy="7" r="4" />
               <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
@@ -59,7 +77,7 @@ export function AccountMasterScreen({ onClose }: AccountMasterScreenProps): Reac
           </div>
           <div>
             <h1 className="text-lg font-bold text-slate-800 tracking-tight leading-none">Account Master</h1>
-            <p className="text-xs text-slate-500 mt-1">Manage customers, suppliers, karagirs & bank accounts</p>
+            <p className="text-xs text-slate-500 mt-1">Manage customers, suppliers, karagirs, banks & expense heads</p>
           </div>
         </div>
         <button
@@ -69,7 +87,8 @@ export function AccountMasterScreen({ onClose }: AccountMasterScreenProps): Reac
           title="Close"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-            <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
           </svg>
         </button>
       </div>
@@ -87,16 +106,23 @@ export function AccountMasterScreen({ onClose }: AccountMasterScreenProps): Reac
         selectedAccountName={selectedAccount ? selectedAccount.accountName : null}
         accountTypeFilter={accountTypeFilter}
         setAccountTypeFilter={setAccountTypeFilter}
+        accountGroupFilter={accountGroupFilter}
+        setAccountGroupFilter={setAccountGroupFilter}
+        statusFilter={statusFilter}
+        setStatusFilter={setStatusFilter}
+        balanceFilter={balanceFilter}
+        setBalanceFilter={setBalanceFilter}
+        accountGroups={accountGroups}
         searchText={searchText}
         setSearchText={setSearchText}
         totalCount={accounts.length}
         activeCount={activeCount}
         showingCount={filteredAccounts.length}
         onAddNew={openNewForm}
-        onEdit={handleToolbarEdit}
         onPrint={handlePrint}
-        onDelete={handleToolbarDelete}
-        onClose={onClose}
+        onExportCsv={handleExportCsv}
+        onClearFilters={handleClearFilters}
+        hasActiveFilters={hasActiveFilters}
       />
 
       {/* Body */}
@@ -124,13 +150,34 @@ export function AccountMasterScreen({ onClose }: AccountMasterScreenProps): Reac
                 selectedId={selectedAccount?.id}
                 onSelect={(id) => setSelectedAccountId(id)}
                 onDoubleClick={(account) => openEditForm(account)}
+                onEdit={(account) => openEditForm(account)}
+                onDelete={(account) => requestDelete(account)}
               />
             </div>
-            <div className="flex items-center gap-2 text-[11px] text-slate-500 select-none shrink-0 no-print font-medium bg-slate-100/50 p-2 rounded-lg border border-slate-200">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-amber-500">
-                <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
-              </svg>
-              Click a row to select · Double-click to edit · Opening balances support positive (Payable) and negative (Receivable, e.g. -8000) values.
+            <div className="flex items-center justify-between gap-3 text-[11px] text-slate-500 select-none shrink-0 no-print font-medium bg-slate-50 p-2.5 rounded-lg border border-slate-200/80">
+              <div className="flex items-center gap-2">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-amber-500 shrink-0">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="16" x2="12" y2="12" />
+                  <line x1="12" y1="8" x2="12.01" y2="8" />
+                </svg>
+                <span>Click row to select · Double-click to edit account</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
+                    Dr
+                  </span>
+                  <span className="text-slate-600 font-semibold">Debit / Payable (देणे)</span>
+                </span>
+                <span className="text-slate-300">|</span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-900 border border-emerald-300">
+                    Cr
+                  </span>
+                  <span className="text-slate-600 font-semibold">Credit / Receivable (घेणे)</span>
+                </span>
+              </div>
             </div>
           </>
         )}

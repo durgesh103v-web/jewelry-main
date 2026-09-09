@@ -19,12 +19,19 @@ const initialForm: AccountFormValues = {
   lastDate: today,
   goldFineLimit: '',
   silverFineLimit: '',
+  creditLimit: '',
   mobileNumber: '',
   whatsappNumber: '',
   phone2: '',
+  email: '',
   address: '',
   city: '',
   state: 'Maharashtra',
+  pincode: '',
+  bankName: '',
+  bankAccountNumber: '',
+  bankIfsc: '',
+  bankBranch: '',
   gstNo: '',
   panNo: '',
   notification: '',
@@ -57,6 +64,9 @@ export function useAccountMaster() {
   const [saving, setSaving] = useState(false)
   const [searchText, setSearchText] = useState('')
   const [accountTypeFilter, setAccountTypeFilter] = useState('All')
+  const [accountGroupFilter, setAccountGroupFilter] = useState('All')
+  const [statusFilter, setStatusFilter] = useState('ALL')
+  const [balanceFilter, setBalanceFilter] = useState('ALL')
 
   const accountNameRef = useRef<HTMLInputElement | null>(null)
 
@@ -68,31 +78,84 @@ export function useAccountMaster() {
     return accounts.find((account) => account.id === selectedAccountId) || null
   }, [accounts, selectedAccountId])
 
+  const hasActiveFilters = useMemo(() => {
+    return (
+      Boolean(searchText.trim()) ||
+      accountTypeFilter !== 'All' ||
+      accountGroupFilter !== 'All' ||
+      statusFilter !== 'ALL' ||
+      balanceFilter !== 'ALL'
+    )
+  }, [searchText, accountTypeFilter, accountGroupFilter, statusFilter, balanceFilter])
+
+  const handleClearFilters = useCallback(() => {
+    setSearchText('')
+    setAccountTypeFilter('All')
+    setAccountGroupFilter('All')
+    setStatusFilter('ALL')
+    setBalanceFilter('ALL')
+  }, [])
+
   const filteredAccounts = useMemo(() => {
     const keyword = searchText.trim().toLowerCase()
 
     return accounts.filter((account) => {
+      // 1. Account Type
       const typeMatch = accountTypeFilter === 'All' || account.accountType === accountTypeFilter
+
+      // 2. Account Group
+      const groupMatch =
+        accountGroupFilter === 'All' ||
+        account.accountGroupId === accountGroupFilter ||
+        account.groupName === accountGroupFilter
+
+      // 3. Status
+      const statusMatch =
+        statusFilter === 'ALL' ||
+        (statusFilter === 'ACTIVE' && account.active) ||
+        (statusFilter === 'INACTIVE' && !account.active)
+
+      // 4. Balance Filter
+      let balanceMatch = true
+      if (balanceFilter === 'HAS_CASH') {
+        balanceMatch = Number(account.openingCash || 0) !== 0
+      } else if (balanceFilter === 'HAS_GOLD') {
+        balanceMatch = Number(account.openingGoldFine || 0) !== 0
+      } else if (balanceFilter === 'HAS_SILVER') {
+        balanceMatch = Number(account.openingSilverFine || 0) !== 0
+      } else if (balanceFilter === 'ANY_OUTSTANDING') {
+        balanceMatch =
+          Number(account.openingCash || 0) !== 0 ||
+          Number(account.openingGoldFine || 0) !== 0 ||
+          Number(account.openingSilverFine || 0) !== 0
+      }
+
+      // 5. Keyword search
       const keywordMatch =
         !keyword ||
         account.accountName.toLowerCase().includes(keyword) ||
-        account.otherName.toLowerCase().includes(keyword) ||
-        account.accountType.toLowerCase().includes(keyword) ||
-        account.groupName.toLowerCase().includes(keyword) ||
-        account.groupType.toLowerCase().includes(keyword) ||
-        account.mobileNumber.toLowerCase().includes(keyword) ||
-        account.whatsappNumber.toLowerCase().includes(keyword) ||
-        account.phone2.toLowerCase().includes(keyword) ||
-        account.address.toLowerCase().includes(keyword) ||
-        account.city.toLowerCase().includes(keyword) ||
-        account.state.toLowerCase().includes(keyword) ||
-        account.gstNo.toLowerCase().includes(keyword) ||
-        account.panNo.toLowerCase().includes(keyword) ||
-        account.notification.toLowerCase().includes(keyword)
+        (account.otherName && account.otherName.toLowerCase().includes(keyword)) ||
+        (account.accountType && account.accountType.toLowerCase().includes(keyword)) ||
+        (account.groupName && account.groupName.toLowerCase().includes(keyword)) ||
+        (account.groupType && account.groupType.toLowerCase().includes(keyword)) ||
+        (account.mobileNumber && account.mobileNumber.toLowerCase().includes(keyword)) ||
+        (account.whatsappNumber && account.whatsappNumber.toLowerCase().includes(keyword)) ||
+        (account.phone2 && account.phone2.toLowerCase().includes(keyword)) ||
+        (account.email && account.email.toLowerCase().includes(keyword)) ||
+        (account.address && account.address.toLowerCase().includes(keyword)) ||
+        (account.city && account.city.toLowerCase().includes(keyword)) ||
+        (account.state && account.state.toLowerCase().includes(keyword)) ||
+        (account.pincode && account.pincode.toLowerCase().includes(keyword)) ||
+        (account.gstNo && account.gstNo.toLowerCase().includes(keyword)) ||
+        (account.panNo && account.panNo.toLowerCase().includes(keyword)) ||
+        (account.bankName && account.bankName.toLowerCase().includes(keyword)) ||
+        (account.bankAccountNumber && account.bankAccountNumber.toLowerCase().includes(keyword)) ||
+        (account.bankIfsc && account.bankIfsc.toLowerCase().includes(keyword)) ||
+        (account.notification && account.notification.toLowerCase().includes(keyword))
 
-      return typeMatch && keywordMatch
+      return typeMatch && groupMatch && statusMatch && balanceMatch && keywordMatch
     })
-  }, [accounts, searchText, accountTypeFilter])
+  }, [accounts, searchText, accountTypeFilter, accountGroupFilter, statusFilter, balanceFilter])
 
   const activeCount = useMemo(() => {
     return accounts.filter((account) => account.active).length
@@ -111,7 +174,7 @@ export function useAccountMaster() {
     ])
 
     setAccountGroups(groupData)
-    setAccounts(accountData)
+    setAccounts(accountData as unknown as AccountRecord[])
   }, [])
 
   const openNewForm = useCallback((): void => {
@@ -163,12 +226,19 @@ export function useAccountMaster() {
       lastDate: form.lastDate,
       goldFineLimit: toNumber(form.goldFineLimit),
       silverFineLimit: toNumber(form.silverFineLimit),
+      creditLimit: toNumber(form.creditLimit),
       mobileNumber: form.mobileNumber.trim(),
       whatsappNumber: form.whatsappNumber.trim(),
       phone2: form.phone2.trim(),
+      email: form.email.trim(),
       address: form.address.trim(),
       city: form.city.trim(),
       state: form.state.trim(),
+      pincode: form.pincode.trim(),
+      bankName: form.bankName.trim(),
+      bankAccountNumber: form.bankAccountNumber.trim(),
+      bankIfsc: form.bankIfsc.trim().toUpperCase(),
+      bankBranch: form.bankBranch.trim(),
       gstNo: form.gstNo.trim().toUpperCase(),
       panNo: form.panNo.trim().toUpperCase(),
       notification: form.notification.trim(),
@@ -220,12 +290,19 @@ export function useAccountMaster() {
       goldFineLimit: Number(account.goldFineLimit || 0) === 0 ? '' : String(account.goldFineLimit),
       silverFineLimit:
         Number(account.silverFineLimit || 0) === 0 ? '' : String(account.silverFineLimit),
+      creditLimit: Number(account.creditLimit || 0) === 0 ? '' : String(account.creditLimit),
       mobileNumber: account.mobileNumber || '',
       whatsappNumber: account.whatsappNumber || '',
       phone2: account.phone2 || '',
+      email: account.email || '',
       address: account.address || '',
       city: account.city || '',
       state: account.state || 'Maharashtra',
+      pincode: account.pincode || '',
+      bankName: account.bankName || '',
+      bankAccountNumber: account.bankAccountNumber || '',
+      bankIfsc: account.bankIfsc || '',
+      bankBranch: account.bankBranch || '',
       gstNo: account.gstNo || '',
       panNo: account.panNo || '',
       notification: account.notification || '',
@@ -271,6 +348,90 @@ export function useAccountMaster() {
     window.print()
   }
 
+  const handleExportCsv = useCallback((): void => {
+    if (filteredAccounts.length === 0) {
+      showAlert('warning', 'No accounts to export.')
+      return
+    }
+
+    const headers = [
+      '#',
+      'Account Name',
+      'Other Name',
+      'Account Type',
+      'Group Name',
+      'Gold Fine (g)',
+      'Silver Fine (g)',
+      'Cash (INR)',
+      'Anamat (INR)',
+      'Bank (INR)',
+      'As On Date',
+      'Mobile Number',
+      'WhatsApp Number',
+      'Phone 2',
+      'Email',
+      'Address',
+      'City',
+      'State',
+      'Pincode',
+      'GSTIN',
+      'PAN',
+      'Bank Name',
+      'Bank A/C No',
+      'IFSC Code',
+      'Branch',
+      'Gold Limit (g)',
+      'Silver Limit (g)',
+      'Credit Limit (INR)',
+      'Status'
+    ]
+
+    const rows = filteredAccounts.map((acc, index) => [
+      index + 1,
+      `"${(acc.accountName || '').replace(/"/g, '""')}"`,
+      `"${(acc.otherName || '').replace(/"/g, '""')}"`,
+      `"${acc.accountType || ''}"`,
+      `"${acc.groupName || ''}"`,
+      acc.openingGoldFine || 0,
+      acc.openingSilverFine || 0,
+      acc.openingCash || 0,
+      acc.openingAnamat || 0,
+      acc.openingBank || 0,
+      acc.lastDate || '',
+      `"${acc.mobileNumber || ''}"`,
+      `"${acc.whatsappNumber || ''}"`,
+      `"${acc.phone2 || ''}"`,
+      `"${acc.email || ''}"`,
+      `"${(acc.address || '').replace(/"/g, '""')}"`,
+      `"${acc.city || ''}"`,
+      `"${acc.state || ''}"`,
+      `"${acc.pincode || ''}"`,
+      `"${acc.gstNo || ''}"`,
+      `"${acc.panNo || ''}"`,
+      `"${acc.bankName || ''}"`,
+      `"${acc.bankAccountNumber || ''}"`,
+      `"${acc.bankIfsc || ''}"`,
+      `"${acc.bankBranch || ''}"`,
+      acc.goldFineLimit || 0,
+      acc.silverFineLimit || 0,
+      acc.creditLimit || 0,
+      acc.active ? 'Active' : 'Inactive'
+    ])
+
+    const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n')
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', `accounts_export_${new Date().toISOString().slice(0, 10)}.csv`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+
+    showAlert('success', `Exported ${filteredAccounts.length} accounts to CSV.`)
+  }, [filteredAccounts, showAlert])
+
   useEffect(() => {
     let cancelled = false
 
@@ -278,7 +439,7 @@ export function useAccountMaster() {
       .then(([groupData, accountData]) => {
         if (cancelled) return
         setAccountGroups(groupData)
-        setAccounts(accountData)
+        setAccounts(accountData as unknown as AccountRecord[])
       })
       .catch((error: unknown) => {
         if (!cancelled) showAlert('error', getFriendlyErrorMessage(error))
@@ -342,6 +503,15 @@ export function useAccountMaster() {
     setSearchText,
     accountTypeFilter,
     setAccountTypeFilter,
+    accountGroupFilter,
+    setAccountGroupFilter,
+    statusFilter,
+    setStatusFilter,
+    balanceFilter,
+    setBalanceFilter,
+    hasActiveFilters,
+    handleClearFilters,
+    accountGroups,
     activeGroups,
     filteredAccounts,
     activeCount,
@@ -350,10 +520,12 @@ export function useAccountMaster() {
     openEditForm,
     handleToolbarEdit,
     handleToolbarDelete,
+    requestDelete,
     handleSave,
     handleConfirmDelete,
     handleCancelDelete,
     handlePrint,
+    handleExportCsv,
     accountNameRef
   }
 }

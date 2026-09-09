@@ -5,6 +5,7 @@ import { getFriendlyErrorMessage } from '../../utils/getFriendlyErrorMessage'
 import { getVisibleScreenIds } from '../navigation/menu.config'
 import { AppTopNavbar } from './AppTopNavbar'
 import { AppWorkspace } from './AppWorkspace'
+import { AppFooterTaskbar } from './AppFooterTaskbar'
 import { useAlert } from '@renderer/hooks'
 import type { AppMenuChild } from '../../types/menu'
 import type { WorkspaceTab } from '../navigation/navigation.types'
@@ -162,7 +163,7 @@ export function AppShell({ session, onLogout }: AppShellProps): React.JSX.Elemen
         </div>
       )}
 
-      {/* 2. Main Full-Screen Workspace (Zero Footer) */}
+      {/* 2. Main Full-Screen Workspace */}
       <div className="erp-desktop-workspace-container">
         <AppWorkspace
           tabs={tabs}
@@ -173,6 +174,15 @@ export function AppShell({ session, onLogout }: AppShellProps): React.JSX.Elemen
           visibleScreenIds={visibleScreenIds}
         />
       </div>
+
+      {/* 3. Bottom Multi-Window Taskbar & System Status Bar */}
+      <AppFooterTaskbar
+        tabs={tabs}
+        activeTabId={activeTabId}
+        setActiveTabId={setActiveTabId}
+        onCloseTab={closeTab}
+        firmName={topFirmName}
+      />
     </div>
   )
 }

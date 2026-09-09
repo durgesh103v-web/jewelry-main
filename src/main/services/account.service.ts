@@ -25,8 +25,14 @@ const accountSchema = z.object({
   address: z.string().trim().max(250).optional().default(''),
   city: z.string().trim().max(80).optional().default(''),
   state: z.string().trim().max(80).optional().default(''),
+  pincode: z.string().trim().max(10).optional().default(''),
+  email: z.string().trim().max(120).optional().default(''),
   gstNo: z.string().trim().max(30).optional().default(''),
   panNo: z.string().trim().max(30).optional().default(''),
+  bankName: z.string().trim().max(100).optional().default(''),
+  bankAccountNumber: z.string().trim().max(40).optional().default(''),
+  bankIfsc: z.string().trim().max(20).optional().default(''),
+  bankBranch: z.string().trim().max(100).optional().default(''),
   lastDate: z.string().trim().optional().default(''),
   openingGoldFine: z.coerce.number().default(0),
   openingSilverFine: z.coerce.number().default(0),
@@ -35,6 +41,7 @@ const accountSchema = z.object({
   openingBank: z.coerce.number().default(0),
   goldFineLimit: z.coerce.number().default(0),
   silverFineLimit: z.coerce.number().default(0),
+  creditLimit: z.coerce.number().default(0),
   notification: z.string().trim().optional().default(''),
   active: z.boolean().default(true)
 })
@@ -55,8 +62,14 @@ export type AccountRecord = {
   address: string
   city: string
   state: string
+  pincode: string
+  email: string
   gstNo: string
   panNo: string
+  bankName: string
+  bankAccountNumber: string
+  bankIfsc: string
+  bankBranch: string
   lastDate: string
   openingGoldFine: number
   openingSilverFine: number
@@ -65,6 +78,7 @@ export type AccountRecord = {
   openingBank: number
   goldFineLimit: number
   silverFineLimit: number
+  creditLimit: number
   notification: string
   active: boolean
   createdAt: string
@@ -86,8 +100,14 @@ function mapRow(row: AccountRow): AccountRecord {
     address: row.address ?? '',
     city: row.city ?? '',
     state: row.state ?? '',
+    pincode: row.pincode ?? '',
+    email: row.email ?? '',
     gstNo: row.gst_no ?? '',
     panNo: row.pan_no ?? '',
+    bankName: row.bank_name ?? '',
+    bankAccountNumber: row.bank_account_number ?? '',
+    bankIfsc: row.bank_ifsc ?? '',
+    bankBranch: row.bank_branch ?? '',
     lastDate: row.last_date ?? '',
     openingGoldFine: Number(row.opening_gold_fine ?? 0),
     openingSilverFine: Number(row.opening_silver_fine ?? 0),
@@ -96,6 +116,7 @@ function mapRow(row: AccountRow): AccountRecord {
     openingBank: Number(row.opening_bank ?? 0),
     goldFineLimit: Number(row.gold_fine_limit ?? 0),
     silverFineLimit: Number(row.silver_fine_limit ?? 0),
+    creditLimit: Number(row.credit_limit ?? 0),
     notification: row.notification ?? '',
     active: Boolean(row.active),
     createdAt: row.created_at,

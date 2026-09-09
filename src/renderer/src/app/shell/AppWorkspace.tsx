@@ -15,7 +15,6 @@ export interface AppWorkspaceProps {
 export function AppWorkspace({
   tabs,
   activeTabId,
-  setActiveTabId,
   onCloseTab,
   onNavigate,
   visibleScreenIds
@@ -28,38 +27,7 @@ export function AppWorkspace({
 
   return (
     <div className="erp-app-workspace-inner">
-      {/* Top Workspace Tab Strip (Only displayed when additional screens are open for multi-tasking) */}
-      {tabs.length > 1 && (
-        <div className="top-workspace-tabs-strip">
-          {tabs.map((tab) => {
-            const isActive = tab.id === activeTabId
-            return (
-              <button
-                key={tab.id}
-                className={`top-workspace-tab ${isActive ? 'active-tab' : ''}`}
-                type="button"
-                onClick={() => setActiveTabId(tab.id)}
-              >
-                <span className="tab-title">{tab.label}</span>
-                {tab.id !== 'dashboard' && (
-                  <span
-                    className="tab-close-icon"
-                    title="Close Tab"
-                    onClick={(event) => {
-                      event.stopPropagation()
-                      onCloseTab(tab.id)
-                    }}
-                  >
-                    &times;
-                  </span>
-                )}
-              </button>
-            )
-          })}
-        </div>
-      )}
-
-      {/* Main Workspace Canvas (No Footer at all) */}
+      {/* Main Workspace Canvas (Full Height, Tabs moved to Footer Taskbar) */}
       <main className="workspace-screen-canvas">
         <ScreenRenderer
           activeTab={activeTab}

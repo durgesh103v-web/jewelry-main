@@ -72,9 +72,7 @@ export function DashboardScreen({
   const [reminders, setReminders] = useState<any[]>([])
   const [firmName, setFirmName] = useState<string>('Shree Jewellery')
   const [salesInvoices, setSalesInvoices] = useState<SalesInvoiceRecord[]>([])
-  const [salesHeaders, setSalesHeaders] = useState<any[]>([])
   const [purchaseInvoices, setPurchaseInvoices] = useState<PurchaseInvoiceRecord[]>([])
-  const [purchaseHeaders, setPurchaseHeaders] = useState<any[]>([])
 
   // 2. DATA FETCHING
   const loadDashboardData = useCallback(async (isRefresh = false) => {
@@ -108,9 +106,7 @@ export function DashboardScreen({
       if (results[7].status === 'fulfilled' && results[7].value?.firmName) setFirmName(results[7].value.firmName)
       if (results[8].status === 'fulfilled' && Array.isArray(results[8].value)) setReminders(results[8].value)
       if (results[9].status === 'fulfilled' && Array.isArray(results[9].value)) setSalesInvoices(results[9].value)
-      if (results[10].status === 'fulfilled' && Array.isArray(results[10].value)) setSalesHeaders(results[10].value)
       if (results[11].status === 'fulfilled' && Array.isArray(results[11].value)) setPurchaseInvoices(results[11].value)
-      if (results[12].status === 'fulfilled' && Array.isArray(results[12].value)) setPurchaseHeaders(results[12].value)
 
       setLastSynced(new Date())
     } catch {
