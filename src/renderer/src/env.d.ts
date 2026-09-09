@@ -42,6 +42,7 @@ type AccountGroupPayload = {
 
 type AccountGroupRecord = AccountGroupPayload & {
   id: string
+  accountCount?: number
   createdAt: string
   updatedAt: string
 }

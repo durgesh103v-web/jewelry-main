@@ -141,22 +141,17 @@ function renderBalance(amount: number, unit = '', isCurrency = false): React.JSX
   )
 }
 
-function renderStatusBadge(active: boolean): React.JSX.Element {
+function renderStatus(active: boolean): React.JSX.Element {
   if (active) {
     return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80 shadow-2xs whitespace-nowrap">
-        <span className="relative flex h-2 w-2">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-        </span>
+      <span className="text-emerald-600 font-bold text-xs whitespace-nowrap">
         Active
       </span>
     )
   }
 
   return (
-    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-100 text-slate-500 border border-slate-200 whitespace-nowrap">
-      <span className="inline-block h-2 w-2 rounded-full bg-slate-400"></span>
+    <span className="text-slate-400 font-medium text-xs whitespace-nowrap">
       Inactive
     </span>
   )
@@ -340,9 +335,9 @@ export function AccountTable({
                     {r.pincode && <div className="text-[10px] text-slate-400">{r.pincode}</div>}
                   </td>
 
-                  {/* Status Badge */}
+                  {/* Status */}
                   <td className="py-2.5 px-3 text-center">
-                    {renderStatusBadge(r.active)}
+                    {renderStatus(r.active)}
                   </td>
 
                   {/* Actions */}

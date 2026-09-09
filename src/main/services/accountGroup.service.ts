@@ -5,19 +5,20 @@ import { getDatabase } from '../database/connection'
 
 const accountGroupSchema = z.object({
   groupName: z.string().trim().min(1, 'Group name is required').max(80),
-  groupType: z.enum(['Customer', 'Supplier', 'Karigar', 'Cash', 'Bank', 'Other']),
+  groupType: z.enum(['Customer', 'Supplier', 'Karagir', 'Cash', 'Bank', 'Expense', 'Other']),
   description: z.string().trim().max(255).optional().default(''),
   active: z.boolean().default(true)
 })
 
 type AccountGroupPayload = z.infer<typeof accountGroupSchema>
 
-type AccountGroupRecord = {
+export type AccountGroupRecord = {
   id: string
   groupName: string
   groupType: string
   description: string
   active: boolean
+  accountCount: number
   createdAt: string
   updatedAt: string
 }
@@ -28,6 +29,7 @@ type AccountGroupRow = {
   group_type: string
   description: string | null
   active: number
+  account_count?: number
   created_at: string
   updated_at: string
 }
@@ -39,6 +41,7 @@ function mapRow(row: AccountGroupRow): AccountGroupRecord {
     groupType: row.group_type,
     description: row.description ?? '',
     active: Boolean(row.active),
+    accountCount: Number(row.account_count ?? 0),
     createdAt: row.created_at,
     updatedAt: row.updated_at
   }
@@ -51,10 +54,20 @@ export const accountGroupService = {
     const rows = db
       .prepare(
         `
-        SELECT id, group_name, group_type, description, active, created_at, updated_at
-        FROM account_groups
-        WHERE deleted_at IS NULL
-        ORDER BY group_name ASC
+        SELECT
+          ag.id,
+          ag.group_name,
+          ag.group_type,
+          ag.description,
+          ag.active,
+          ag.created_at,
+          ag.updated_at,
+          COUNT(a.id) AS account_count
+        FROM account_groups ag
+        LEFT JOIN accounts a ON a.account_group_id = ag.id AND a.deleted_at IS NULL
+        WHERE ag.deleted_at IS NULL
+        GROUP BY ag.id
+        ORDER BY ag.group_name ASC
       `
       )
       .all() as AccountGroupRow[]
@@ -157,6 +170,40 @@ export const accountGroupService = {
 
   delete(id: string) {
     const db = getDatabase()
+
+    const existing = db
+      .prepare(
+        `
+        SELECT id, group_name
+        FROM account_groups
+        WHERE id = ?
+        AND deleted_at IS NULL
+      `
+      )
+      .get(id) as { id: string; group_name: string } | undefined
+
+    if (!existing) {
+      throw new Error('Account group not found')
+    }
+
+    // Safety check: ensure no active accounts are linked to this group
+    const linkRow = db
+      .prepare(
+        `
+        SELECT COUNT(*) AS count
+        FROM accounts
+        WHERE account_group_id = ?
+        AND deleted_at IS NULL
+      `
+      )
+      .get(id) as { count: number } | undefined
+
+    if (linkRow && linkRow.count > 0) {
+      throw new Error(
+        `Cannot delete "${existing.group_name}" because ${linkRow.count} active account(s) are linked to it. Please reassign or delete those accounts first.`
+      )
+    }
+
     const now = dayjs().format('YYYY-MM-DD HH:mm:ss')
 
     db.prepare(
@@ -177,10 +224,20 @@ export const accountGroupService = {
     const row = db
       .prepare(
         `
-        SELECT id, group_name, group_type, description, active, created_at, updated_at
-        FROM account_groups
-        WHERE id = ?
-        AND deleted_at IS NULL
+        SELECT
+          ag.id,
+          ag.group_name,
+          ag.group_type,
+          ag.description,
+          ag.active,
+          ag.created_at,
+          ag.updated_at,
+          COUNT(a.id) AS account_count
+        FROM account_groups ag
+        LEFT JOIN accounts a ON a.account_group_id = ag.id AND a.deleted_at IS NULL
+        WHERE ag.id = ?
+        AND ag.deleted_at IS NULL
+        GROUP BY ag.id
       `
       )
       .get(id) as AccountGroupRow | undefined
