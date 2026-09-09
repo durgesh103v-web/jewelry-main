@@ -1,5 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react'
-import './AppTopNavbar.css'
+import {
+  FiSearch,
+  FiMessageCircle,
+  FiCamera,
+  FiSettings,
+  FiKey,
+  FiLogOut
+} from 'react-icons/fi'
 import { getMenusForBusinessType } from '../../config/appMenus'
 import type { AppMenuChild, BusinessTypeValue } from '../../types/menu'
 
@@ -57,7 +64,7 @@ export const AppTopNavbar: React.FC<AppTopNavbarProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // Global Ctrl + K hotkey for search
+  // Global Ctrl + K hotkey for search & Escape to dismiss
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent): void => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
@@ -82,7 +89,7 @@ export const AppTopNavbar: React.FC<AppTopNavbarProps> = ({
   }
 
   const handleMenuMouseEnter = (menuId: string): void => {
-    // If another menu is already open, hovering switches to the hovered menu (standard desktop behavior)
+    // If another menu is already open, hovering switches to the hovered menu
     if (openDropdownId !== null) {
       setOpenDropdownId(menuId)
     }
@@ -94,13 +101,20 @@ export const AppTopNavbar: React.FC<AppTopNavbarProps> = ({
   }
 
   return (
-    <header className="desktop-top-navbar" ref={navRef}>
+    <header
+      ref={navRef}
+      className="h-12 bg-white border-b border-slate-200/90 px-3.5 flex items-center justify-between select-none shadow-2xs relative z-30"
+    >
       {/* 1. LEFT SECTION: NAVIGATION MENUS */}
-      <div className="navbar-left-cluster">
+      <div className="flex items-center gap-1 shrink-0">
         {/* Home / Dashboard Item */}
         <button
           type="button"
-          className={`nav-menu-btn nav-dashboard-btn ${activeScreenId === 'dashboard' ? 'active-home' : ''}`}
+          className={`inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            activeScreenId === 'dashboard'
+              ? 'bg-amber-500/10 text-amber-800'
+              : 'text-slate-700 hover:text-slate-900 hover:bg-slate-100/80'
+          }`}
           onClick={() => {
             setOpenDropdownId(null)
             onNavigate('dashboard', 'Dashboard', 'home')
@@ -108,9 +122,7 @@ export const AppTopNavbar: React.FC<AppTopNavbarProps> = ({
           title="Showroom Dashboard"
         >
           <svg
-            className="nav-home-icon"
-            width="16"
-            height="16"
+            className="w-4 h-4 text-amber-600 shrink-0"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -123,17 +135,23 @@ export const AppTopNavbar: React.FC<AppTopNavbarProps> = ({
           <span>Dashboard</span>
         </button>
 
-        {/* Primary Desktop Menus (Master, Transaction, GST / Estimate, Reports, Utility) — Optimized without carets */}
-        <nav className="navbar-menu-items" aria-label="Main Navigation">
+        {/* Primary Desktop Menus (Master, Transaction, GST / Estimate, Reports, Utility) */}
+        <nav className="flex items-center gap-0.5" aria-label="Main Navigation">
           {menus.map((menu) => {
             const isOpen = openDropdownId === menu.id
             const isChildActive = menu.children.some((c) => c.id === activeScreenId)
 
             return (
-              <div key={menu.id} className="nav-menu-wrapper">
+              <div key={menu.id} className="relative">
                 <button
                   type="button"
-                  className={`nav-menu-btn ${isOpen ? 'menu-open' : ''} ${isChildActive ? 'child-active' : ''}`}
+                  className={`h-8 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none ${
+                    isOpen
+                      ? 'bg-amber-500/15 text-amber-900 font-bold shadow-2xs'
+                      : isChildActive
+                      ? 'text-amber-800 font-bold bg-amber-50/70 hover:bg-amber-100/60'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
+                  }`}
                   onClick={() => handleMenuClick(menu.id)}
                   onMouseEnter={() => handleMenuMouseEnter(menu.id)}
                   aria-expanded={isOpen}
@@ -141,10 +159,13 @@ export const AppTopNavbar: React.FC<AppTopNavbarProps> = ({
                   <span>{menu.label}</span>
                 </button>
 
-                {/* Desktop Dropdown Menu */}
+                {/* Desktop Dropdown Pane */}
                 {isOpen && (
-                  <div className="desktop-dropdown-pane" role="menu">
-                    <div className="dropdown-scroll-body">
+                  <div
+                    className="absolute left-0 top-full mt-1.5 min-w-[220px] max-w-[320px] bg-white rounded-xl border border-slate-200/90 shadow-xl py-1.5 z-50 animate-in fade-in-50 zoom-in-95 duration-100"
+                    role="menu"
+                  >
+                    <div className="max-h-[calc(100vh-140px)] overflow-y-auto py-0.5">
                       {menu.children.map((child) => {
                         const isSelected = child.id === activeScreenId
                         const isVisible = visibleScreenIds.has(child.id)
@@ -154,12 +175,20 @@ export const AppTopNavbar: React.FC<AppTopNavbarProps> = ({
                           <button
                             key={child.id}
                             type="button"
-                            className={`dropdown-menu-item ${isSelected ? 'selected-item' : ''}`}
+                            className={`w-[calc(100%-8px)] mx-1 px-3 py-2 rounded-lg text-xs flex items-center justify-between text-left transition-all cursor-pointer group ${
+                              isSelected
+                                ? 'bg-amber-50 text-amber-950 font-bold shadow-2xs'
+                                : 'text-slate-700 hover:bg-amber-50/70 hover:text-amber-900 font-medium'
+                            }`}
                             onClick={() => handleItemSelect(child)}
                             role="menuitem"
                           >
-                            
-                            <span className="item-label">{child.label}</span>
+                            <span className="truncate">{child.label}</span>
+                            {isSelected ? (
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-600 shrink-0 ml-2" />
+                            ) : (
+                              <span className="w-1.5 h-1.5 rounded-full bg-transparent group-hover:bg-amber-400/60 shrink-0 ml-2 transition-colors" />
+                            )}
                           </button>
                         )
                       })}
@@ -172,141 +201,141 @@ export const AppTopNavbar: React.FC<AppTopNavbarProps> = ({
         </nav>
       </div>
 
-      {/* 2. RIGHT SECTION: PROPER SEARCH BAR & ICON SUITE */}
-      <div className="navbar-right-cluster">
+      {/* 2. RIGHT SECTION: SEARCH BAR & ACTION ICONS */}
+      <div className="flex items-center gap-2 shrink-0">
         {/* Proper Global Search Bar */}
-        <div className={`navbar-search-box ${searchFocused ? 'search-active' : ''}`}>
-          <svg
-            className="search-icon"
-            width="15"
-            height="15"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
+        <div className="relative flex items-center">
+          <div
+            className={`flex items-center gap-2 h-8 px-2.5 rounded-lg border transition-all duration-150 ${
+              searchFocused
+                ? 'w-72 bg-white border-amber-500 ring-2 ring-amber-500/20 shadow-xs text-slate-800'
+                : 'w-56 bg-slate-100/80 border-slate-200/80 hover:bg-slate-100 hover:border-slate-300 text-slate-500'
+            }`}
           >
-            <circle cx="11" cy="11" r="8" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
-          <input
-            id="navbar-global-search"
-            type="text"
-            className="navbar-search-input"
-            placeholder="Search bills, barcodes, accounts..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onFocus={() => setSearchFocused(true)}
-            onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
-          />
-          {searchQuery ? (
-            <button
-              type="button"
-              className="search-clear-btn"
-              onClick={() => setSearchQuery('')}
-              title="Clear search"
-            >
-              ✕
-            </button>
-          ) : ""}
+            <FiSearch
+              size={14}
+              className={`shrink-0 ${searchFocused ? 'text-amber-600' : 'text-slate-400'}`}
+            />
+            <input
+              id="navbar-global-search"
+              type="text"
+              className="w-full bg-transparent text-xs text-slate-800 placeholder-slate-400 focus:outline-none"
+              placeholder="Search bills, barcodes, accounts..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
+            />
+            {searchQuery ? (
+              <button
+                type="button"
+                className="w-4 h-4 rounded-full bg-slate-200 hover:bg-slate-300 text-slate-600 flex items-center justify-center text-[10px] shrink-0"
+                onClick={() => setSearchQuery('')}
+                title="Clear search"
+              >
+                ✕
+              </button>
+            ) : (
+              <kbd className="hidden sm:inline-block text-[10px] font-medium text-slate-400 bg-white border border-slate-200 px-1.5 py-0.2 rounded shadow-2xs">
+                Ctrl+K
+              </kbd>
+            )}
+          </div>
         </div>
 
         {/* Divider */}
-        <div className="navbar-divider" />
+        <div className="w-px h-5 bg-slate-200 mx-0.5" />
 
         {/* Action Icon Suite */}
-        <div className="navbar-actions-suite">
-
-          {/* WhatsApp Icon Button with Tooltip */}
+        <div className="flex items-center gap-1">
+          {/* WhatsApp */}
           {onOpenWhatsApp && (
             <button
               type="button"
-              className="navbar-icon-btn whatsapp-icon-btn"
+              className="p-1.5 rounded-lg text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 relative transition-colors cursor-pointer"
               title="WhatsApp Messages & Customer Outreach"
               onClick={onOpenWhatsApp}
               aria-label="WhatsApp"
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
-              </svg>
-              <span className="icon-badge-dot whatsapp-dot" />
+              <FiMessageCircle size={16} />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-emerald-500 border border-white" />
             </button>
           )}
 
-          {/* Screenshot Icon Button */}
+          {/* Screenshot */}
           {onQuickScreenshot && (
             <button
               type="button"
-              className="navbar-icon-btn"
+              className="p-1.5 rounded-lg text-slate-500 hover:text-amber-600 hover:bg-amber-50 transition-colors disabled:opacity-40 cursor-pointer"
               title="Take Screenshot"
               onClick={onQuickScreenshot}
               disabled={capturingScreenshot}
               aria-label="Take Screenshot"
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-                <circle cx="12" cy="13" r="4" />
-              </svg>
+              <FiCamera size={16} />
             </button>
           )}
 
-          {/* Settings Icon Button */}
+          {/* Settings */}
           {onOpenSettings && (
             <button
               type="button"
-              className="navbar-icon-btn"
+              className="p-1.5 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors cursor-pointer"
               title="Application Settings"
               onClick={onOpenSettings}
               aria-label="Settings"
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="3" />
-                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
-              </svg>
+              <FiSettings size={16} />
             </button>
           )}
         </div>
 
-        {/* User Profile Badge */}
-        <div className="navbar-user-container">
+        {/* User Profile */}
+        <div className="relative">
           <button
             type="button"
-            className="navbar-user-btn"
+            className="flex items-center gap-2 h-8 px-2 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer select-none"
             onClick={() => setUserMenuOpen((prev) => !prev)}
             title={`Logged in as ${username} (${role})`}
           >
-            <span className="navbar-user-avatar">
+            <span className="w-6 h-6 rounded-full bg-gradient-to-tr from-amber-600 to-amber-500 text-white font-bold text-[10px] flex items-center justify-center shadow-2xs shrink-0">
               {username.slice(0, 2).toUpperCase()}
             </span>
-            <span className="navbar-username">{username}</span>
+            <span className="text-xs font-semibold text-slate-700 max-w-[100px] truncate hidden md:inline">
+              {username}
+            </span>
           </button>
 
+          {/* User Dropdown */}
           {userMenuOpen && (
-            <div className="user-dropdown-menu">
-              <div className="user-menu-header">
-                <strong>{username}</strong>
-                <span className="user-menu-role">{role}</span>
+            <div className="absolute right-0 top-full mt-1.5 w-52 bg-white rounded-xl border border-slate-200 shadow-xl p-1.5 z-50 animate-in fade-in-50 zoom-in-95 duration-100">
+              <div className="px-3 py-2 bg-slate-50/80 rounded-lg mb-1">
+                <div className="text-xs font-bold text-slate-800 truncate">{username}</div>
+                <div className="text-[10px] font-semibold text-amber-700 mt-0.5">{role}</div>
               </div>
-              <div className="user-menu-divider" />
+              <div className="h-px bg-slate-100 my-1" />
               <button
                 type="button"
-                className="user-menu-item"
+                className="w-full px-3 py-2 rounded-lg text-xs font-medium text-slate-700 hover:bg-amber-50 hover:text-amber-900 transition-colors text-left flex items-center gap-2 cursor-pointer"
                 onClick={() => {
                   setUserMenuOpen(false)
                   onNavigate('change-password', 'Change Password', 'utility')
                 }}
               >
-                Change Password
+                <FiKey size={14} className="text-slate-400" />
+                <span>Change Password</span>
               </button>
               {role === 'ADMIN' && (
                 <button
                   type="button"
-                  className="user-menu-item"
+                  className="w-full px-3 py-2 rounded-lg text-xs font-medium text-slate-700 hover:bg-amber-50 hover:text-amber-900 transition-colors text-left flex items-center gap-2 cursor-pointer"
                   onClick={() => {
                     setUserMenuOpen(false)
                     onNavigate('settings', 'Settings', 'utility')
                   }}
                 >
-                  System Configuration
+                  <FiSettings size={14} className="text-slate-400" />
+                  <span>System Configuration</span>
                 </button>
               )}
             </div>
@@ -317,16 +346,12 @@ export const AppTopNavbar: React.FC<AppTopNavbarProps> = ({
         {onLogout && (
           <button
             type="button"
-            className="navbar-logout-btn"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
             onClick={onLogout}
             title="Sign out of Jewellery ERP"
             aria-label="Logout"
           >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-              <polyline points="16 17 21 12 16 7" />
-              <line x1="21" y1="12" x2="9" y2="12" />
-            </svg>
+            <FiLogOut size={16} />
           </button>
         )}
       </div>
