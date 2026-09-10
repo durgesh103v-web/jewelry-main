@@ -74,6 +74,7 @@ export type ItemDesignRecord = {
 
 export type ItemRecord = {
   id: string
+  itemCode?: string
   itemName: string
   metalType: string
   itemGroupId: string
@@ -82,11 +83,19 @@ export type ItemRecord = {
   defaultStampName?: string
   defaultDesignId: string
   defaultDesignName?: string
+  purityKarat?: string
+  isStudded?: boolean
+  stoneDeductionType?: string
+  huidRequired?: boolean
+  minStockQty?: number
+  minStockWeight?: number
+  description?: string
   barcodeItem: boolean
   barcodeType: string
   labourChargesBy: string
   salePurchaseBy: string
   gstHsnCode: string
+  gstRate?: number
   fixedWeightPerPcs: number
   defaultTanch?: number
   defaultWastage?: number

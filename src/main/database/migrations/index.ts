@@ -18,6 +18,8 @@ import { migration017 } from './017_gold_savings_scheme'
 import { migration018 } from './018_vendor_consignment_and_memo'
 import { migration019 } from './019_account_bank_and_contact_fields'
 import { migration020 } from './020_seed_standard_account_groups'
+import { migration021 } from './021_item_master_expanded_fields'
+import { migration022 } from './022_seed_standard_items_and_groups'
 import { Migration } from './types'
 
 export const allMigrations: Migration[] = [
@@ -40,5 +42,7 @@ export const allMigrations: Migration[] = [
   migration017,
   migration018,
   migration019,
-  migration020
+  migration020,
+  migration021,
+  migration022
 ]

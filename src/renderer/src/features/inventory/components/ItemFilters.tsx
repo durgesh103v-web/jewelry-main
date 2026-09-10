@@ -1,37 +1,271 @@
 import React from 'react'
-import { SearchInput } from '@components/ui'
+import { Select } from '@components/ui/select/Select'
+import type { ItemGroupOption } from './ItemForm'
+
+export const STATUS_FILTERS = [
+  { value: 'ALL', label: 'All Status' },
+  { value: 'ACTIVE', label: 'Active Only' },
+  { value: 'INACTIVE', label: 'Inactive Only' }
+]
+
+export const METAL_FILTERS = [
+  { value: 'ALL', label: 'All Metals' },
+  { value: 'Gold', label: 'Gold' },
+  { value: 'Silver', label: 'Silver' },
+  { value: 'Platinum', label: 'Platinum' },
+  { value: 'Diamond', label: 'Diamond' },
+  { value: 'Gemstone', label: 'Gemstone' },
+  { value: 'Imitation', label: 'Imitation' },
+  { value: 'Other', label: 'Other' }
+]
 
 export interface ItemFiltersProps {
+  formOpen: boolean
+  selectedItemName: string | null
+  metalTypeFilter: string
+  setMetalTypeFilter: (metal: string) => void
+  itemGroupFilter: string
+  setItemGroupFilter: (groupId: string) => void
+  statusFilter: string
+  setStatusFilter: (status: string) => void
+  barcodeFilter: string
+  setBarcodeFilter: (barcode: string) => void
+  itemGroups: ItemGroupOption[]
   searchText: string
   setSearchText: (text: string) => void
   totalCount: number
   activeCount: number
   showingCount: number
+  onAddNew: () => void
+  onPrint: () => void
+  onExportCsv: () => void
+  onClearFilters: () => void
+  hasActiveFilters: boolean
 }
 
 export function ItemFilters({
+  formOpen,
+  selectedItemName,
+  metalTypeFilter,
+  setMetalTypeFilter,
+  itemGroupFilter,
+  setItemGroupFilter,
+  statusFilter,
+  setStatusFilter,
+  barcodeFilter,
+  setBarcodeFilter,
+  itemGroups,
   searchText,
   setSearchText,
   totalCount,
   activeCount,
-  showingCount
+  showingCount,
+  onAddNew,
+  onPrint,
+  onExportCsv,
+  onClearFilters,
+  hasActiveFilters
 }: ItemFiltersProps): React.JSX.Element {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 my-3 bg-background-muted p-2.5 rounded-sm border border-border">
-      <div className="w-72">
-        <SearchInput
-          value={searchText}
-          onChange={setSearchText}
-          onClear={() => setSearchText('')}
-          placeholder="Search item, group, stamp, design, HSN"
-        />
+    <div className="px-6 pt-4 pb-2 shrink-0 space-y-3 no-print">
+      {/* Action Toolbar */}
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            type="button"
+            onClick={onAddNew}
+            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-md bg-amber-600 hover:bg-amber-700 !text-white text-xs font-semibold shadow-sm transition-all focus:ring-2 focus:ring-amber-500/20"
+            style={{ color: '#ffffff' }}
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+            >
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            <span className="!text-white text-white font-semibold" style={{ color: '#ffffff' }}>
+              Add New Item
+            </span>
+          </button>
+
+          <div className="w-px h-6 bg-slate-200 mx-1" />
+
+          <button
+            type="button"
+            onClick={onPrint}
+            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-md bg-white border border-slate-200 text-slate-700 text-xs font-medium hover:bg-slate-50 hover:border-slate-300 transition-colors shadow-sm"
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <polyline points="6 9 6 2 18 2 18 9" />
+              <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+              <rect x="6" y="14" width="12" height="8" />
+            </svg>
+            Print Catalog
+          </button>
+
+          <button
+            type="button"
+            onClick={onExportCsv}
+            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-md bg-white border border-slate-200 text-slate-700 text-xs font-medium hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-800 transition-colors shadow-sm"
+            title="Export filtered items to CSV"
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            Export CSV
+          </button>
+        </div>
+
+        {/* Counts & Selection Status */}
+        <div className="flex items-center gap-2 text-xs">
+          {selectedItemName && !formOpen && (
+            <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 font-medium">
+              Selected: {selectedItemName}
+            </span>
+          )}
+          <span className="px-2.5 py-1 rounded-md bg-slate-100 text-slate-600 font-medium border border-slate-200/60">
+            Total: <strong className="text-slate-800">{totalCount}</strong>
+          </span>
+          <span className="px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-700 font-medium border border-emerald-200/60">
+            Active: <strong>{activeCount}</strong>
+          </span>
+          {showingCount !== totalCount && (
+            <span className="px-2.5 py-1 rounded-md bg-amber-50 text-amber-700 font-medium border border-amber-200/60">
+              Showing: <strong>{showingCount}</strong>
+            </span>
+          )}
+        </div>
       </div>
 
-      <div className="text-xs text-foreground-muted select-none">
-        Total: <strong className="text-foreground">{totalCount}</strong> | Active:{' '}
-        <strong className="text-success font-bold">{activeCount}</strong> | Showing:{' '}
-        <strong className="text-foreground">{showingCount}</strong>
-      </div>
+      {/* Filter Row */}
+      {!formOpen && (
+        <div className="flex items-center gap-2.5 flex-wrap pt-1">
+          {/* Search Box */}
+          <div className="relative min-w-[200px] max-w-xs flex-1">
+            <input
+              type="text"
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              placeholder="Search code, name, HSN..."
+              className="w-full h-8 pl-8 pr-7 text-xs bg-white border border-slate-200 rounded-md text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs transition-all"
+            />
+            <svg
+              className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+              width="13"
+              height="13"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            {searchText && (
+              <button
+                type="button"
+                onClick={() => setSearchText('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                title="Clear search"
+              >
+                &times;
+              </button>
+            )}
+          </div>
+
+          {/* Metal Type Filter using common Select */}
+          <div className="w-32">
+            <Select
+              size="sm"
+              value={metalTypeFilter}
+              onChange={(e) => setMetalTypeFilter(e.target.value)}
+              options={METAL_FILTERS}
+            />
+          </div>
+
+          {/* Item Group Filter using common Select */}
+          <div className="w-44">
+            <Select
+              size="sm"
+              value={itemGroupFilter}
+              onChange={(e) => setItemGroupFilter(e.target.value)}
+              options={[
+                { label: 'All Groups', value: 'ALL' },
+                ...itemGroups.map((g) => ({
+                  label: `${g.groupName} (${g.metalType})`,
+                  value: g.id
+                }))
+              ]}
+            />
+          </div>
+
+          {/* Status Filter using common Select */}
+          <div className="w-32">
+            <Select
+              size="sm"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              options={STATUS_FILTERS}
+            />
+          </div>
+
+          {/* Barcode Filter using common Select */}
+          <div className="w-36">
+            <Select
+              size="sm"
+              value={barcodeFilter}
+              onChange={(e) => setBarcodeFilter(e.target.value)}
+              options={[
+                { label: 'All Barcode', value: 'ALL' },
+                { label: 'Barcoded Only', value: 'BARCODED' },
+                { label: 'Non-Barcoded', value: 'NON_BARCODED' }
+              ]}
+            />
+          </div>
+
+          {/* Clear Filters */}
+          {hasActiveFilters && (
+            <button
+              type="button"
+              onClick={onClearFilters}
+              className="inline-flex items-center gap-1 h-8 px-2.5 text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-50 border border-rose-200/80 rounded-md font-medium transition-colors cursor-pointer"
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+              Reset Filters
+            </button>
+          )}
+        </div>
+      )}
     </div>
   )
 }

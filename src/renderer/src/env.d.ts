@@ -124,16 +124,25 @@ type ItemDesignRecord = ItemDesignPayload & {
 }
 
 type ItemPayload = {
+  itemCode?: string
   itemName: string
   metalType: string
   itemGroupId: string
-  defaultStampId: string
-  defaultDesignId: string
+  defaultStampId?: string
+  defaultDesignId?: string
+  purityKarat?: string
+  isStudded?: boolean
+  stoneDeductionType?: string
+  huidRequired?: boolean
+  minStockQty?: number
+  minStockWeight?: number
+  description?: string
   barcodeItem: boolean
-  barcodeType: string
+  barcodeType?: string
   labourChargesBy: string
   salePurchaseBy: string
-  gstHsnCode: string
+  gstHsnCode?: string
+  gstRate?: number
   fixedWeightPerPcs: number
   defaultTanch: number
   defaultWastage: number
@@ -142,12 +151,37 @@ type ItemPayload = {
   active: boolean
 }
 
-type ItemRecord = ItemPayload & {
+type ItemRecord = {
   id: string
+  itemCode: string
+  itemName: string
+  metalType: string
+  itemGroupId: string
   groupName: string
+  defaultStampId: string
   stampName: string
+  defaultDesignId: string
   designName: string
+  purityKarat: string
+  isStudded: boolean
+  stoneDeductionType: string
+  huidRequired: boolean
+  minStockQty: number
+  minStockWeight: number
+  description: string
+  barcodeItem: boolean
+  barcodeType: string
   barcodeValue: string
+  labourChargesBy: string
+  salePurchaseBy: string
+  gstHsnCode: string
+  gstRate: number
+  fixedWeightPerPcs: number
+  defaultTanch: number
+  defaultWastage: number
+  defaultLabourRate: number
+  labourRateType: string
+  active: boolean
   createdAt: string
   updatedAt: string
 }

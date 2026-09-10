@@ -2,6 +2,7 @@ import { BaseRepository } from './BaseRepository'
 
 export interface ItemRow {
   id: string
+  item_code: string | null
   item_name: string
   metal_type: string
   item_group_id: string
@@ -10,12 +11,20 @@ export interface ItemRow {
   stamp_name: string | null
   default_design_id: string | null
   design_name: string | null
+  purity_karat: string | null
+  is_studded: number
+  stone_deduction_type: string | null
+  huid_required: number
+  min_stock_qty: number
+  min_stock_weight: number
+  description: string | null
   barcode_item: number
   barcode_type: string | null
   barcode_value: string | null
   labour_charges_by: string
   sale_purchase_by: string
   gst_hsn_code: string | null
+  gst_rate: number
   fixed_weight_per_pcs: number
   default_tanch: number
   default_wastage: number
@@ -34,6 +43,7 @@ function emptyToNull(value?: string): string | null {
 const itemSelectSql = `
   SELECT
     i.id,
+    COALESCE(i.item_code, '') AS item_code,
     i.item_name,
     i.metal_type,
     i.item_group_id,
@@ -42,12 +52,20 @@ const itemSelectSql = `
     ist.stamp_name,
     i.default_design_id,
     idg.design_name,
+    COALESCE(i.purity_karat, '') AS purity_karat,
+    COALESCE(i.is_studded, 0) AS is_studded,
+    COALESCE(i.stone_deduction_type, 'None') AS stone_deduction_type,
+    COALESCE(i.huid_required, 0) AS huid_required,
+    COALESCE(i.min_stock_qty, 0) AS min_stock_qty,
+    COALESCE(i.min_stock_weight, 0) AS min_stock_weight,
+    COALESCE(i.description, '') AS description,
     i.barcode_item,
     i.barcode_type,
     i.barcode_value,
     i.labour_charges_by,
     i.sale_purchase_by,
     i.gst_hsn_code,
+    COALESCE(i.gst_rate, 3.0) AS gst_rate,
     i.fixed_weight_per_pcs,
     i.default_tanch,
     i.default_wastage,
@@ -150,16 +168,25 @@ export class ItemRepository extends BaseRepository {
 
   insert(data: {
     id: string
+    itemCode?: string
     itemName: string
     metalType: string
     itemGroupId: string
     defaultStampId?: string
     defaultDesignId?: string
+    purityKarat?: string
+    isStudded?: boolean
+    stoneDeductionType?: string
+    huidRequired?: boolean
+    minStockQty?: number
+    minStockWeight?: number
+    description?: string
     barcodeItem: boolean
     barcodeType?: string
     labourChargesBy: string
     salePurchaseBy: string
     gstHsnCode?: string
+    gstRate?: number
     fixedWeightPerPcs: number
     defaultTanch: number
     defaultWastage: number
@@ -173,26 +200,36 @@ export class ItemRepository extends BaseRepository {
       .prepare(
         `
         INSERT INTO items (
-          id, item_name, metal_type, item_group_id, default_stamp_id, default_design_id,
-          barcode_item, barcode_type, labour_charges_by, sale_purchase_by, gst_hsn_code,
-          fixed_weight_per_pcs, default_tanch, default_wastage, default_labour_rate,
+          id, item_code, item_name, metal_type, item_group_id, default_stamp_id, default_design_id,
+          purity_karat, is_studded, stone_deduction_type, huid_required, min_stock_qty, min_stock_weight,
+          description, barcode_item, barcode_type, labour_charges_by, sale_purchase_by, gst_hsn_code,
+          gst_rate, fixed_weight_per_pcs, default_tanch, default_wastage, default_labour_rate,
           labour_rate_type, active, created_at, updated_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `
       )
       .run(
         data.id,
+        data.itemCode ?? '',
         data.itemName,
         data.metalType,
         data.itemGroupId,
         emptyToNull(data.defaultStampId),
         emptyToNull(data.defaultDesignId),
+        data.purityKarat ?? '',
+        data.isStudded ? 1 : 0,
+        data.stoneDeductionType ?? 'None',
+        data.huidRequired ? 1 : 0,
+        data.minStockQty ?? 0,
+        data.minStockWeight ?? 0,
+        data.description ?? '',
         data.barcodeItem ? 1 : 0,
         data.barcodeType ?? '',
         data.labourChargesBy,
         data.salePurchaseBy,
         data.gstHsnCode ?? '',
+        data.gstRate ?? 3.0,
         data.fixedWeightPerPcs,
         data.defaultTanch,
         data.defaultWastage,
@@ -207,16 +244,25 @@ export class ItemRepository extends BaseRepository {
   update(
     id: string,
     data: {
+      itemCode?: string
       itemName: string
       metalType: string
       itemGroupId: string
       defaultStampId?: string
       defaultDesignId?: string
+      purityKarat?: string
+      isStudded?: boolean
+      stoneDeductionType?: string
+      huidRequired?: boolean
+      minStockQty?: number
+      minStockWeight?: number
+      description?: string
       barcodeItem: boolean
       barcodeType?: string
       labourChargesBy: string
       salePurchaseBy: string
       gstHsnCode?: string
+      gstRate?: number
       fixedWeightPerPcs: number
       defaultTanch: number
       defaultWastage: number
@@ -231,24 +277,34 @@ export class ItemRepository extends BaseRepository {
         `
         UPDATE items
         SET
-          item_name = ?, metal_type = ?, item_group_id = ?, default_stamp_id = ?, default_design_id = ?,
-          barcode_item = ?, barcode_type = ?, labour_charges_by = ?, sale_purchase_by = ?, gst_hsn_code = ?,
-          fixed_weight_per_pcs = ?, default_tanch = ?, default_wastage = ?, default_labour_rate = ?,
+          item_code = ?, item_name = ?, metal_type = ?, item_group_id = ?, default_stamp_id = ?, default_design_id = ?,
+          purity_karat = ?, is_studded = ?, stone_deduction_type = ?, huid_required = ?, min_stock_qty = ?, min_stock_weight = ?,
+          description = ?, barcode_item = ?, barcode_type = ?, labour_charges_by = ?, sale_purchase_by = ?, gst_hsn_code = ?,
+          gst_rate = ?, fixed_weight_per_pcs = ?, default_tanch = ?, default_wastage = ?, default_labour_rate = ?,
           labour_rate_type = ?, active = ?, updated_at = ?
         WHERE id = ?
       `
       )
       .run(
+        data.itemCode ?? '',
         data.itemName,
         data.metalType,
         data.itemGroupId,
         emptyToNull(data.defaultStampId),
         emptyToNull(data.defaultDesignId),
+        data.purityKarat ?? '',
+        data.isStudded ? 1 : 0,
+        data.stoneDeductionType ?? 'None',
+        data.huidRequired ? 1 : 0,
+        data.minStockQty ?? 0,
+        data.minStockWeight ?? 0,
+        data.description ?? '',
         data.barcodeItem ? 1 : 0,
         data.barcodeType ?? '',
         data.labourChargesBy,
         data.salePurchaseBy,
         data.gstHsnCode ?? '',
+        data.gstRate ?? 3.0,
         data.fixedWeightPerPcs,
         data.defaultTanch,
         data.defaultWastage,

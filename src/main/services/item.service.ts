@@ -7,16 +7,25 @@ import { ValidationError, NotFoundError, ConflictError } from '../ipc/errors'
 const itemRepository = new ItemRepository()
 
 const itemSchema = z.object({
+  itemCode: z.string().trim().max(50).optional().default(''),
   itemName: z.string().trim().min(1, 'Item name is required').max(120),
-  metalType: z.enum(['Gold', 'Silver', 'Diamond', 'Other']),
+  metalType: z.enum(['Gold', 'Silver', 'Diamond', 'Platinum', 'Gemstone', 'Imitation', 'Other']),
   itemGroupId: z.string().trim().min(1, 'Item group is required'),
   defaultStampId: z.string().trim().optional().default(''),
   defaultDesignId: z.string().trim().optional().default(''),
+  purityKarat: z.string().trim().max(50).optional().default(''),
+  isStudded: z.boolean().default(false),
+  stoneDeductionType: z.string().trim().optional().default('None'),
+  huidRequired: z.boolean().default(false),
+  minStockQty: z.coerce.number().default(0),
+  minStockWeight: z.coerce.number().default(0),
+  description: z.string().trim().max(500).optional().default(''),
   barcodeItem: z.boolean().default(false),
   barcodeType: z.string().trim().max(50).optional().default(''),
   labourChargesBy: z.enum(['Kg', 'Gm', 'Pcs']).default('Kg'),
   salePurchaseBy: z.enum(['Fine', 'Weight', 'Pcs']).default('Fine'),
   gstHsnCode: z.string().trim().max(30).optional().default(''),
+  gstRate: z.coerce.number().default(3.0),
   fixedWeightPerPcs: z.coerce.number().default(0),
   defaultTanch: z.coerce.number().default(0),
   defaultWastage: z.coerce.number().default(0),
@@ -29,6 +38,7 @@ export type ItemPayload = z.infer<typeof itemSchema>
 
 export type ItemRecord = {
   id: string
+  itemCode: string
   itemName: string
   metalType: string
   itemGroupId: string
@@ -37,12 +47,20 @@ export type ItemRecord = {
   stampName: string
   defaultDesignId: string
   designName: string
+  purityKarat: string
+  isStudded: boolean
+  stoneDeductionType: string
+  huidRequired: boolean
+  minStockQty: number
+  minStockWeight: number
+  description: string
   barcodeItem: boolean
   barcodeType: string
   barcodeValue: string
   labourChargesBy: string
   salePurchaseBy: string
   gstHsnCode: string
+  gstRate: number
   fixedWeightPerPcs: number
   defaultTanch: number
   defaultWastage: number
@@ -56,6 +74,7 @@ export type ItemRecord = {
 function mapRow(row: ItemRow): ItemRecord {
   return {
     id: row.id,
+    itemCode: row.item_code ?? '',
     itemName: row.item_name,
     metalType: row.metal_type,
     itemGroupId: row.item_group_id,
@@ -64,12 +83,20 @@ function mapRow(row: ItemRow): ItemRecord {
     stampName: row.stamp_name ?? '',
     defaultDesignId: row.default_design_id ?? '',
     designName: row.design_name ?? '',
+    purityKarat: row.purity_karat ?? '',
+    isStudded: Boolean(row.is_studded),
+    stoneDeductionType: row.stone_deduction_type ?? 'None',
+    huidRequired: Boolean(row.huid_required),
+    minStockQty: Number(row.min_stock_qty ?? 0),
+    minStockWeight: Number(row.min_stock_weight ?? 0),
+    description: row.description ?? '',
     barcodeItem: Boolean(row.barcode_item),
     barcodeType: row.barcode_type ?? '',
     barcodeValue: row.barcode_value ?? '',
     labourChargesBy: row.labour_charges_by,
     salePurchaseBy: row.sale_purchase_by,
     gstHsnCode: row.gst_hsn_code ?? '',
+    gstRate: Number(row.gst_rate ?? 3.0),
     fixedWeightPerPcs: Number(row.fixed_weight_per_pcs ?? 0),
     defaultTanch: Number(row.default_tanch ?? 0),
     defaultWastage: Number(row.default_wastage ?? 0),
