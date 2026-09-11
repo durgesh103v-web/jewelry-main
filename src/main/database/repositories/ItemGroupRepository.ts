@@ -6,6 +6,13 @@ export interface ItemGroupRow {
   metal_type: string
   description: string | null
   active: number
+  prefix?: string | null
+  hsn_code?: string | null
+  gst_rate?: number | null
+  default_purity?: string | null
+  default_labour_rate?: number | null
+  default_labour_type?: string | null
+  default_wastage?: number | null
   created_at: string
   updated_at: string
 }
@@ -15,7 +22,9 @@ export class ItemGroupRepository extends BaseRepository {
     return this.db
       .prepare(
         `
-        SELECT id, group_name, metal_type, description, active, created_at, updated_at
+        SELECT id, group_name, metal_type, description, active,
+               prefix, hsn_code, gst_rate, default_purity, default_labour_rate, default_labour_type, default_wastage,
+               created_at, updated_at
         FROM item_groups
         WHERE deleted_at IS NULL
         ORDER BY group_name ASC
@@ -28,7 +37,9 @@ export class ItemGroupRepository extends BaseRepository {
     return this.db
       .prepare(
         `
-        SELECT id, group_name, metal_type, description, active, created_at, updated_at
+        SELECT id, group_name, metal_type, description, active,
+               prefix, hsn_code, gst_rate, default_purity, default_labour_rate, default_labour_type, default_wastage,
+               created_at, updated_at
         FROM item_groups
         WHERE id = ? AND deleted_at IS NULL
       `
@@ -64,14 +75,25 @@ export class ItemGroupRepository extends BaseRepository {
     metalType: string
     description?: string
     active: boolean
+    prefix?: string
+    hsnCode?: string
+    gstRate?: number
+    defaultPurity?: string
+    defaultLabourRate?: number
+    defaultLabourType?: string
+    defaultWastage?: number
     createdAt: string
     updatedAt: string
   }): void {
     this.db
       .prepare(
         `
-        INSERT INTO item_groups (id, group_name, metal_type, description, active, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO item_groups (
+          id, group_name, metal_type, description, active,
+          prefix, hsn_code, gst_rate, default_purity, default_labour_rate, default_labour_type, default_wastage,
+          created_at, updated_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `
       )
       .run(
@@ -80,6 +102,13 @@ export class ItemGroupRepository extends BaseRepository {
         data.metalType,
         data.description ?? '',
         data.active ? 1 : 0,
+        data.prefix ?? '',
+        data.hsnCode ?? '7113',
+        data.gstRate ?? 3.0,
+        data.defaultPurity ?? '',
+        data.defaultLabourRate ?? 0,
+        data.defaultLabourType ?? 'PER_GRAM',
+        data.defaultWastage ?? 0,
         data.createdAt,
         data.updatedAt
       )
@@ -92,6 +121,13 @@ export class ItemGroupRepository extends BaseRepository {
       metalType: string
       description?: string
       active: boolean
+      prefix?: string
+      hsnCode?: string
+      gstRate?: number
+      defaultPurity?: string
+      defaultLabourRate?: number
+      defaultLabourType?: string
+      defaultWastage?: number
       updatedAt: string
     }
   ): void {
@@ -99,11 +135,28 @@ export class ItemGroupRepository extends BaseRepository {
       .prepare(
         `
         UPDATE item_groups
-        SET group_name = ?, metal_type = ?, description = ?, active = ?, updated_at = ?
+        SET group_name = ?, metal_type = ?, description = ?, active = ?,
+            prefix = ?, hsn_code = ?, gst_rate = ?, default_purity = ?,
+            default_labour_rate = ?, default_labour_type = ?, default_wastage = ?,
+            updated_at = ?
         WHERE id = ?
       `
       )
-      .run(data.groupName, data.metalType, data.description ?? '', data.active ? 1 : 0, data.updatedAt, id)
+      .run(
+        data.groupName,
+        data.metalType,
+        data.description ?? '',
+        data.active ? 1 : 0,
+        data.prefix ?? '',
+        data.hsnCode ?? '7113',
+        data.gstRate ?? 3.0,
+        data.defaultPurity ?? '',
+        data.defaultLabourRate ?? 0,
+        data.defaultLabourType ?? 'PER_GRAM',
+        data.defaultWastage ?? 0,
+        data.updatedAt,
+        id
+      )
   }
 
   delete(id: string, now: string): void {

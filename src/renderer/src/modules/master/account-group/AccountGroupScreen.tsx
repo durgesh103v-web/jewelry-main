@@ -290,7 +290,7 @@ function CustomGroupTypeDropdown({ value, onChange, onSelectNext }: GroupTypeSel
   )
 }
 
-export function AccountGroupScreen({ onClose }: { onClose: () => void }): React.JSX.Element {
+export function AccountGroupScreen({ onClose: _onClose }: { onClose?: () => void }): React.JSX.Element {
   const [form, setForm] = useState(initialForm)
   const [groups, setGroups] = useState<AccountGroup[]>([])
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -528,27 +528,6 @@ export function AccountGroupScreen({ onClose }: { onClose: () => void }): React.
 
   return (
     <div className="flex flex-col h-full bg-slate-50/50">
-      {/* Page Header */}
-      <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-slate-200 shadow-sm shrink-0 z-10">
-        <div className="flex items-center gap-3.5">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-100 to-amber-50 border border-amber-200 flex items-center justify-center shadow-inner shrink-0 text-amber-700">
-            <FiLayers size={18} className="stroke-[2.5]" />
-          </div>
-          <div>
-            <h1 className="text-lg font-bold text-slate-800 tracking-tight leading-none">Account Group Master</h1>
-            <p className="text-xs text-slate-500 mt-1">Organize ledger accounts into business categories (Customers, Suppliers, Banks, etc.)</p>
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={onClose}
-          className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
-          title="Close"
-        >
-          <FiX size={18} />
-        </button>
-      </div>
-
       {/* Alert */}
       {alert && (
         <div className="px-6 pt-4 shrink-0">

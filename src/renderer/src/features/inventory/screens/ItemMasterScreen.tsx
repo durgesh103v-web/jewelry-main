@@ -10,7 +10,7 @@ export interface ItemMasterScreenProps {
   onClose: () => void
 }
 
-export function ItemMasterScreen({ onClose }: ItemMasterScreenProps): React.JSX.Element {
+export function ItemMasterScreen({ onClose: _onClose }: ItemMasterScreenProps): React.JSX.Element {
   const {
     alert,
     clearAlert,
@@ -59,45 +59,6 @@ export function ItemMasterScreen({ onClose }: ItemMasterScreenProps): React.JSX.
 
   return (
     <div className="flex flex-col h-full bg-slate-50/50">
-      {/* Page Header */}
-      <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-slate-200 shadow-sm shrink-0 z-10">
-        <div className="flex items-center gap-3.5">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-100 to-amber-50 border border-amber-200 flex items-center justify-center shadow-inner shrink-0">
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#b45309"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <polygon points="12 2 2 7 12 12 22 7 12 2" />
-              <polyline points="2 17 12 22 22 17" />
-              <polyline points="2 12 12 17 22 12" />
-            </svg>
-          </div>
-          <div>
-            <h1 className="text-lg font-bold text-slate-800 tracking-tight leading-none">Item Master</h1>
-            <p className="text-xs text-slate-500 mt-1">
-              Manage jewellery products, metal purities, making charges, and billing defaults
-            </p>
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={onClose}
-          className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
-          title="Close"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
-        </button>
-      </div>
-
       {/* Alert Container */}
       {alert && (
         <div className="px-6 pt-4 shrink-0">

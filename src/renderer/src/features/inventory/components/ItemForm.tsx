@@ -34,6 +34,13 @@ export interface ItemGroupOption {
   groupName: string
   metalType: string
   active: boolean
+  prefix?: string
+  hsnCode?: string
+  gstRate?: number
+  defaultPurity?: string
+  defaultLabourRate?: number
+  defaultLabourType?: string
+  defaultWastage?: number
 }
 
 export interface ItemStampOption {
@@ -79,6 +86,60 @@ export function ItemForm({
 }: ItemFormProps): React.JSX.Element {
   const updateForm = <K extends keyof ItemFormValues>(field: K, value: ItemFormValues[K]) => {
     setForm((curr) => ({ ...curr, [field]: value }))
+  }
+
+  const handleGroupChange = (groupId: string) => {
+    const selectedGroup = activeGroups.find((g) => g.id === groupId)
+    if (!selectedGroup) {
+      updateForm('itemGroupId', groupId)
+      return
+    }
+
+    setForm((curr) => {
+      const updates: Partial<ItemFormValues> = { itemGroupId: groupId }
+      if (selectedGroup.metalType) {
+        updates.metalType = selectedGroup.metalType
+      }
+      if (selectedGroup.hsnCode) {
+        updates.gstHsnCode = selectedGroup.hsnCode
+      }
+      if (selectedGroup.gstRate !== undefined && selectedGroup.gstRate !== null) {
+        updates.gstRate = String(selectedGroup.gstRate)
+      }
+      if (selectedGroup.defaultPurity) {
+        updates.purityKarat = selectedGroup.defaultPurity
+        let autoTanch = curr.defaultTanch
+        if (selectedGroup.defaultPurity === '24K' || selectedGroup.defaultPurity === '999') autoTanch = '99.9'
+        else if (selectedGroup.defaultPurity === '22K') autoTanch = '91.6'
+        else if (selectedGroup.defaultPurity === '18K') autoTanch = '75'
+        else if (selectedGroup.defaultPurity === '14K') autoTanch = '58.5'
+        else if (selectedGroup.defaultPurity === '9K') autoTanch = '37.5'
+        else if (selectedGroup.defaultPurity === '925') autoTanch = '92.5'
+        else if (selectedGroup.defaultPurity === '800') autoTanch = '80'
+        else if (selectedGroup.defaultPurity === '700') autoTanch = '70'
+        else if (selectedGroup.defaultPurity === 'Pt950') autoTanch = '95'
+        else if (selectedGroup.defaultPurity === 'Pt900') autoTanch = '90'
+        updates.defaultTanch = autoTanch
+      }
+      if (selectedGroup.defaultLabourRate) {
+        updates.defaultLabourRate = String(selectedGroup.defaultLabourRate)
+      }
+      if (selectedGroup.defaultLabourType) {
+        updates.labourChargesBy =
+          selectedGroup.defaultLabourType === 'PER_PIECE'
+            ? 'PER_PIECE'
+            : selectedGroup.defaultLabourType === 'PERCENT'
+              ? 'PERCENT'
+              : 'PER_GRAM'
+      }
+      if (selectedGroup.defaultWastage) {
+        updates.defaultWastage = String(selectedGroup.defaultWastage)
+      }
+      if (selectedGroup.prefix && !curr.itemCode && !editingId) {
+        updates.itemCode = selectedGroup.prefix
+      }
+      return { ...curr, ...updates }
+    })
   }
 
   const updateAmountField = (field: keyof ItemFormValues, value: string) => {
@@ -249,7 +310,7 @@ export function ItemForm({
               label="Item Group"
               required
               value={form.itemGroupId}
-              onChange={(e) => updateForm('itemGroupId', e.target.value)}
+              onChange={(e) => handleGroupChange(e.target.value)}
               placeholder="Select Item Group"
               options={activeGroups.map((g) => ({ label: g.groupName, value: g.id }))}
             />
