@@ -15,6 +15,9 @@ export interface SalesInvoiceRow {
   customer_name: string | null
   customer_code: string | null
   customer_phone: string | null
+  salesperson_id: string | null
+  salesperson_name: string | null
+  delivery_status: string | null
   account_id: string
   account_name: string | null
   order_id: string | null
@@ -27,6 +30,7 @@ export interface SalesInvoiceRow {
   fine_weight: number
   subtotal: number
   discount_amount: number
+  invoice_discount?: number
   taxable_amount: number
   tax_amount: number
   old_gold_exchange_amount: number
@@ -54,6 +58,7 @@ export interface SalesInvoiceItemRow {
   stamp_id: string | null
   design_id: string | null
   barcode: string | null
+  huid: string | null
   pcs: number
   gross_weight: number
   pack_weight: number
@@ -66,12 +71,16 @@ export interface SalesInvoiceItemRow {
   wastage: number
   fine_weight: number
   gold_rate: number
-  metal_value: number
+  metalValue: number
   labour_rate: number
   labour_rate_type: 'Kg' | 'Gm' | 'Pcs'
   making_charges: number
+  making_discount?: number
   stone_charges: number
   diamond_charges: number
+  diamond_carats?: number
+  diamond_pcs?: number
+  stone_amount?: number
   discount_amount: number
   taxable_amount: number
   tax_percent: number
@@ -102,6 +111,9 @@ const invoiceSelectSql = `
     c.name AS customer_name,
     c.customer_code,
     c.mobile AS customer_phone,
+    si.salesperson_id,
+    si.salesperson_name,
+    si.delivery_status,
     si.account_id,
     a.account_name,
     si.order_id,
@@ -114,6 +126,7 @@ const invoiceSelectSql = `
     si.fine_weight,
     si.subtotal,
     si.discount_amount,
+    si.invoice_discount,
     si.taxable_amount,
     si.tax_amount,
     si.old_gold_exchange_amount,
@@ -143,6 +156,9 @@ function mapInvoiceRow(row: SalesInvoiceRow): SalesInvoiceRecord {
     customerName: row.customer_name,
     customerCode: row.customer_code,
     customerPhone: row.customer_phone,
+    salespersonId: row.salesperson_id,
+    salespersonName: row.salesperson_name,
+    deliveryStatus: row.delivery_status || 'Delivered',
     accountId: row.account_id,
     accountName: row.account_name,
     orderId: row.order_id,
@@ -155,6 +171,7 @@ function mapInvoiceRow(row: SalesInvoiceRow): SalesInvoiceRecord {
     fineWeight: Number(row.fine_weight ?? 0),
     subtotal: Number(row.subtotal ?? 0),
     discountAmount: Number(row.discount_amount ?? 0),
+    invoiceDiscount: Number(row.invoice_discount ?? 0),
     taxableAmount: Number(row.taxable_amount ?? 0),
     taxAmount: Number(row.tax_amount ?? 0),
     oldGoldExchangeAmount: Number(row.old_gold_exchange_amount ?? 0),
@@ -184,6 +201,7 @@ function mapItemRow(row: SalesInvoiceItemRow): SalesInvoiceItemRecord {
     stampId: row.stamp_id,
     designId: row.design_id,
     barcode: row.barcode,
+    huid: row.huid ?? '',
     pcs: Number(row.pcs ?? 1),
     grossWeight: Number(row.gross_weight ?? 0),
     packWeight: Number(row.pack_weight ?? 0),
@@ -196,12 +214,16 @@ function mapItemRow(row: SalesInvoiceItemRow): SalesInvoiceItemRecord {
     wastage: Number(row.wastage ?? 0),
     fineWeight: Number(row.fine_weight ?? 0),
     goldRate: Number(row.gold_rate ?? 0),
-    metalValue: Number(row.metal_value ?? 0),
+    metalValue: Number(row.metal_value ?? (row as any).metal_value ?? 0),
     labourRate: Number(row.labour_rate ?? 0),
     labourRateType: row.labour_rate_type || 'Kg',
     makingCharges: Number(row.making_charges ?? 0),
+    makingDiscount: Number(row.making_discount ?? 0),
     stoneCharges: Number(row.stone_charges ?? 0),
     diamondCharges: Number(row.diamond_charges ?? 0),
+    diamondCarats: Number(row.diamond_carats ?? 0),
+    diamondPcs: Number(row.diamond_pcs ?? 0),
+    stoneAmount: Number(row.stone_amount ?? 0),
     discountAmount: Number(row.discount_amount ?? 0),
     taxableAmount: Number(row.taxable_amount ?? 0),
     taxPercent: Number(row.tax_percent ?? 0),
@@ -242,6 +264,11 @@ export class SalesInvoiceRepository extends BaseRepository {
       params.push(filter.customerId)
     }
 
+    if (filter?.salespersonId) {
+      conditions.push('si.salesperson_id = ?')
+      params.push(filter.salespersonId)
+    }
+
     if (filter?.accountId) {
       conditions.push('si.account_id = ?')
       params.push(filter.accountId)
@@ -270,9 +297,9 @@ export class SalesInvoiceRepository extends BaseRepository {
     if (filter?.search) {
       const pattern = `%${filter.search.trim().toLowerCase()}%`
       conditions.push(
-        `(LOWER(si.invoice_number) LIKE ? OR LOWER(COALESCE(c.name, '')) LIKE ? OR LOWER(COALESCE(c.mobile, '')) LIKE ? OR LOWER(COALESCE(a.account_name, '')) LIKE ?)`
+        `(LOWER(si.invoice_number) LIKE ? OR LOWER(COALESCE(c.name, '')) LIKE ? OR LOWER(COALESCE(c.mobile, '')) LIKE ? OR LOWER(COALESCE(a.account_name, '')) LIKE ? OR LOWER(COALESCE(si.salesperson_name, '')) LIKE ?)`
       )
-      params.push(pattern, pattern, pattern, pattern)
+      params.push(pattern, pattern, pattern, pattern, pattern)
     }
 
     const rows = this.db
@@ -338,7 +365,7 @@ export class SalesInvoiceRepository extends BaseRepository {
         ORDER BY sii.created_at ASC
       `
       )
-      .all(invoiceId) as SalesInvoiceItemRow[]
+      .all(invoiceId) as (SalesInvoiceItemRow & { item_name: string | null; item_code: string | null })[]
 
     return rows.map(mapItemRow)
   }
@@ -362,6 +389,9 @@ export class SalesInvoiceRepository extends BaseRepository {
     id: string
     invoiceNumber: string
     customerId?: string | null
+    salespersonId?: string | null
+    salespersonName?: string | null
+    deliveryStatus?: string | null
     accountId: string
     orderId?: string | null
     invoiceDate: string
@@ -372,6 +402,7 @@ export class SalesInvoiceRepository extends BaseRepository {
     fineWeight: number
     subtotal: number
     discountAmount: number
+    invoiceDiscount?: number
     taxableAmount: number
     taxAmount: number
     oldGoldExchangeAmount: number
@@ -391,20 +422,24 @@ export class SalesInvoiceRepository extends BaseRepository {
       .prepare(
         `
         INSERT INTO sales_invoices (
-          id, invoice_number, customer_id, account_id, order_id,
-          invoice_date, metal_type, total_pcs, gross_weight, net_weight,
-          fine_weight, subtotal, discount_amount, taxable_amount, tax_amount,
+          id, invoice_number, customer_id, salesperson_id, salesperson_name,
+          delivery_status, account_id, order_id, invoice_date, metal_type,
+          total_pcs, gross_weight, net_weight, fine_weight, subtotal,
+          discount_amount, invoice_discount, taxable_amount, tax_amount,
           old_gold_exchange_amount, advance_amount, round_off, grand_total,
           paid_amount, balance_due, pricing_snapshot, status, notes,
           created_by, created_at, updated_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `
       )
       .run(
         data.id,
         data.invoiceNumber,
         data.customerId ?? null,
+        data.salespersonId ?? '',
+        data.salespersonName ?? '',
+        data.deliveryStatus ?? 'Delivered',
         data.accountId,
         data.orderId ?? null,
         data.invoiceDate,
@@ -415,6 +450,7 @@ export class SalesInvoiceRepository extends BaseRepository {
         data.fineWeight,
         data.subtotal,
         data.discountAmount,
+        data.invoiceDiscount ?? 0,
         data.taxableAmount,
         data.taxAmount,
         data.oldGoldExchangeAmount,
@@ -425,7 +461,7 @@ export class SalesInvoiceRepository extends BaseRepository {
         data.balanceDue,
         data.pricingSnapshot ?? null,
         data.status,
-        data.notes ?? '',
+        data.notes ?? null,
         data.createdBy ?? null,
         data.createdAt,
         data.updatedAt
@@ -440,6 +476,7 @@ export class SalesInvoiceRepository extends BaseRepository {
     stampId?: string | null
     designId?: string | null
     barcode?: string | null
+    huid?: string | null
     pcs: number
     grossWeight: number
     packWeight?: number
@@ -456,8 +493,12 @@ export class SalesInvoiceRepository extends BaseRepository {
     labourRate: number
     labourRateType: 'Kg' | 'Gm' | 'Pcs'
     makingCharges: number
+    makingDiscount?: number
     stoneCharges: number
     diamondCharges: number
+    diamondCarats?: number
+    diamondPcs?: number
+    stoneAmount?: number
     discountAmount: number
     taxableAmount: number
     taxPercent: number
@@ -472,24 +513,26 @@ export class SalesInvoiceRepository extends BaseRepository {
         `
         INSERT INTO sales_invoice_items (
           id, invoice_id, item_id, description, stamp_id, design_id,
-          barcode, pcs, gross_weight, pack_weight, less_weight,
+          barcode, huid, pcs, gross_weight, pack_weight, less_weight,
           add_weight, net_weight, metal_type, purity_name, tunch,
           wastage, fine_weight, gold_rate, metal_value, labour_rate,
-          labour_rate_type, making_charges, stone_charges, diamond_charges,
+          labour_rate_type, making_charges, making_discount, stone_charges,
+          diamond_charges, diamond_carats, diamond_pcs, stone_amount,
           discount_amount, taxable_amount, tax_percent, tax_amount,
           line_total, pricing_breakdown, created_at, updated_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `
       )
       .run(
         data.id,
         data.invoiceId,
         data.itemId,
-        data.description ?? '',
+        data.description ?? null,
         data.stampId ?? null,
         data.designId ?? null,
         data.barcode ?? null,
+        data.huid ?? '',
         data.pcs,
         data.grossWeight,
         data.packWeight ?? 0,
@@ -497,7 +540,7 @@ export class SalesInvoiceRepository extends BaseRepository {
         data.addWeight ?? 0,
         data.netWeight,
         data.metalType,
-        data.purityName ?? '',
+        data.purityName ?? null,
         data.tunch,
         data.wastage,
         data.fineWeight,
@@ -506,16 +549,20 @@ export class SalesInvoiceRepository extends BaseRepository {
         data.labourRate,
         data.labourRateType,
         data.makingCharges,
+        data.makingDiscount ?? 0,
         data.stoneCharges,
         data.diamondCharges,
+        data.diamondCarats ?? 0,
+        data.diamondPcs ?? 0,
+        data.stoneAmount ?? 0,
         data.discountAmount,
         data.taxableAmount,
         data.taxPercent,
         data.taxAmount,
         data.lineTotal,
-        data.pricingBreakdown ?? '',
-        data.createdAt || new Date().toISOString(),
-        data.updatedAt || new Date().toISOString()
+        data.pricingBreakdown ?? null,
+        data.createdAt,
+        data.updatedAt
       )
   }
 
@@ -545,24 +592,36 @@ export class SalesInvoiceRepository extends BaseRepository {
         data.invoiceId,
         data.paymentMethod,
         data.amount,
-        data.paymentReference ?? '',
+        data.paymentReference ?? null,
         data.paymentDate,
-        data.notes ?? '',
+        data.notes ?? null,
         data.createdAt,
         data.updatedAt
       )
   }
 
-  updateStatus(id: string, status: SalesInvoiceStatus, updatedAt?: string): void {
-    const time = updatedAt || new Date().toISOString()
+  updateStatus(id: string, status: SalesInvoiceStatus): void {
     this.db
-      .prepare(`UPDATE sales_invoices SET status = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL`)
-      .run(status, time, id)
+      .prepare(
+        `
+        UPDATE sales_invoices
+        SET status = ?, updated_at = ?
+        WHERE id = ?
+      `
+      )
+      .run(status, new Date().toISOString(), id)
   }
 
-  softDelete(id: string, now: string): void {
+  softDelete(id: string): void {
+    const now = new Date().toISOString()
     this.db
-      .prepare(`UPDATE sales_invoices SET deleted_at = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL`)
+      .prepare(
+        `
+        UPDATE sales_invoices
+        SET deleted_at = ?, status = 'CANCELLED', updated_at = ?
+        WHERE id = ?
+      `
+      )
       .run(now, now, id)
   }
 }

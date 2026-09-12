@@ -36,10 +36,11 @@ export const inventoryQueryService = {
         INNER JOIN item_groups ig ON ig.id = i.item_group_id
         LEFT JOIN item_stamps ist ON ist.id = i.default_stamp_id
         LEFT JOIN item_designs idg ON idg.id = i.default_design_id
-        WHERE i.barcode_value = ? AND i.deleted_at IS NULL
+        WHERE (i.barcode_value = ? OR i.id = ? OR LOWER(i.item_name) = LOWER(?)) AND i.deleted_at IS NULL
+        LIMIT 1
       `
       )
-      .get(clean) as ItemRow | undefined
+      .get(clean, clean, clean) as ItemRow | undefined
 
     if (!row) {
       throw new NotFoundError(`No item found for barcode: ${clean}`)

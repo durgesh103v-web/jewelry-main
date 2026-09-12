@@ -48,26 +48,26 @@ export const BarcodeInput: React.FC<BarcodeInputProps> = ({
   }, [])
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2.5">
       <form onSubmit={handleSubmit} className="flex-1 relative">
         <input
           ref={inputRef}
           type="text"
           value={barcode}
           onChange={(e) => setBarcode(e.target.value)}
-          placeholder="Scan Barcode / Enter Tag ID (Press Enter)..."
+          placeholder="Scan Barcode / Enter Tag ID (e.g. TAG-G101) & press Enter..."
           disabled={disabled || isScanning}
-          className="w-full h-10 pl-9 pr-32 text-sm bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent placeholder:text-muted-foreground font-mono"
+          className="w-full h-9 pl-9 pr-32 text-xs bg-slate-50 hover:bg-white focus:bg-white border border-slate-300 rounded-lg focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 placeholder:text-slate-400 font-mono text-slate-800 transition-all shadow-2xs"
         />
-        <div className="absolute left-3 top-2.5 text-muted-foreground text-sm">
+        <div className="absolute left-3 top-2 text-slate-400 text-xs">
           🏷️
         </div>
         {scanStatus && (
           <span
-            className={`absolute right-3 top-2.5 text-xs font-semibold ${
+            className={`absolute right-3 top-2 text-[11px] font-bold ${
               scanStatus.isError
-                ? 'text-destructive'
-                : 'text-emerald-600 dark:text-emerald-400'
+                ? 'text-rose-600'
+                : 'text-emerald-600'
             } animate-pulse`}
           >
             {scanStatus.message}
@@ -79,7 +79,7 @@ export const BarcodeInput: React.FC<BarcodeInputProps> = ({
         type="button"
         onClick={onOpenSearch}
         disabled={disabled}
-        className="h-10 px-3.5 bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-colors"
+        className="h-9 px-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 !text-white font-bold rounded-lg text-xs flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer disabled:opacity-50"
       >
         <span>🔍</span>
         <span>Item Search (F4)</span>

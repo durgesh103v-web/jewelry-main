@@ -24,6 +24,7 @@ export interface SalesInvoiceItemRecord {
   stampId?: string | null
   designId?: string | null
   barcode?: string | null
+  huid?: string | null
   pcs: number
   grossWeight: number
   packWeight: number
@@ -40,8 +41,12 @@ export interface SalesInvoiceItemRecord {
   labourRate: number
   labourRateType: 'Kg' | 'Gm' | 'Pcs'
   makingCharges: number
+  makingDiscount?: number
   stoneCharges: number
   diamondCharges: number
+  diamondCarats?: number
+  diamondPcs?: number
+  stoneAmount?: number
   discountAmount: number
   taxableAmount: number
   taxPercent: number
@@ -59,6 +64,9 @@ export interface SalesInvoiceRecord {
   customerName?: string | null
   customerCode?: string | null
   customerPhone?: string | null
+  salespersonId?: string | null
+  salespersonName?: string | null
+  deliveryStatus?: string | null
   accountId: string
   accountName?: string | null
   orderId?: string | null
@@ -71,6 +79,7 @@ export interface SalesInvoiceRecord {
   fineWeight: number
   subtotal: number
   discountAmount: number
+  invoiceDiscount?: number
   taxableAmount: number
   taxAmount: number
   oldGoldExchangeAmount: number
@@ -96,6 +105,7 @@ export interface SalesInvoiceItemPayload {
   stampId?: string
   designId?: string
   barcode?: string
+  huid?: string
   pcs: number
   grossWeight: number
   packWeight?: number
@@ -108,8 +118,12 @@ export interface SalesInvoiceItemPayload {
   goldRate?: number
   labourRate?: number
   labourRateType?: 'Kg' | 'Gm' | 'Pcs'
+  makingDiscount?: number
   stoneCharges?: number
   diamondCharges?: number
+  diamondCarats?: number
+  diamondPcs?: number
+  stoneAmount?: number
   discountAmount?: number
   discountPercent?: number
   taxPercent?: number
@@ -125,11 +139,15 @@ export interface SalesInvoicePaymentPayload {
 export interface SalesInvoicePayload {
   invoiceNumber?: string
   customerId?: string
+  salespersonId?: string
+  salespersonName?: string
+  deliveryStatus?: string
   accountId: string
   orderId?: string
   invoiceDate?: string
   metalType?: string
   notes?: string
+  invoiceDiscount?: number
   advanceIds?: string[]
   metalExchangeIds?: string[]
   items: SalesInvoiceItemPayload[]
@@ -139,6 +157,7 @@ export interface SalesInvoicePayload {
 export interface SalesInvoiceFilter {
   search?: string
   customerId?: string
+  salespersonId?: string
   accountId?: string
   orderId?: string
   status?: SalesInvoiceStatus

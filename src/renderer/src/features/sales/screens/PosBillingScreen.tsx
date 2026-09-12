@@ -11,16 +11,36 @@ import { OldGoldExchangePanel } from '../components/OldGoldExchangePanel'
 import { PaymentPanel } from '../components/PaymentPanel'
 import { InvoiceSummaryPanel } from '../components/InvoiceSummaryPanel'
 import { CompleteSaleDialog } from '../components/CompleteSaleDialog'
+import { FiUser, FiTruck, FiRotateCcw, FiX } from 'react-icons/fi'
 
 interface PosBillingScreenProps {
   onClose?: () => void
 }
+
+const SALESPERSON_OPTIONS = [
+  'Main Sales Staff',
+  'Counter Executive 1',
+  'Counter Executive 2',
+  'Floor Manager',
+  'Store Director'
+]
+
+const DELIVERY_STATUS_OPTIONS = [
+  'Delivered',
+  'Pending Sizing',
+  'Pending Polishing',
+  'Store Pickup Later'
+]
 
 export const PosBillingScreen: React.FC<PosBillingScreenProps> = ({ onClose }) => {
   const {
     lifecycleStage,
     customer,
     setCustomer,
+    salespersonName,
+    setSalespersonName,
+    deliveryStatus,
+    setDeliveryStatus,
     order,
     loadOrder,
     items,
@@ -39,6 +59,8 @@ export const PosBillingScreen: React.FC<PosBillingScreenProps> = ({ onClose }) =
     removePaymentLine,
     metalType,
     setMetalType,
+    invoiceDiscount,
+    setInvoiceDiscount,
     summary,
     isAnyItemCalculating,
     hasPricingErrors,
@@ -70,6 +92,7 @@ export const PosBillingScreen: React.FC<PosBillingScreenProps> = ({ onClose }) =
           itemName: item.itemName || item.item_name,
           itemCode: item.itemCode || item.item_code,
           barcode: item.barcode,
+          huid: item.huid || '',
           metalType: item.metalType || item.metal_type || metalType,
           stampId: item.defaultStampId || item.default_stamp_id,
           designId: item.defaultDesignId || item.default_design_id,
@@ -113,7 +136,6 @@ export const PosBillingScreen: React.FC<PosBillingScreenProps> = ({ onClose }) =
         setIsSearchOpen(true)
       } else if (e.key === 'F6') {
         e.preventDefault()
-        // Focus first payment input
         const paymentInput = document.querySelector<HTMLInputElement>('input[placeholder="Amount"]')
         paymentInput?.focus()
       } else if (e.key === 'F8') {
@@ -176,29 +198,30 @@ export const PosBillingScreen: React.FC<PosBillingScreenProps> = ({ onClose }) =
   }, [pendingClose, resetPos, onClose])
 
   return (
-    <div className="h-full flex flex-col bg-background text-foreground overflow-hidden">
+    <div className="h-full flex flex-col bg-[var(--color-background-app,#f8fafc)] text-slate-900 overflow-hidden select-none">
       {/* Top POS Header */}
-      <header className="min-h-[48px] py-2 px-4 border-b border-border bg-card flex flex-wrap items-center justify-between gap-2 shadow-sm shrink-0">
+      <header className="min-h-[48px] py-2 px-4 border-b border-slate-200 bg-white flex flex-wrap items-center justify-between gap-2 shadow-2xs shrink-0">
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2">
             <span className="text-xl">💎</span>
             <div>
-              <h1 className="font-bold text-sm text-foreground tracking-tight flex items-center gap-2">
+              <h1 className="font-bold text-sm text-slate-900 tracking-tight flex items-center gap-2">
                 <span>POS & Retail Billing Counter</span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-mono">
+                <span className="text-[10px] px-2 py-0.5 rounded bg-slate-100 text-slate-600 font-mono font-semibold uppercase">
                   {lifecycleStage}
                 </span>
               </h1>
             </div>
           </div>
-          <div className="flex items-center bg-muted/60 rounded-lg p-0.5 text-xs font-medium border border-border/50">
+
+          <div className="flex items-center bg-slate-100 rounded-lg p-0.5 text-xs font-medium border border-slate-200">
             <button
               type="button"
               onClick={() => setMetalType('Gold')}
-              className={`px-3 py-1 rounded-md transition-all ${
+              className={`px-3 py-1 rounded-md transition-all cursor-pointer ${
                 metalType === 'Gold'
-                  ? 'bg-amber-500 text-white font-bold shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
+                  ? 'bg-amber-500 !text-white font-bold shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               Gold Billing
@@ -206,10 +229,10 @@ export const PosBillingScreen: React.FC<PosBillingScreenProps> = ({ onClose }) =
             <button
               type="button"
               onClick={() => setMetalType('Silver')}
-              className={`px-3 py-1 rounded-md transition-all ${
+              className={`px-3 py-1 rounded-md transition-all cursor-pointer ${
                 metalType === 'Silver'
-                  ? 'bg-slate-500 text-white font-bold shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
+                  ? 'bg-slate-700 !text-white font-bold shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               Silver Billing
@@ -218,22 +241,23 @@ export const PosBillingScreen: React.FC<PosBillingScreenProps> = ({ onClose }) =
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="hidden sm:flex text-[11px] text-muted-foreground items-center gap-2 font-mono">
-            <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+          <div className="hidden sm:flex text-[11px] text-slate-500 items-center gap-2 font-mono">
+            <span className="flex items-center gap-1 text-emerald-600 font-semibold">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
               Scanner Ready
             </span>
             <span>•</span>
-            <span className="text-muted-foreground">Print Bridge Ready</span>
+            <span className="text-slate-500 font-medium">Print Bridge Ready</span>
           </div>
 
           {items.length > 0 && (
             <button
               type="button"
               onClick={handleRequestClear}
-              className="text-xs px-3 py-1.5 bg-secondary text-secondary-foreground hover:bg-destructive hover:text-destructive-foreground rounded-lg transition-colors font-medium border border-border"
+              className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 bg-white border border-slate-300 text-slate-700 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200 rounded-lg transition-colors font-semibold cursor-pointer shadow-2xs"
             >
-              Clear Bill
+              <FiRotateCcw size={12} />
+              <span>Clear Bill</span>
             </button>
           )}
 
@@ -241,10 +265,10 @@ export const PosBillingScreen: React.FC<PosBillingScreenProps> = ({ onClose }) =
             <button
               type="button"
               onClick={handleRequestClose}
-              className="text-xs px-2.5 py-1.5 text-muted-foreground hover:text-foreground rounded-lg transition-colors"
+              className="h-8 w-8 inline-flex items-center justify-center text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
               title="Close POS"
             >
-              ✕
+              <FiX size={16} />
             </button>
           )}
         </div>
@@ -252,24 +276,24 @@ export const PosBillingScreen: React.FC<PosBillingScreenProps> = ({ onClose }) =
 
       {/* Global POS Alerts */}
       {error && (
-        <div className="px-4 py-2 bg-destructive/10 border-b border-destructive/20 text-destructive text-xs flex items-center justify-between">
-          <span>⚠️ {error}</span>
+        <div className="px-4 py-2 bg-rose-50 border-b border-rose-200 text-rose-800 text-xs flex items-center justify-between">
+          <span className="font-medium">⚠️ {error}</span>
           <button
             type="button"
             onClick={() => setError(null)}
-            className="text-destructive font-bold text-xs"
+            className="text-rose-700 font-bold text-xs p-1 hover:bg-rose-100 rounded"
           >
             ✕
           </button>
         </div>
       )}
 
-      {/* Main Workspace Layout (2 Columns, responsive stacking on smaller screens) */}
-      <div className="flex-1 flex flex-col xl:flex-row gap-4 p-3 lg:p-4 overflow-y-auto xl:overflow-hidden">
+      {/* Main Workspace Layout */}
+      <div className="flex-1 flex flex-col xl:flex-row gap-3 p-3 overflow-y-auto xl:overflow-hidden">
         {/* Left Column: Items, Barcode, Breakdown, Credits */}
         <div className="flex-1 flex flex-col gap-3 min-w-0 xl:overflow-hidden">
           {/* Barcode & Search Bar */}
-          <div className="bg-card p-3 rounded-xl border border-border shadow-sm shrink-0">
+          <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs shrink-0">
             <BarcodeInput
               onScanItem={handleScanBarcode}
               onOpenSearch={() => setIsSearchOpen(true)}
@@ -282,6 +306,8 @@ export const PosBillingScreen: React.FC<PosBillingScreenProps> = ({ onClose }) =
             items={items}
             onUpdateItem={updateItem}
             onRemoveItem={removeItem}
+            onOpenSearch={() => setIsSearchOpen(true)}
+            onQuickAddItem={handleScanBarcode}
           />
 
           {/* Bottom Left Panels (Breakdown, Advances, Exchanges) */}
@@ -300,26 +326,67 @@ export const PosBillingScreen: React.FC<PosBillingScreenProps> = ({ onClose }) =
           </div>
         </div>
 
-        {/* Right Column: Customer Context, Payments, Summary, Checkout */}
+        {/* Right Column: Customer Context, Staff Tag, Payments, Summary, Checkout */}
         <div className="w-full xl:w-80 flex flex-col gap-3 shrink-0 overflow-y-auto pr-0.5">
-          {/* Customer Selection */}
-          <div className="bg-card p-3 rounded-xl border border-border shadow-sm space-y-2">
-            <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+          {/* Customer Selection & Salesperson Box */}
+          <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs space-y-2.5">
+            <div className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
               <span>👤</span>
               <span>Customer Context</span>
             </div>
+
             <CustomerSelector
               customer={customer}
               onSelectCustomer={setCustomer}
               disabled={isSubmitting}
               inputRef={customerInputRef}
             />
+
             <OrderSelector
               customerId={customer?.id}
               currentOrder={order}
               onSelectOrder={loadOrder}
               onClearOrder={() => {}}
             />
+
+            {/* Salesperson & Delivery Details */}
+            <div className="pt-2 border-t border-slate-100 grid grid-cols-2 gap-2 text-xs">
+              <div>
+                <label className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1 mb-1">
+                  <FiUser size={11} className="text-amber-600" />
+                  <span>Attendant</span>
+                </label>
+                <select
+                  value={salespersonName}
+                  onChange={(e) => setSalespersonName(e.target.value)}
+                  className="w-full h-7 text-xs bg-slate-50 border border-slate-200 rounded px-1.5 font-medium text-slate-800 focus:bg-white focus:border-amber-500"
+                >
+                  {SALESPERSON_OPTIONS.map((name) => (
+                    <option key={name} value={name}>
+                      {name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1 mb-1">
+                  <FiTruck size={11} className="text-indigo-600" />
+                  <span>Delivery</span>
+                </label>
+                <select
+                  value={deliveryStatus}
+                  onChange={(e) => setDeliveryStatus(e.target.value)}
+                  className="w-full h-7 text-xs bg-slate-50 border border-slate-200 rounded px-1.5 font-medium text-slate-800 focus:bg-white focus:border-amber-500"
+                >
+                  {DELIVERY_STATUS_OPTIONS.map((status) => (
+                    <option key={status} value={status}>
+                      {status}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
           </div>
 
           {/* Split Payment Panel */}
@@ -334,6 +401,8 @@ export const PosBillingScreen: React.FC<PosBillingScreenProps> = ({ onClose }) =
           {/* Net Payable & Checkout Panel */}
           <InvoiceSummaryPanel
             summary={summary}
+            invoiceDiscount={invoiceDiscount}
+            onUpdateInvoiceDiscount={setInvoiceDiscount}
             onOpenCompleteDialog={() => setIsConfirmOpen(true)}
             disabled={
               isSubmitting ||
@@ -374,11 +443,11 @@ export const PosBillingScreen: React.FC<PosBillingScreenProps> = ({ onClose }) =
 
       {/* Unsaved Changes Warning Modal */}
       {showUnsavedPrompt && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-card border border-border rounded-xl shadow-2xl w-full max-w-sm p-5 text-center animate-in fade-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-xl shadow-2xl w-full max-w-sm p-5 text-center">
             <div className="text-3xl mb-2">⚠️</div>
-            <h3 className="font-bold text-foreground text-sm">Discard Active Bill?</h3>
-            <p className="text-xs text-muted-foreground mt-1 mb-4">
+            <h3 className="font-bold text-slate-900 text-sm">Discard Active Bill?</h3>
+            <p className="text-xs text-slate-500 mt-1 mb-4">
               You have customer and item details in progress. Clearing will reset all transient billing state.
             </p>
             <div className="flex gap-2">
@@ -388,14 +457,14 @@ export const PosBillingScreen: React.FC<PosBillingScreenProps> = ({ onClose }) =
                   setShowUnsavedPrompt(false)
                   setPendingClose(false)
                 }}
-                className="flex-1 px-3 py-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded-lg text-xs font-semibold"
+                className="flex-1 px-3 py-2 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-lg text-xs font-semibold cursor-pointer"
               >
                 Keep Bill
               </button>
               <button
                 type="button"
                 onClick={handleConfirmUnsavedAction}
-                className="flex-1 px-3 py-2 bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-lg text-xs font-bold"
+                className="flex-1 px-3 py-2 bg-rose-600 text-white hover:bg-rose-700 rounded-lg text-xs font-bold cursor-pointer"
               >
                 Discard & Reset
               </button>

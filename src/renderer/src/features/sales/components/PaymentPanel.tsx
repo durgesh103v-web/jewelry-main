@@ -26,28 +26,28 @@ export const PaymentPanel: React.FC<PaymentPanelProps> = ({
   onRemovePayment
 }) => {
   return (
-    <div className="p-3.5 bg-card border border-border rounded-xl shadow-sm text-xs space-y-3">
-      <div className="flex items-center justify-between border-b border-border/60 pb-2">
-        <span className="font-semibold text-foreground flex items-center gap-1.5">
+    <div className="p-3 bg-white border border-slate-200 rounded-xl shadow-2xs text-xs space-y-2.5">
+      <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+        <span className="font-bold text-slate-800 flex items-center gap-1.5">
           <span>💳</span>
           <span>Payment Collection (F6)</span>
         </span>
         <button
           type="button"
           onClick={onAddPayment}
-          className="text-xs px-2 py-0.5 text-primary hover:bg-primary/10 rounded font-medium transition-colors"
+          className="text-xs px-2 py-0.5 text-amber-700 hover:text-amber-900 hover:bg-amber-50 rounded font-bold transition-colors cursor-pointer"
         >
           + Add Split Payment
         </button>
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         {payments.map((p) => (
-          <div key={p.id} className="flex items-center gap-2 p-2 rounded-lg bg-muted/20 border border-border/40">
+          <div key={p.id} className="flex items-center gap-1.5 p-1.5 rounded-lg bg-slate-50 border border-slate-200">
             <select
               value={p.paymentMethod}
               onChange={(e) => onUpdatePayment(p.id, { paymentMethod: e.target.value as PaymentMethod })}
-              className="h-8 text-xs bg-background border border-input rounded px-2 font-medium"
+              className="h-8 text-xs bg-white border border-slate-200 rounded px-1.5 font-bold text-slate-800 focus:border-amber-500 focus:outline-none"
             >
               {PAYMENT_METHODS.map((m) => (
                 <option key={m.value} value={m.value}>
@@ -57,14 +57,14 @@ export const PaymentPanel: React.FC<PaymentPanelProps> = ({
             </select>
 
             <div className="relative flex-1">
-              <span className="absolute left-2.5 top-2 text-muted-foreground text-[11px]">₹</span>
+              <span className="absolute left-2.5 top-2 text-slate-400 text-[11px] font-bold">₹</span>
               <input
                 type="number"
                 min="0"
                 value={p.amount || ''}
                 onChange={(e) => onUpdatePayment(p.id, { amount: Number(e.target.value) || 0 })}
                 placeholder="Amount"
-                className="w-full h-8 pl-6 pr-2 text-xs font-mono font-bold bg-background border border-input rounded focus:ring-1 focus:ring-primary"
+                className="w-full h-8 pl-6 pr-2 text-xs font-mono font-bold bg-white border border-slate-200 rounded focus:border-amber-500 focus:outline-none text-slate-900"
               />
             </div>
 
@@ -80,7 +80,7 @@ export const PaymentPanel: React.FC<PaymentPanelProps> = ({
                       ? 'Cheque No'
                       : 'Auth / Ref No'
                 }
-                className="w-32 h-8 px-2 text-xs bg-background border border-input rounded placeholder:text-muted-foreground font-mono"
+                className="w-28 h-8 px-2 text-xs bg-white border border-slate-200 rounded placeholder:text-slate-400 font-mono text-slate-800 focus:border-amber-500 focus:outline-none"
               />
             )}
 
@@ -88,7 +88,7 @@ export const PaymentPanel: React.FC<PaymentPanelProps> = ({
               <button
                 type="button"
                 onClick={() => onRemovePayment(p.id)}
-                className="text-muted-foreground hover:text-destructive text-sm px-1"
+                className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded text-sm px-1.5 py-1 cursor-pointer transition-colors"
                 title="Remove split line"
               >
                 ✕

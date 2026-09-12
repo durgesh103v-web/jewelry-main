@@ -27,6 +27,11 @@ export interface PosBillItem extends SalesInvoiceItemPayload {
   id: string
   itemName: string
   itemCode?: string
+  huid?: string
+  diamondCarats?: number
+  diamondPcs?: number
+  stoneAmount?: number
+  makingDiscount?: number
   pricingResult?: PricingResult
   pricingStatus?: ItemPricingStatus
   pricingError?: string
@@ -39,6 +44,9 @@ export interface PosPaymentLine extends SalesInvoicePaymentPayload {
 export interface PosBillingState {
   lifecycleStage: PosLifecycleStage
   customer: CustomerRecord | null
+  salespersonId: string
+  salespersonName: string
+  deliveryStatus: string
   order: CustomerOrderRecord | null
   items: PosBillItem[]
   availableAdvances: CustomerAdvanceRecord[]
@@ -48,6 +56,7 @@ export interface PosBillingState {
   payments: PosPaymentLine[]
   metalType: string
   notes: string
+  invoiceDiscount: number
   isCalculating: boolean
   isSubmitting: boolean
   error: string | null

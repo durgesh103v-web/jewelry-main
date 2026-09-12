@@ -11,6 +11,9 @@ import { roundNumber } from '@shared/jewelleryFormula'
 
 export function usePosBilling() {
   const [customer, setCustomer] = useState<CustomerRecord | null>(null)
+  const [salespersonId, setSalespersonId] = useState<string>('')
+  const [salespersonName, setSalespersonName] = useState<string>('Main Staff')
+  const [deliveryStatus, setDeliveryStatus] = useState<string>('Delivered')
   const [order, setOrder] = useState<CustomerOrderRecord | null>(null)
   const [items, setItems] = useState<PosBillItem[]>([])
   const [availableAdvances, setAvailableAdvances] = useState<CustomerAdvanceRecord[]>([])
@@ -22,6 +25,7 @@ export function usePosBilling() {
   ])
   const [metalType, setMetalType] = useState<string>('Gold')
   const [notes, setNotes] = useState<string>('')
+  const [invoiceDiscount, setInvoiceDiscount] = useState<number>(0)
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
   const [completedInvoice, setCompletedInvoice] = useState<SalesInvoiceRecord | null>(null)
@@ -90,12 +94,14 @@ export function usePosBilling() {
           labourRateType: item.labourRateType || 'Kg',
           ratePerGram: item.goldRate,
           stoneCharges: item.stoneCharges
-            ? [{ stoneName: 'STONE', pcs: 1, carat: 0, weightGm: 0, ratePerUnit: item.stoneCharges, unit: 'Pcs' }]
-            : [],
+            ? [{ stoneName: 'STONE', pcs: item.diamondPcs || 1, carat: item.diamondCarats || 0, weightGm: 0, ratePerUnit: item.stoneCharges, unit: 'Pcs' }]
+            : item.stoneAmount
+              ? [{ stoneName: 'STONE', pcs: 1, carat: 0, weightGm: 0, ratePerUnit: item.stoneAmount, unit: 'Pcs' }]
+              : [],
           diamondCharges: item.diamondCharges
-            ? [{ diamondDescription: 'DIAMOND', carat: 1, ratePerCarat: item.diamondCharges, clarity: '', color: '' }]
+            ? [{ diamondDescription: 'DIAMOND', carat: item.diamondCarats || 1, ratePerCarat: item.diamondCharges, clarity: '', color: '' }]
             : [],
-          discountAmount: item.discountAmount || 0,
+          discountAmount: roundNumber((item.discountAmount || 0) + (item.makingDiscount || 0), 2),
           discountPercent: item.discountPercent || 0,
           taxPercent: item.taxPercent || 0
         })
@@ -123,16 +129,14 @@ export function usePosBilling() {
     [metalType]
   )
 
-  // 3. Add Item to POS bill (with duplicate barcode awareness)
+  // 3. Add Item to POS bill
   const addItem = useCallback(
     async (rawItem: Partial<PosBillItem> & { itemId: string; itemName: string; grossWeight: number }) => {
-      // Check if item with same barcode or itemId already exists in bill
       const existingIdx = rawItem.barcode
         ? items.findIndex((it) => it.barcode && it.barcode === rawItem.barcode)
         : -1
 
       if (existingIdx >= 0) {
-        // Increment quantity on existing line
         const existing = items[existingIdx]
         const newPcs = existing.pcs + (rawItem.pcs || 1)
         const unitGrossWeight = existing.pcs > 0 ? existing.grossWeight / existing.pcs : existing.grossWeight
@@ -160,6 +164,7 @@ export function usePosBilling() {
         stampId: rawItem.stampId || '',
         designId: rawItem.designId || '',
         barcode: rawItem.barcode || '',
+        huid: rawItem.huid || '',
         pcs: rawItem.pcs || 1,
         grossWeight: rawItem.grossWeight,
         packWeight: rawItem.packWeight || 0,
@@ -172,8 +177,12 @@ export function usePosBilling() {
         goldRate: rawItem.goldRate || 0,
         labourRate: rawItem.labourRate ?? 0,
         labourRateType: rawItem.labourRateType || 'Kg',
+        makingDiscount: rawItem.makingDiscount || 0,
         stoneCharges: rawItem.stoneCharges || 0,
         diamondCharges: rawItem.diamondCharges || 0,
+        diamondCarats: rawItem.diamondCarats || 0,
+        diamondPcs: rawItem.diamondPcs || 0,
+        stoneAmount: rawItem.stoneAmount || 0,
         discountAmount: rawItem.discountAmount || 0,
         discountPercent: rawItem.discountPercent || 0,
         taxPercent: rawItem.taxPercent || 0,
@@ -212,7 +221,7 @@ export function usePosBilling() {
     setItems((prev) => prev.filter((it) => it.id !== id))
   }, [])
 
-  // 6. Safe Customer Selection (Clears incompatible credits)
+  // 6. Safe Customer Selection
   const setCustomerWithSafety = useCallback((newCustomer: CustomerRecord | null) => {
     setCustomer(newCustomer)
     if (!newCustomer) {
@@ -220,7 +229,6 @@ export function usePosBilling() {
       setSelectedAdvanceIds([])
       setSelectedExchangeIds([])
     } else {
-      // Clear previous customer order/advance selections
       setSelectedAdvanceIds([])
       setSelectedExchangeIds([])
       if (order && order.customerId !== newCustomer.id) {
@@ -229,7 +237,7 @@ export function usePosBilling() {
     }
   }, [order])
 
-  // 7. Load Customer Order with Snapshot
+  // 7. Load Customer Order
   const loadOrder = useCallback(
     async (orderId: string) => {
       setError(null)
@@ -313,19 +321,19 @@ export function usePosBilling() {
       }
     }
 
-    // Selected Advance Total
+    // Advance Total
     const totalAdvanceApplied = availableAdvances
       .filter((a) => selectedAdvanceIds.includes(a.id))
       .reduce((sum, a) => roundNumber(sum + a.unallocatedAmount, 2), 0)
     const advanceDeducted = Math.min(grandTotal, totalAdvanceApplied)
 
-    // Selected Exchange Total
+    // Exchange Total
     const totalExchangeApplied = availableExchanges
       .filter((e) => selectedExchangeIds.includes(e.id))
       .reduce((sum, e) => roundNumber(sum + e.exchangeAmount, 2), 0)
     const exchangeDeducted = Math.min(roundNumber(grandTotal - advanceDeducted, 2), totalExchangeApplied)
 
-    const netPayable = Math.max(0, roundNumber(grandTotal - advanceDeducted - exchangeDeducted, 2))
+    const netPayable = Math.max(0, roundNumber(grandTotal - advanceDeducted - exchangeDeducted - invoiceDiscount, 2))
 
     // Total Payments
     const totalPaid = payments.reduce((sum, p) => roundNumber(sum + Number(p.amount || 0), 2), 0)
@@ -338,6 +346,7 @@ export function usePosBilling() {
       totalFineWeight,
       subtotal,
       totalDiscount,
+      invoiceDiscount,
       totalTaxable,
       totalTax,
       grandTotal,
@@ -347,7 +356,7 @@ export function usePosBilling() {
       totalPaid,
       balanceDue
     }
-  }, [items, availableAdvances, selectedAdvanceIds, availableExchanges, selectedExchangeIds, payments])
+  }, [items, availableAdvances, selectedAdvanceIds, availableExchanges, selectedExchangeIds, payments, invoiceDiscount])
 
   // 9. Auto-fill payment amount when single payment line is untouched
   useEffect(() => {
@@ -403,7 +412,7 @@ export function usePosBilling() {
     setPayments((prev) => (prev.length > 1 ? prev.filter((p) => p.id !== id) : prev))
   }, [])
 
-  // 12. Complete Sale Submission (with Idempotency & Double-Submission Protection)
+  // 12. Complete Sale Submission
   const submitSale = useCallback(async () => {
     if (isSubmittingRef.current) {
       return null
@@ -432,10 +441,14 @@ export function usePosBilling() {
     try {
       const payload = {
         customerId: customer.id,
+        salespersonId: salespersonId || undefined,
+        salespersonName: salespersonName || undefined,
+        deliveryStatus: deliveryStatus || 'Delivered',
         accountId: customer.accountId,
         orderId: order?.id || undefined,
         metalType,
         notes,
+        invoiceDiscount,
         advanceIds: selectedAdvanceIds,
         metalExchangeIds: selectedExchangeIds,
         items: items.map((it) => ({
@@ -444,6 +457,7 @@ export function usePosBilling() {
           stampId: it.stampId || undefined,
           designId: it.designId || undefined,
           barcode: it.barcode || undefined,
+          huid: it.huid || undefined,
           pcs: it.pcs,
           grossWeight: it.grossWeight,
           packWeight: it.packWeight,
@@ -456,8 +470,12 @@ export function usePosBilling() {
           goldRate: it.goldRate,
           labourRate: it.labourRate,
           labourRateType: it.labourRateType,
+          makingDiscount: it.makingDiscount,
           stoneCharges: it.stoneCharges,
           diamondCharges: it.diamondCharges,
+          diamondCarats: it.diamondCarats,
+          diamondPcs: it.diamondPcs,
+          stoneAmount: it.stoneAmount,
           discountAmount: it.discountAmount,
           discountPercent: it.discountPercent,
           taxPercent: it.taxPercent
@@ -499,10 +517,14 @@ export function usePosBilling() {
     }
   }, [
     customer,
+    salespersonId,
+    salespersonName,
+    deliveryStatus,
     items,
     order,
     metalType,
     notes,
+    invoiceDiscount,
     selectedAdvanceIds,
     selectedExchangeIds,
     payments,
@@ -521,6 +543,7 @@ export function usePosBilling() {
     setSelectedExchangeIds([])
     setPayments([{ id: uuidv4(), paymentMethod: 'CASH', amount: 0, paymentReference: '', notes: '' }])
     setNotes('')
+    setInvoiceDiscount(0)
     setError(null)
     setCompletedInvoice(null)
     isSubmittingRef.current = false
@@ -531,6 +554,12 @@ export function usePosBilling() {
     lifecycleStage,
     customer,
     setCustomer: setCustomerWithSafety,
+    salespersonId,
+    setSalespersonId,
+    salespersonName,
+    setSalespersonName,
+    deliveryStatus,
+    setDeliveryStatus,
     order,
     loadOrder,
     items,
@@ -551,6 +580,8 @@ export function usePosBilling() {
     setMetalType,
     notes,
     setNotes,
+    invoiceDiscount,
+    setInvoiceDiscount,
     summary,
     isAnyItemCalculating,
     hasPricingErrors,

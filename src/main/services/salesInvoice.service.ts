@@ -41,6 +41,7 @@ const invoiceItemSchema = z.object({
   stampId: z.string().trim().optional().default(''),
   designId: z.string().trim().optional().default(''),
   barcode: z.string().trim().optional().default(''),
+  huid: z.string().trim().optional().default(''),
   pcs: z.coerce.number().int().positive('Pieces must be greater than 0'),
   grossWeight: z.coerce.number().positive('Gross weight must be greater than 0'),
   packWeight: z.coerce.number().optional().default(0),
@@ -53,8 +54,12 @@ const invoiceItemSchema = z.object({
   goldRate: z.coerce.number().optional().default(0),
   labourRate: z.coerce.number().optional(),
   labourRateType: z.enum(['Kg', 'Gm', 'Pcs']).optional().default('Kg'),
+  makingDiscount: z.coerce.number().optional().default(0),
   stoneCharges: z.coerce.number().optional().default(0),
   diamondCharges: z.coerce.number().optional().default(0),
+  diamondCarats: z.coerce.number().optional().default(0),
+  diamondPcs: z.coerce.number().optional().default(0),
+  stoneAmount: z.coerce.number().optional().default(0),
   discountAmount: z.coerce.number().optional().default(0),
   discountPercent: z.coerce.number().optional().default(0),
   taxPercent: z.coerce.number().optional().default(0)
@@ -70,11 +75,15 @@ const invoicePaymentSchema = z.object({
 const invoiceSchema = z.object({
   invoiceNumber: z.string().trim().optional().default(''),
   customerId: z.string().trim().optional().default(''),
+  salespersonId: z.string().trim().optional().default(''),
+  salespersonName: z.string().trim().optional().default(''),
+  deliveryStatus: z.string().trim().optional().default('Delivered'),
   accountId: z.string().trim().min(1, 'Account is required'),
   orderId: z.string().trim().optional().default(''),
   invoiceDate: z.string().trim().optional().default(''),
   metalType: z.string().trim().optional().default('Gold'),
   notes: z.string().trim().optional().default(''),
+  invoiceDiscount: z.coerce.number().optional().default(0),
   advanceIds: z.array(z.string().trim()).optional().default([]),
   metalExchangeIds: z.array(z.string().trim()).optional().default([]),
   items: z.array(invoiceItemSchema).min(1, 'At least one item is required on invoice'),
@@ -210,6 +219,7 @@ export const salesInvoiceService = {
         stampId: line.stampId || itemMaster?.default_stamp_id || null,
         designId: line.designId || itemMaster?.default_design_id || null,
         barcode: line.barcode || null,
+        huid: line.huid || '',
         pcs: line.pcs,
         grossWeight: priceResult.weights.grossWeight,
         packWeight: priceResult.weights.packWeight,
@@ -226,8 +236,12 @@ export const salesInvoiceService = {
         labourRate: priceResult.charges.labourRate,
         labourRateType: priceResult.charges.labourRateType,
         makingCharges: priceResult.charges.making,
+        makingDiscount: line.makingDiscount || 0,
         stoneCharges: priceResult.charges.stoneTotal,
         diamondCharges: priceResult.charges.diamondTotal,
+        diamondCarats: line.diamondCarats || 0,
+        diamondPcs: line.diamondPcs || 0,
+        stoneAmount: line.stoneAmount || 0,
         discountAmount: priceResult.discount.amount,
         taxableAmount: priceResult.tax.taxableAmount,
         taxPercent: priceResult.tax.taxPercent,
@@ -290,7 +304,8 @@ export const salesInvoiceService = {
       })
     }
 
-    const netPayable = roundNumber(grandTotal - totalAdvanceApplied - totalExchangeApplied, 2)
+    const invoiceDiscount = data.invoiceDiscount || 0
+    const netPayable = Math.max(0, roundNumber(grandTotal - totalAdvanceApplied - totalExchangeApplied - invoiceDiscount, 2))
     const balanceDue = Math.max(0, roundNumber(netPayable - totalPaid, 2))
 
     const pricingSnapshot = JSON.stringify({
@@ -301,6 +316,7 @@ export const salesInvoiceService = {
       totalFineWeight,
       subtotal: totalSubtotal,
       discountAmount: totalDiscount,
+      invoiceDiscount,
       taxableAmount: totalTaxable,
       taxAmount: totalTax,
       grandTotal,
@@ -318,6 +334,9 @@ export const salesInvoiceService = {
         id: invoiceId,
         invoiceNumber,
         customerId,
+        salespersonId: data.salespersonId || '',
+        salespersonName: data.salespersonName || '',
+        deliveryStatus: data.deliveryStatus || 'Delivered',
         accountId: data.accountId,
         orderId: data.orderId || null,
         invoiceDate,
@@ -328,6 +347,7 @@ export const salesInvoiceService = {
         fineWeight: totalFineWeight,
         subtotal: totalSubtotal,
         discountAmount: totalDiscount,
+        invoiceDiscount,
         taxableAmount: totalTaxable,
         taxAmount: totalTax,
         oldGoldExchangeAmount: totalExchangeApplied,
