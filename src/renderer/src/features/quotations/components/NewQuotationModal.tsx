@@ -331,46 +331,49 @@ export const NewQuotationModal: React.FC<NewQuotationModalProps> = ({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 flex items-center justify-center p-4">
-      <div className="bg-background text-foreground max-w-6xl w-full max-h-[95vh] flex flex-col rounded-xl shadow-2xl border border-border overflow-hidden">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+      <div className="bg-white text-slate-900 max-w-5xl w-full max-h-[90vh] flex flex-col rounded-xl shadow-2xl border border-slate-200 overflow-hidden">
         {/* Header Bar */}
-        <div className="px-6 py-4 border-b border-border flex items-center justify-between bg-muted/40">
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-xl font-bold tracking-tight">Create Customer Quotation / Estimate</h2>
-              <span className="font-mono text-xs px-2.5 py-0.5 rounded bg-primary/10 text-primary font-semibold border border-primary/20">
-                {isLoadingNumber ? '...' : quotationNumber || 'NEW'}
-              </span>
+        <div className="px-6 py-3.5 border-b border-slate-200 flex items-center justify-between bg-white">
+          <div className="flex items-center gap-3">
+            <span className="text-xl">📋</span>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-base font-bold text-slate-900">Create Customer Quotation / Estimate</h2>
+                <span className="font-mono text-xs px-2.5 py-0.5 rounded bg-amber-100 text-amber-900 font-bold border border-amber-200">
+                  {isLoadingNumber ? '...' : quotationNumber || 'NEW'}
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Draft a quotation with live pricing, purity calculation, and GST breakdown
+              </p>
             </div>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Draft a quotation with live pricing, purity calculation, and GST breakdown
-            </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="text-muted-foreground hover:text-foreground text-lg leading-none p-1 rounded-md hover:bg-accent"
+            className="text-slate-400 hover:text-slate-700 text-lg leading-none p-1 cursor-pointer"
           >
             ✕
           </button>
         </div>
 
         {/* Content Body */}
-        <div className="p-6 overflow-y-auto flex-1 space-y-5">
+        <div className="p-5 overflow-y-auto flex-1 space-y-4 bg-slate-50">
           {errorMessage && (
-            <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 dark:bg-rose-950/40 dark:border-rose-800 dark:text-rose-300 rounded-lg text-xs flex justify-between items-center">
-              <span>{errorMessage}</span>
-              <button type="button" onClick={() => setErrorMessage(null)} className="text-rose-600 hover:text-rose-800 font-bold">
+            <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-lg text-xs font-semibold flex justify-between items-center shadow-2xs">
+              <span>⚠️ {errorMessage}</span>
+              <button type="button" onClick={() => setErrorMessage(null)} className="text-rose-600 hover:text-rose-800 font-bold cursor-pointer">
                 ✕
               </button>
             </div>
           )}
 
           {/* Customer & Quotation Header Row */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 rounded-xl border border-border bg-card">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3 p-3.5 rounded-xl border border-slate-200 bg-white shadow-2xs">
             {/* Customer Selector */}
             <div className="md:col-span-2">
-              <label className="block text-xs font-semibold text-foreground mb-1">
+              <label className="block text-xs font-bold text-slate-700 mb-1">
                 Customer <span className="text-rose-500">*</span>
               </label>
               <CustomerSelector
@@ -381,47 +384,46 @@ export const NewQuotationModal: React.FC<NewQuotationModalProps> = ({
 
             {/* Quotation Date */}
             <div>
-              <label className="block text-xs font-semibold text-foreground mb-1">
+              <label className="block text-xs font-bold text-slate-700 mb-1">
                 Quotation Date
               </label>
               <input
                 type="date"
                 value={quotationDate}
                 onChange={(e) => setQuotationDate(e.target.value)}
-                className="w-full h-9 px-3 text-xs bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full h-8 px-2.5 text-xs bg-slate-50 hover:bg-white focus:bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-amber-500 text-slate-800"
               />
             </div>
 
             {/* Valid Until */}
             <div>
-              <label className="block text-xs font-semibold text-foreground mb-1">
+              <label className="block text-xs font-bold text-slate-700 mb-1">
                 Valid Until
               </label>
               <input
                 type="date"
                 value={validUntil}
                 onChange={(e) => setValidUntil(e.target.value)}
-                className="w-full h-9 px-3 text-xs bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full h-8 px-2.5 text-xs bg-slate-50 hover:bg-white focus:bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-amber-500 text-slate-800"
               />
             </div>
 
             {/* Metal Type & Default Rate */}
-            <div className="md:col-span-2 flex gap-4 items-center">
+            <div className="md:col-span-2 flex gap-3 items-center">
               <div>
-                <label className="block text-xs font-semibold text-foreground mb-1">
+                <label className="block text-xs font-bold text-slate-700 mb-1">
                   Metal Type
                 </label>
-                <div className="flex gap-2">
+                <div className="flex gap-1.5">
                   {['Gold', 'Silver'].map((mt) => (
                     <button
                       key={mt}
                       type="button"
                       onClick={() => setMetalType(mt)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-                        metalType === mt
-                          ? 'border-primary bg-primary/10 text-primary font-semibold'
-                          : 'border-border hover:bg-accent text-muted-foreground'
-                      }`}
+                      className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${metalType === mt
+                          ? 'bg-amber-500 !text-white shadow-2xs'
+                          : 'bg-slate-100 text-slate-600 hover:text-slate-900'
+                        }`}
                     >
                       {mt}
                     </button>
@@ -430,7 +432,7 @@ export const NewQuotationModal: React.FC<NewQuotationModalProps> = ({
               </div>
 
               <div className="flex-1">
-                <label className="block text-xs font-semibold text-foreground mb-1">
+                <label className="block text-xs font-bold text-slate-700 mb-1">
                   Default Rate (₹/g)
                 </label>
                 <input
@@ -438,31 +440,31 @@ export const NewQuotationModal: React.FC<NewQuotationModalProps> = ({
                   step="any"
                   value={currentGoldRate || ''}
                   onChange={(e) => setCurrentGoldRate(Number(e.target.value) || 0)}
-                  placeholder="e.g. 7200"
-                  className="w-full h-9 px-3 text-xs font-mono bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  placeholder="e.g. 7250"
+                  className="w-full h-8 px-2.5 text-xs font-mono font-bold bg-slate-50 hover:bg-white focus:bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-amber-500 text-slate-900"
                 />
               </div>
             </div>
 
             {/* Notes */}
             <div className="md:col-span-2">
-              <label className="block text-xs font-semibold text-foreground mb-1">
+              <label className="block text-xs font-bold text-slate-700 mb-1">
                 Quotation Notes / Terms
               </label>
               <input
                 type="text"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="e.g. Rate valid for 7 days, 50% advance required for custom work"
-                className="w-full h-9 px-3 text-xs bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                placeholder="e.g. Rate valid for 3 days, 50% advance required"
+                className="w-full h-8 px-2.5 text-xs bg-slate-50 hover:bg-white focus:bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-amber-500 text-slate-800"
               />
             </div>
           </div>
 
           {/* Item Entry Section */}
-          <div className="space-y-3">
+          <div className="space-y-2.5">
             <div className="flex items-center justify-between flex-wrap gap-2">
-              <h3 className="text-sm font-semibold tracking-wide text-foreground">
+              <h3 className="text-xs font-bold tracking-wider uppercase text-slate-700">
                 Quotation Items ({items.length})
               </h3>
               <div className="flex items-center gap-2">
@@ -472,12 +474,12 @@ export const NewQuotationModal: React.FC<NewQuotationModalProps> = ({
                     type="text"
                     value={barcodeInput}
                     onChange={(e) => setBarcodeInput(e.target.value)}
-                    placeholder="Scan Barcode / SKU..."
-                    className="h-8 px-2.5 text-xs font-mono bg-background border border-input rounded-lg w-44 focus:outline-none focus:ring-2 focus:ring-primary"
+                    placeholder="Scan Tag / Barcode..."
+                    className="h-8 px-2.5 text-xs font-mono bg-slate-50 border border-slate-200 rounded-lg w-40 focus:outline-none focus:border-amber-500 text-slate-800"
                   />
                   <button
                     type="submit"
-                    className="h-8 px-3 bg-secondary text-secondary-foreground text-xs font-medium rounded-lg hover:bg-secondary/80 transition-colors"
+                    className="h-8 px-3 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-lg transition-colors cursor-pointer"
                   >
                     Scan
                   </button>
@@ -487,21 +489,22 @@ export const NewQuotationModal: React.FC<NewQuotationModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsItemSearchOpen(true)}
-                  className="h-8 px-3 bg-primary text-primary-foreground text-xs font-medium rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-1.5"
+                  className="h-8 px-3.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 !text-white text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                  style={{ color: '#ffffff' }}
                 >
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
-                  Search Catalog
+                  <span className="!text-white font-bold" style={{ color: '#ffffff' }}>Search Catalog</span>
                 </button>
               </div>
             </div>
 
             {/* Items Table */}
-            <div className="overflow-x-auto rounded-xl border border-border">
+            <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-2xs">
               <table className="w-full border-collapse text-left text-xs">
                 <thead>
-                  <tr className="bg-muted/50 border-b border-border text-muted-foreground font-medium">
+                  <tr className="bg-slate-100/80 border-b border-slate-200 text-slate-700 font-extrabold uppercase text-[11px] tracking-tight">
                     <th className="p-2.5 text-center w-8">#</th>
                     <th className="p-2.5 min-w-[140px]">Item</th>
                     <th className="p-2.5 text-center w-16">Pcs</th>
@@ -516,27 +519,27 @@ export const NewQuotationModal: React.FC<NewQuotationModalProps> = ({
                     <th className="p-2.5 text-center w-10"></th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border">
+                <tbody className="divide-y divide-slate-100">
                   {items.length === 0 ? (
                     <tr>
-                      <td colSpan={12} className="p-8 text-center text-muted-foreground italic">
-                        No items added yet. Click &quot;Search Catalog&quot; or scan a barcode to add quotation lines.
+                      <td colSpan={12} className="p-8 text-center text-slate-500 font-medium">
+                        No items added yet. Click &quot;Search Catalog&quot; or scan a barcode tag to add estimate lines.
                       </td>
                     </tr>
                   ) : (
                     items.map((it, idx) => (
-                      <tr key={it.tempId} className="hover:bg-accent/30 transition-colors">
-                        <td className="p-2.5 text-center font-mono text-muted-foreground">{idx + 1}</td>
+                      <tr key={it.tempId} className="hover:bg-amber-50/30 transition-colors">
+                        <td className="p-2.5 text-center font-mono text-slate-400 font-bold">{idx + 1}</td>
                         <td className="p-2.5">
                           <input
                             type="text"
                             value={it.description || it.itemName}
                             onChange={(e) => handleItemChange(it.tempId, 'description', e.target.value)}
-                            className="w-full h-7 px-1.5 text-xs bg-transparent border-b border-transparent hover:border-input focus:border-primary focus:outline-none font-semibold text-foreground"
+                            className="w-full h-7 px-1 text-xs bg-transparent border-b border-transparent hover:border-slate-300 focus:border-amber-500 focus:outline-none font-bold text-slate-900"
                           />
-                          <div className="text-[10px] text-muted-foreground flex gap-2 mt-0.5 px-1.5">
-                            <span>{it.metalType}</span>
-                            {it.barcode && <span>BC: {it.barcode}</span>}
+                          <div className="text-[10px] text-slate-500 flex gap-2 mt-0.5 px-1 font-medium">
+                            <span className="text-amber-800 font-semibold">{it.metalType}</span>
+                            {it.barcode && <span>🏷️ {it.barcode}</span>}
                           </div>
                         </td>
                         <td className="p-2.5 text-center">
@@ -545,7 +548,7 @@ export const NewQuotationModal: React.FC<NewQuotationModalProps> = ({
                             min="1"
                             value={it.pcs}
                             onChange={(e) => handleItemChange(it.tempId, 'pcs', Math.max(1, parseInt(e.target.value) || 1))}
-                            className="w-14 h-7 text-center text-xs font-mono bg-background border border-input rounded focus:outline-none focus:ring-1 focus:ring-primary"
+                            className="w-12 h-7 text-center text-xs font-mono font-bold bg-slate-50 border border-slate-200 rounded focus:bg-white focus:border-amber-500"
                           />
                         </td>
                         <td className="p-2.5 text-right">
@@ -555,7 +558,7 @@ export const NewQuotationModal: React.FC<NewQuotationModalProps> = ({
                             min="0.001"
                             value={it.grossWeight}
                             onChange={(e) => handleItemChange(it.tempId, 'grossWeight', parseFloat(e.target.value) || 0)}
-                            className="w-20 h-7 text-right text-xs font-mono bg-background border border-input rounded focus:outline-none focus:ring-1 focus:ring-primary"
+                            className="w-20 h-7 text-right px-1 text-xs font-mono font-bold bg-amber-50/50 border border-amber-300 rounded focus:bg-white focus:border-amber-500 text-slate-900"
                           />
                         </td>
                         <td className="p-2.5 text-right">
@@ -565,10 +568,10 @@ export const NewQuotationModal: React.FC<NewQuotationModalProps> = ({
                             min="0"
                             value={it.lessWeight}
                             onChange={(e) => handleItemChange(it.tempId, 'lessWeight', parseFloat(e.target.value) || 0)}
-                            className="w-16 h-7 text-right text-xs font-mono bg-background border border-input rounded focus:outline-none focus:ring-1 focus:ring-primary"
+                            className="w-14 h-7 text-right px-1 text-xs font-mono bg-slate-50 border border-slate-200 rounded focus:bg-white focus:border-amber-500 text-slate-600"
                           />
                         </td>
-                        <td className="p-2.5 text-right font-mono text-xs font-medium text-foreground">
+                        <td className="p-2.5 text-right font-mono text-xs font-extrabold text-slate-900">
                           {formatWeight(it.netWeight)}
                         </td>
                         <td className="p-2.5 text-center">
@@ -577,7 +580,7 @@ export const NewQuotationModal: React.FC<NewQuotationModalProps> = ({
                             step="0.1"
                             value={it.tunch}
                             onChange={(e) => handleItemChange(it.tempId, 'tunch', parseFloat(e.target.value) || 0)}
-                            className="w-16 h-7 text-center text-xs font-mono bg-background border border-input rounded focus:outline-none focus:ring-1 focus:ring-primary"
+                            className="w-14 h-7 text-center text-xs font-mono bg-slate-50 border border-slate-200 rounded focus:bg-white focus:border-amber-500"
                           />
                         </td>
                         <td className="p-2.5 text-center">
@@ -586,7 +589,7 @@ export const NewQuotationModal: React.FC<NewQuotationModalProps> = ({
                             step="0.1"
                             value={it.wastage}
                             onChange={(e) => handleItemChange(it.tempId, 'wastage', parseFloat(e.target.value) || 0)}
-                            className="w-14 h-7 text-center text-xs font-mono bg-background border border-input rounded focus:outline-none focus:ring-1 focus:ring-primary"
+                            className="w-12 h-7 text-center text-xs font-mono bg-slate-50 border border-slate-200 rounded focus:bg-white focus:border-amber-500"
                           />
                         </td>
                         <td className="p-2.5 text-right">
@@ -596,7 +599,7 @@ export const NewQuotationModal: React.FC<NewQuotationModalProps> = ({
                             value={it.goldRate || ''}
                             onChange={(e) => handleItemChange(it.tempId, 'goldRate', parseFloat(e.target.value) || 0)}
                             placeholder="Rate"
-                            className="w-20 h-7 text-right text-xs font-mono bg-background border border-input rounded focus:outline-none focus:ring-1 focus:ring-primary"
+                            className="w-20 h-7 text-right px-1 text-xs font-mono font-medium bg-slate-50 border border-slate-200 rounded focus:bg-white focus:border-amber-500 text-slate-800"
                           />
                         </td>
                         <td className="p-2.5 text-right">
@@ -605,24 +608,24 @@ export const NewQuotationModal: React.FC<NewQuotationModalProps> = ({
                             step="1"
                             value={it.labourRate}
                             onChange={(e) => handleItemChange(it.tempId, 'labourRate', parseFloat(e.target.value) || 0)}
-                            className="w-20 h-7 text-right text-xs font-mono bg-background border border-input rounded focus:outline-none focus:ring-1 focus:ring-primary"
+                            className="w-16 h-7 text-right px-1 text-xs font-mono font-medium bg-slate-50 border border-slate-200 rounded focus:bg-white focus:border-amber-500 text-slate-800"
                           />
-                          <div className="text-[10px] text-muted-foreground text-right mt-0.5 font-mono">
-                            {formatCurrency(it.makingCharges, false)}
+                          <div className="text-[10px] text-slate-500 text-right mt-0.5 font-mono font-bold">
+                            ₹{it.makingCharges.toLocaleString()}
                           </div>
                         </td>
-                        <td className="p-2.5 text-right font-mono font-semibold text-foreground">
+                        <td className="p-2.5 text-right font-mono font-extrabold text-amber-900 text-xs">
                           {it.isCalculating ? (
-                            <span className="text-muted-foreground animate-pulse">...</span>
+                            <span className="text-slate-400 animate-pulse">...</span>
                           ) : (
-                            formatCurrency(it.lineTotal, false)
+                            `₹${it.lineTotal.toLocaleString()}`
                           )}
                         </td>
                         <td className="p-2.5 text-center">
                           <button
                             type="button"
                             onClick={() => handleRemoveItem(it.tempId)}
-                            className="text-muted-foreground hover:text-rose-600 transition-colors p-1"
+                            className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded p-1 cursor-pointer transition-colors"
                             title="Remove Line"
                           >
                             ✕
@@ -637,60 +640,60 @@ export const NewQuotationModal: React.FC<NewQuotationModalProps> = ({
           </div>
 
           {/* Totals Summary Footer Card */}
-          <div className="p-4 rounded-xl border border-border bg-card grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
+          <div className="p-4 rounded-xl border border-slate-200 bg-white grid grid-cols-1 md:grid-cols-4 gap-3 text-xs shadow-2xs">
             <div>
-              <span className="text-muted-foreground block text-[11px] uppercase tracking-wider">
+              <span className="text-slate-500 block text-[10px] font-bold uppercase tracking-wider">
                 Total Pieces & Weights
               </span>
-              <p className="font-semibold text-sm mt-1 text-foreground">
+              <p className="font-extrabold text-xs mt-1 text-slate-900">
                 {totals.totalPcs} pcs | {formatWeight(totals.totalGrossWeight)}g Gross
               </p>
-              <p className="text-xs text-muted-foreground mt-0.5">
+              <p className="text-[11px] text-slate-500 mt-0.5 font-medium">
                 Net Wt: {formatWeight(totals.totalNetWeight)}g
               </p>
             </div>
 
             <div>
-              <span className="text-muted-foreground block text-[11px] uppercase tracking-wider">
+              <span className="text-slate-500 block text-[10px] font-bold uppercase tracking-wider">
                 Metal & Labour Breakdown
               </span>
-              <p className="font-mono text-xs mt-1 text-foreground">
-                Metal: {formatCurrency(totals.metalValue)}
+              <p className="font-mono text-xs mt-1 text-slate-900 font-bold">
+                Metal: ₹{totals.metalValue.toLocaleString()}
               </p>
-              <p className="font-mono text-xs text-muted-foreground">
-                Making: {formatCurrency(totals.totalMaking)}
+              <p className="font-mono text-[11px] text-slate-500 font-medium">
+                Making: ₹{totals.totalMaking.toLocaleString()}
               </p>
             </div>
 
             <div>
-              <span className="text-muted-foreground block text-[11px] uppercase tracking-wider">
+              <span className="text-slate-500 block text-[10px] font-bold uppercase tracking-wider">
                 Taxable & GST
               </span>
-              <p className="font-mono text-xs mt-1 text-foreground">
-                Taxable: {formatCurrency(totals.taxableAmount)}
+              <p className="font-mono text-xs mt-1 text-slate-900 font-bold">
+                Taxable: ₹{totals.taxableAmount.toLocaleString()}
               </p>
-              <p className="font-mono text-xs text-muted-foreground">
-                GST (3%): {formatCurrency(totals.taxAmount)}
+              <p className="font-mono text-[11px] text-slate-500 font-medium">
+                GST (3%): ₹{totals.taxAmount.toLocaleString()}
               </p>
             </div>
 
-            <div className="text-right flex flex-col justify-center">
-              <span className="text-muted-foreground block text-[11px] uppercase tracking-wider">
+            <div className="text-right flex flex-col justify-center bg-amber-50 p-2.5 rounded-lg border border-amber-200">
+              <span className="text-amber-800 block text-[10px] font-extrabold uppercase tracking-wider">
                 ESTIMATED GRAND TOTAL
               </span>
-              <p className="text-xl font-bold text-primary font-mono mt-0.5">
-                {formatCurrency(Math.round(totals.grandTotal))}
+              <p className="text-lg font-black text-amber-900 font-mono mt-0.5">
+                ₹{Math.round(totals.grandTotal).toLocaleString()}
               </p>
             </div>
           </div>
         </div>
 
         {/* Modal Actions Footer */}
-        <div className="px-6 py-4 border-t border-border flex items-center justify-between bg-muted/20">
+        <div className="px-6 py-3 border-t border-slate-200 flex items-center justify-between bg-slate-50">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 bg-secondary text-secondary-foreground font-medium rounded-lg text-xs hover:bg-secondary/80 transition-colors"
+            className="px-4 py-2 bg-white border border-slate-300 text-slate-700 font-semibold rounded-lg text-xs hover:bg-slate-100 transition-colors cursor-pointer"
           >
             Cancel
           </button>
@@ -700,18 +703,16 @@ export const NewQuotationModal: React.FC<NewQuotationModalProps> = ({
               type="button"
               disabled={isSubmitting || items.length === 0 || !selectedCustomer}
               onClick={handleSubmit}
-              className="px-6 py-2 bg-primary text-primary-foreground font-semibold rounded-lg text-xs hover:bg-primary/90 transition-colors flex items-center gap-2 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 !text-white font-bold rounded-lg text-xs transition-all flex items-center gap-2 shadow-2xs disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              style={{ color: '#ffffff' }}
             >
               {isSubmitting ? (
                 <>
-                  <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                  </svg>
-                  Saving Quotation...
+                  <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span className="!text-white" style={{ color: '#ffffff' }}>Saving Quotation...</span>
                 </>
               ) : (
-                'Save & Create Quotation'
+                <span className="!text-white font-bold" style={{ color: '#ffffff' }}>Save & Create Quotation</span>
               )}
             </button>
           </div>

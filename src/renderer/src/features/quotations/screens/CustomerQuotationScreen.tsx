@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import type { QuotationRecord, QuotationStatus } from '../types'
 import { formatDate, formatCurrency, formatWeight } from '../../../utils/formatters'
 import { getFriendlyErrorMessage } from '../../../utils/getFriendlyErrorMessage'
-import { NewQuotationModal } from '../components/NewQuotationModal'
+import { CreateQuotationScreen } from './CreateQuotationScreen'
 import { QuotationDetailModal } from '../components/QuotationDetailModal'
 import { QuotationPrintView } from '../components/QuotationPrintView'
 import { StatusPill, MetalRatesStrip } from '../../../components/ui'
@@ -17,6 +17,7 @@ export interface CustomerQuotationScreenProps {
 }
 
 type TabFilter = 'ALL' | QuotationStatus
+type ViewMode = 'list' | 'create'
 
 const STATUS_BADGE_MAP: Record<QuotationStatus, { label: string; className: string }> = {
   DRAFT: { label: 'Draft', className: 'bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200' },
@@ -32,6 +33,9 @@ export const CustomerQuotationScreen: React.FC<CustomerQuotationScreenProps> = (
   onClose,
   onNavigate
 }) => {
+  // Navigation / View State ('list' = Quotation Register, 'create' = Full Page Create Desk)
+  const [viewMode, setViewMode] = useState<ViewMode>('list')
+
   // Quotations List State
   const [quotations, setQuotations] = useState<QuotationRecord[]>([])
   const [isLoading, setIsLoading] = useState<boolean>(true)
@@ -45,7 +49,6 @@ export const CustomerQuotationScreen: React.FC<CustomerQuotationScreenProps> = (
   const [endDate, setEndDate] = useState<string>('')
 
   // Modal Views State
-  const [isNewModalOpen, setIsNewModalOpen] = useState<boolean>(false)
   const [selectedQuotationId, setSelectedQuotationId] = useState<string | null>(null)
   const [printQuotation, setPrintQuotation] = useState<QuotationRecord | null>(null)
 
@@ -119,56 +122,76 @@ export const CustomerQuotationScreen: React.FC<CustomerQuotationScreenProps> = (
     }
   }
 
+  // Render Full Page Create Quotation Desk
+  if (viewMode === 'create') {
+    return (
+      <CreateQuotationScreen
+        onBack={() => setViewMode('list')}
+        onSuccess={(newQuote) => {
+          setToastMessage(`✓ Quotation #${newQuote.quotationNumber} created and saved successfully!`)
+          setViewMode('list')
+          void loadQuotations()
+          setSelectedQuotationId(newQuote.id)
+        }}
+      />
+    )
+  }
+
   return (
-    <div className="flex flex-col h-full bg-background text-foreground overflow-hidden">
+    <div className="flex flex-col h-full bg-[var(--color-background-app,#f8fafc)] text-slate-900 overflow-hidden select-none font-sans">
       {/* Top Banner & Header */}
-      <div className="px-6 py-4 border-b border-border bg-card/60 flex items-center justify-between flex-wrap gap-4">
+      <div className="px-6 py-3 border-b border-slate-200 bg-white flex items-center justify-between flex-wrap gap-3 shadow-2xs shrink-0">
         <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-xl font-bold tracking-tight">Customer Quotation / Estimate Desk</h1>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
-              Phase 22
-            </span>
+          <div className="flex items-center gap-2.5">
+            <span className="text-xl">📋</span>
+            <h1 className="text-base font-bold text-slate-900 tracking-tight flex items-center gap-2">
+              <span>Customer Quotation / Estimate Desk</span>
+              <span className="text-[10px] px-2 py-0.5 rounded bg-amber-100 text-amber-900 font-mono font-bold">
+                ESTIMATES
+              </span>
+            </h1>
           </div>
-          <p className="text-xs text-muted-foreground mt-0.5">
+          <p className="text-xs text-slate-500 font-medium mt-0.5">
             Create customer quotations with live pricing, manage estimates, and convert directly to confirmed orders
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
           <button
             type="button"
             onClick={() => loadQuotations()}
             disabled={isLoading}
-            className="p-2 border border-border rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+            className="h-8 px-3 border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-semibold shadow-2xs transition-colors cursor-pointer flex items-center gap-1.5"
             title="Refresh Quotations"
           >
             <svg
-              className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`}
+              className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin text-slate-500' : 'text-slate-500'}`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
+            <span>Reload</span>
           </button>
 
           <button
             type="button"
-            onClick={() => setIsNewModalOpen(true)}
-            className="px-4 py-2 bg-primary text-primary-foreground font-semibold rounded-lg text-xs hover:bg-primary/90 transition-colors flex items-center gap-2 shadow-sm"
+            onClick={() => setViewMode('create')}
+            className="h-8 px-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 !text-white font-bold rounded-lg text-xs flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer"
+            style={{ color: '#ffffff' }}
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
             </svg>
-            New Quotation / Estimate
+            <span className="!text-white font-bold" style={{ color: '#ffffff' }}>New Quotation / Estimate</span>
           </button>
 
           {onClose && (
             <button
               type="button"
               onClick={onClose}
-              className="p-2 border border-border rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+              className="h-8 w-8 inline-flex items-center justify-center text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg border border-slate-200 transition-colors cursor-pointer"
               title="Close Screen"
             >
               ✕
@@ -178,12 +201,12 @@ export const CustomerQuotationScreen: React.FC<CustomerQuotationScreenProps> = (
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-5">
+      <div className="flex-1 overflow-y-auto p-4 space-y-3.5">
         {/* Toast / Notification Banner */}
         {toastMessage && (
-          <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-300 rounded-lg text-xs font-medium flex justify-between items-center animate-fade-in">
+          <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-semibold flex justify-between items-center shadow-2xs">
             <span>{toastMessage}</span>
-            <button type="button" onClick={() => setToastMessage(null)} className="text-emerald-600 hover:text-emerald-800 font-bold">
+            <button type="button" onClick={() => setToastMessage(null)} className="text-emerald-700 hover:bg-emerald-100 px-2 py-0.5 rounded font-bold cursor-pointer">
               ✕
             </button>
           </div>
@@ -191,9 +214,9 @@ export const CustomerQuotationScreen: React.FC<CustomerQuotationScreenProps> = (
 
         {/* Error Alert */}
         {error && (
-          <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 dark:bg-rose-950/40 dark:border-rose-800 dark:text-rose-300 rounded-lg text-xs flex justify-between items-center">
-            <span>{error}</span>
-            <button type="button" onClick={() => setError(null)} className="text-rose-600 hover:text-rose-800 font-bold">
+          <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs font-semibold flex justify-between items-center shadow-2xs">
+            <span>⚠️ {error}</span>
+            <button type="button" onClick={() => setError(null)} className="text-rose-700 hover:bg-rose-100 px-2 py-0.5 rounded font-bold cursor-pointer">
               ✕
             </button>
           </div>
@@ -203,50 +226,50 @@ export const CustomerQuotationScreen: React.FC<CustomerQuotationScreenProps> = (
         <MetalRatesStrip />
 
         {/* Metric KPI Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="p-4 rounded-xl border border-border bg-card shadow-sm">
-            <span className="text-xs font-medium text-muted-foreground">Total Quotations</span>
-            <div className="mt-2 flex items-baseline justify-between">
-              <span className="text-2xl font-bold font-mono text-foreground">{metrics.total}</span>
-              <span className="text-xs text-muted-foreground">All time</span>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="p-3.5 rounded-xl border border-slate-200 bg-white shadow-2xs">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total Quotations</span>
+            <div className="mt-1 flex items-baseline justify-between">
+              <span className="text-xl font-extrabold font-mono text-slate-900">{metrics.total}</span>
+              <span className="text-[11px] text-slate-500 font-medium">All time</span>
             </div>
           </div>
 
-          <div className="p-4 rounded-xl border border-border bg-card shadow-sm">
-            <span className="text-xs font-medium text-muted-foreground">Active Estimates</span>
-            <div className="mt-2 flex items-baseline justify-between">
-              <span className="text-2xl font-bold font-mono text-blue-600 dark:text-blue-400">
+          <div className="p-3.5 rounded-xl border border-slate-200 bg-white shadow-2xs">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Active Estimates</span>
+            <div className="mt-1 flex items-baseline justify-between">
+              <span className="text-xl font-extrabold font-mono text-blue-700">
                 {metrics.active}
               </span>
-              <span className="text-xs text-muted-foreground">Draft/Sent/Accepted</span>
+              <span className="text-[11px] text-slate-500 font-medium">Draft/Sent/Accepted</span>
             </div>
           </div>
 
-          <div className="p-4 rounded-xl border border-border bg-card shadow-sm">
-            <span className="text-xs font-medium text-muted-foreground">Converted to Orders</span>
-            <div className="mt-2 flex items-baseline justify-between">
-              <span className="text-2xl font-bold font-mono text-purple-600 dark:text-purple-400">
+          <div className="p-3.5 rounded-xl border border-slate-200 bg-white shadow-2xs">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Converted to Orders</span>
+            <div className="mt-1 flex items-baseline justify-between">
+              <span className="text-xl font-extrabold font-mono text-purple-700">
                 {metrics.converted}
               </span>
-              <span className="text-xs text-muted-foreground">Orders generated</span>
+              <span className="text-[11px] text-slate-500 font-medium">Orders generated</span>
             </div>
           </div>
 
-          <div className="p-4 rounded-xl border border-border bg-card shadow-sm">
-            <span className="text-xs font-medium text-muted-foreground">Total Estimated Value</span>
-            <div className="mt-2 flex items-baseline justify-between">
-              <span className="text-2xl font-bold font-mono text-primary">
+          <div className="p-3.5 rounded-xl border border-amber-300 bg-amber-50/70 shadow-2xs">
+            <span className="text-[11px] font-bold text-amber-800 uppercase tracking-wider">Total Estimated Value</span>
+            <div className="mt-1 flex items-baseline justify-between">
+              <span className="text-xl font-black font-mono text-amber-900">
                 {formatCurrency(metrics.totalValue)}
               </span>
-              <span className="text-xs text-muted-foreground">Pipeline value</span>
+              <span className="text-[11px] text-amber-700 font-semibold">Pipeline value</span>
             </div>
           </div>
         </div>
 
         {/* Filter Controls & Tabs */}
-        <div className="space-y-3">
+        <div className="space-y-2.5">
           {/* Status Tabs */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-border text-xs">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
             {(
               [
                 'ALL',
@@ -263,11 +286,10 @@ export const CustomerQuotationScreen: React.FC<CustomerQuotationScreenProps> = (
                 key={tab}
                 type="button"
                 onClick={() => setActiveTab(tab)}
-                className={`px-3 py-1.5 rounded-lg font-medium whitespace-nowrap transition-colors ${
-                  activeTab === tab
-                    ? 'bg-primary text-primary-foreground font-semibold shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-                }`}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${activeTab === tab
+                    ? 'bg-amber-500 !text-white shadow-2xs font-bold'
+                    : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                  }`}
               >
                 {tab === 'ALL' ? 'All Quotations' : STATUS_BADGE_MAP[tab]?.label || tab}
               </button>
@@ -275,7 +297,7 @@ export const CustomerQuotationScreen: React.FC<CustomerQuotationScreenProps> = (
           </div>
 
           {/* Search and Date Filter Row */}
-          <div className="flex flex-wrap items-center justify-between gap-3 bg-card p-3 rounded-xl border border-border">
+          <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-xl border border-slate-200 shadow-2xs">
             <div className="flex-1 min-w-[240px]">
               <div className="relative">
                 <input
@@ -283,33 +305,28 @@ export const CustomerQuotationScreen: React.FC<CustomerQuotationScreenProps> = (
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search by Quotation #, Customer Name, Account, Mobile..."
-                  className="w-full h-9 pl-9 pr-3 text-xs bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full h-8 pl-8 pr-3 text-xs bg-slate-50 hover:bg-white focus:bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 text-slate-800 transition-all font-medium"
                 />
-                <svg
-                  className="w-4 h-4 text-muted-foreground absolute left-3 top-2.5 pointer-events-none"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
+                <div className="absolute left-2.5 top-2 text-slate-400 text-xs">
+                  🔍
+                </div>
               </div>
             </div>
 
             <div className="flex items-center gap-2 text-xs">
-              <span className="text-muted-foreground">From:</span>
+              <span className="text-slate-500 font-semibold text-[11px]">From:</span>
               <input
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="h-9 px-2.5 bg-background border border-input rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                className="h-8 px-2.5 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-amber-500 text-slate-800"
               />
-              <span className="text-muted-foreground">To:</span>
+              <span className="text-slate-500 font-semibold text-[11px]">To:</span>
               <input
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="h-9 px-2.5 bg-background border border-input rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                className="h-8 px-2.5 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-amber-500 text-slate-800"
               />
               {(startDate || endDate || searchQuery) && (
                 <button
@@ -319,7 +336,7 @@ export const CustomerQuotationScreen: React.FC<CustomerQuotationScreenProps> = (
                     setEndDate('')
                     setSearchQuery('')
                   }}
-                  className="h-9 px-2.5 text-xs text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg border border-border transition-colors"
+                  className="h-8 px-2.5 text-xs text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg border border-slate-200 transition-colors font-semibold cursor-pointer"
                 >
                   Reset
                 </button>
@@ -329,11 +346,11 @@ export const CustomerQuotationScreen: React.FC<CustomerQuotationScreenProps> = (
         </div>
 
         {/* Quotation Register Table */}
-        <div className="rounded-xl border border-border overflow-hidden bg-card shadow-sm">
+        <div className="rounded-xl border border-slate-200 overflow-hidden bg-white shadow-2xs">
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-left text-xs">
               <thead>
-                <tr className="bg-muted/50 border-b border-border text-muted-foreground font-medium">
+                <tr className="bg-slate-100/80 border-b border-slate-200 text-slate-700 font-extrabold uppercase text-[11px] tracking-tight">
                   <th className="p-3">Quotation #</th>
                   <th className="p-3">Date</th>
                   <th className="p-3">Customer / Party</th>
@@ -346,30 +363,31 @@ export const CustomerQuotationScreen: React.FC<CustomerQuotationScreenProps> = (
                   <th className="p-3 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border">
+              <tbody className="divide-y divide-slate-100">
                 {isLoading ? (
                   <tr>
-                    <td colSpan={10} className="p-12 text-center text-muted-foreground animate-pulse">
+                    <td colSpan={10} className="p-12 text-center text-slate-400 animate-pulse font-semibold">
                       Loading quotation register...
                     </td>
                   </tr>
                 ) : quotations.length === 0 ? (
                   <tr>
-                    <td colSpan={10} className="p-12 text-center text-muted-foreground">
+                    <td colSpan={10} className="p-12 text-center text-slate-500">
                       <div className="max-w-sm mx-auto space-y-2">
-                        <p className="text-sm font-semibold text-foreground">No quotations found</p>
-                        <p className="text-xs">
+                        <p className="text-sm font-bold text-slate-900">No quotations found</p>
+                        <p className="text-xs text-slate-500">
                           {searchQuery || activeTab !== 'ALL'
                             ? 'No records match your active search and filter criteria.'
-                            : 'Create your first customer estimate by clicking "+ New Quotation".'}
+                            : 'Create your first customer estimate by clicking "+ New Quotation / Estimate".'}
                         </p>
                         {!searchQuery && activeTab === 'ALL' && (
                           <button
                             type="button"
-                            onClick={() => setIsNewModalOpen(true)}
-                            className="mt-2 px-4 py-2 bg-primary text-primary-foreground font-medium rounded-lg text-xs"
+                            onClick={() => setViewMode('create')}
+                            className="mt-2 px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 !text-white font-bold rounded-lg text-xs shadow-2xs cursor-pointer"
+                            style={{ color: '#ffffff' }}
                           >
-                            + New Quotation
+                            + New Quotation / Estimate
                           </button>
                         )}
                       </div>
@@ -377,51 +395,53 @@ export const CustomerQuotationScreen: React.FC<CustomerQuotationScreenProps> = (
                   </tr>
                 ) : (
                   quotations.map((q) => (
-                    <tr key={q.id} className="hover:bg-accent/40 transition-colors">
+                    <tr key={q.id} className="hover:bg-amber-50/30 transition-colors">
                       {/* Quotation Number */}
                       <td className="p-3">
                         <button
                           type="button"
                           onClick={() => setSelectedQuotationId(q.id)}
-                          className="font-mono font-bold text-primary hover:underline text-left"
+                          className="font-mono font-bold text-amber-700 hover:text-amber-900 hover:underline text-left cursor-pointer"
                         >
                           {q.quotationNumber}
                         </button>
-                        <div className="text-[10px] text-muted-foreground mt-0.5">{q.metalType}</div>
+                        <div className="text-[10px] text-slate-500 font-semibold mt-0.5">{q.metalType}</div>
                       </td>
 
                       {/* Date */}
-                      <td className="p-3 font-mono text-foreground whitespace-nowrap">
+                      <td className="p-3 font-mono text-slate-800 whitespace-nowrap font-medium">
                         {formatDate(q.quotationDate)}
                       </td>
 
                       {/* Customer */}
                       <td className="p-3">
-                        <div className="font-semibold text-foreground">
+                        <div className="font-bold text-slate-900">
                           {q.customerName || q.accountName || 'Counter Customer'}
                         </div>
                         {q.customerCode && (
-                          <div className="text-[10px] text-muted-foreground font-mono">
+                          <div className="text-[10px] text-slate-500 font-mono font-semibold">
                             {q.customerCode}
                           </div>
                         )}
                       </td>
 
                       {/* Validity */}
-                      <td className="p-3 text-muted-foreground whitespace-nowrap">
-                        {formatDate(q.validUntil)}
+                      <td className="p-3 whitespace-nowrap">
+                        <span className="font-mono text-xs text-slate-700 font-medium">
+                          {formatDate(q.validUntil)}
+                        </span>
                       </td>
 
                       {/* Items */}
-                      <td className="p-3 text-center font-mono">{q.totalPcs}</td>
+                      <td className="p-3 text-center font-mono font-bold text-slate-800">{q.totalPcs}</td>
 
                       {/* Gross Wt */}
-                      <td className="p-3 text-right font-mono text-foreground">
+                      <td className="p-3 text-right font-mono text-slate-900 font-bold">
                         {formatWeight(q.totalGrossWeight)}
                       </td>
 
                       {/* Grand Total */}
-                      <td className="p-3 text-right font-mono font-bold text-foreground">
+                      <td className="p-3 text-right font-mono font-extrabold text-amber-900 text-xs">
                         {formatCurrency(q.roundedTotal || q.grandTotal)}
                       </td>
 
@@ -439,18 +459,18 @@ export const CustomerQuotationScreen: React.FC<CustomerQuotationScreenProps> = (
                               onClick={() =>
                                 onNavigate('customer-orders', 'Customer Custom Orders Desk', 'transaction')
                               }
-                              className="text-purple-600 dark:text-purple-400 font-medium hover:underline cursor-pointer"
+                              className="text-purple-700 font-bold hover:underline cursor-pointer bg-purple-50 px-2 py-0.5 rounded border border-purple-200"
                               title="View in Customer Orders Desk"
                             >
                               Converted ↗
                             </button>
                           ) : (
-                            <span className="text-purple-600 dark:text-purple-400 font-medium">
+                            <span className="text-purple-700 font-bold bg-purple-50 px-2 py-0.5 rounded border border-purple-200">
                               Converted
                             </span>
                           )
                         ) : (
-                          <span className="text-muted-foreground">-</span>
+                          <span className="text-slate-400 font-medium">-</span>
                         )}
                       </td>
 
@@ -461,7 +481,7 @@ export const CustomerQuotationScreen: React.FC<CustomerQuotationScreenProps> = (
                           <button
                             type="button"
                             onClick={() => setSelectedQuotationId(q.id)}
-                            className="px-2.5 py-1 text-xs border border-border rounded-md hover:bg-accent text-foreground transition-colors"
+                            className="px-2.5 py-1 text-xs border border-slate-300 rounded-md hover:bg-slate-100 text-slate-700 font-semibold transition-colors cursor-pointer"
                           >
                             View
                           </button>
@@ -470,7 +490,7 @@ export const CustomerQuotationScreen: React.FC<CustomerQuotationScreenProps> = (
                           <button
                             type="button"
                             onClick={() => setPrintQuotation(q)}
-                            className="p-1 border border-border rounded-md hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+                            className="p-1 border border-slate-300 rounded-md hover:bg-emerald-50 hover:text-emerald-700 text-slate-600 transition-colors cursor-pointer"
                             title="Print Voucher"
                           >
                             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -483,7 +503,7 @@ export const CustomerQuotationScreen: React.FC<CustomerQuotationScreenProps> = (
                             <button
                               type="button"
                               onClick={() => handleQuickConvert(q)}
-                              className="px-2.5 py-1 text-xs bg-emerald-600/10 text-emerald-700 dark:text-emerald-400 border border-emerald-600/20 hover:bg-emerald-600/20 rounded-md transition-colors font-medium"
+                              className="px-2.5 py-1 text-xs bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 rounded-md transition-colors font-bold cursor-pointer"
                               title="Convert Quotation to Confirmed Order"
                             >
                               Convert
@@ -499,17 +519,6 @@ export const CustomerQuotationScreen: React.FC<CustomerQuotationScreenProps> = (
           </div>
         </div>
       </div>
-
-      {/* New Quotation Modal */}
-      <NewQuotationModal
-        isOpen={isNewModalOpen}
-        onClose={() => setIsNewModalOpen(false)}
-        onSuccess={(newQuote) => {
-          setToastMessage(`✓ Quotation #${newQuote.quotationNumber} saved successfully!`)
-          void loadQuotations()
-          setSelectedQuotationId(newQuote.id)
-        }}
-      />
 
       {/* Quotation Detail Modal */}
       {selectedQuotationId && (
@@ -535,4 +544,4 @@ export const CustomerQuotationScreen: React.FC<CustomerQuotationScreenProps> = (
   )
 }
 
-export default CustomerQuotationScreen
+        export default CustomerQuotationScreen

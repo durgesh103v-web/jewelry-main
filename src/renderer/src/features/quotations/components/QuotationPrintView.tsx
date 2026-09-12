@@ -31,24 +31,32 @@ export const QuotationPrintView: React.FC<QuotationPrintViewProps> = ({ quotatio
   const items = quotation.items || []
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/70 flex justify-center p-4 print:p-0 print:static print:bg-white">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/80 backdrop-blur-sm flex justify-center p-4 print:p-0 print:static print:bg-white">
       {/* Container / Modal Wrapper */}
-      <div className="bg-background text-foreground max-w-4xl w-full my-6 p-8 rounded-xl shadow-2xl border border-border print:border-none print:shadow-none print:p-0 print:my-0 print:max-w-none print:w-full">
+      <div className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 max-w-4xl w-full my-6 p-8 rounded-2xl shadow-2xl border border-amber-200/60 dark:border-amber-900/40 print:border-none print:shadow-none print:p-0 print:my-0 print:max-w-none print:w-full">
         {/* Print Header Bar (Screen Only) */}
-        <div className="flex items-center justify-between pb-6 border-b border-border print:hidden">
-          <div>
-            <h2 className="text-xl font-bold">Quotation Print Preview</h2>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Estimate Voucher #{quotation.quotationNumber}
-            </p>
+        <div className="flex items-center justify-between pb-6 border-b border-amber-100 dark:border-slate-800 print:hidden">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-600 to-amber-400 flex items-center justify-center text-white font-bold shadow-md shadow-amber-500/20">
+              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white">Quotation Print Preview</h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Official Estimate Slip #{quotation.quotationNumber}
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => window.print()}
-              className="px-4 py-2 bg-primary text-primary-foreground font-medium rounded-lg text-sm hover:bg-primary/90 transition-colors flex items-center gap-1.5 shadow-sm"
+              style={{ color: '#ffffff' }}
+              className="px-5 py-2.5 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 !text-white font-bold rounded-xl text-xs transition-all flex items-center gap-2 shadow-md shadow-amber-500/20 cursor-pointer"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
               </svg>
               Print Quotation
@@ -56,7 +64,7 @@ export const QuotationPrintView: React.FC<QuotationPrintViewProps> = ({ quotatio
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 bg-secondary text-secondary-foreground font-medium rounded-lg text-sm hover:bg-secondary/80 transition-colors"
+              className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-xl text-xs transition-colors border border-slate-300 dark:border-slate-700 cursor-pointer"
             >
               Close
             </button>

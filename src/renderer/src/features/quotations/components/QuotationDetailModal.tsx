@@ -114,28 +114,29 @@ export const QuotationDetailModal: React.FC<QuotationDetailModalProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 flex items-center justify-center p-4">
-      <div className="bg-background text-foreground max-w-5xl w-full max-h-[90vh] flex flex-col rounded-xl shadow-2xl border border-border overflow-hidden">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+      <div className="bg-white text-slate-900 max-w-5xl w-full max-h-[90vh] flex flex-col rounded-xl shadow-2xl border border-slate-200 overflow-hidden">
         {/* Header Bar */}
-        <div className="px-6 py-4 border-b border-border flex items-center justify-between bg-muted/40">
+        <div className="px-6 py-3.5 border-b border-slate-200 flex items-center justify-between bg-white">
           <div className="flex items-center gap-3">
+            <span className="text-xl">📋</span>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-xl font-bold tracking-tight">
+                <h2 className="text-base font-bold text-slate-900">
                   Quotation #{quotation?.quotationNumber || '...'}
                 </h2>
                 {quotation && (
                   <span
-                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      STATUS_BADGE_MAP[quotation.status]?.className || 'bg-muted text-muted-foreground'
+                    className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold ${
+                      STATUS_BADGE_MAP[quotation.status]?.className || 'bg-slate-100 text-slate-700'
                     }`}
                   >
                     {STATUS_BADGE_MAP[quotation.status]?.label || quotation.status}
                   </span>
                 )}
               </div>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Detailed customer estimate breakdown and line-item specs
+              <p className="text-xs text-slate-500 mt-0.5">
+                Detailed customer estimate breakdown, metal purity rates, and line-item specs
               </p>
             </div>
           </div>
@@ -144,18 +145,18 @@ export const QuotationDetailModal: React.FC<QuotationDetailModalProps> = ({
               <button
                 type="button"
                 onClick={() => setShowPrintView(true)}
-                className="px-3 py-1.5 bg-secondary text-secondary-foreground text-xs font-medium rounded-lg hover:bg-secondary/80 transition-colors flex items-center gap-1.5"
+                className="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 border border-slate-300 shadow-2xs cursor-pointer"
               >
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3.5 h-3.5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                 </svg>
-                Print Voucher
+                Print Slip
               </button>
             )}
             <button
               type="button"
               onClick={onClose}
-              className="text-muted-foreground hover:text-foreground text-lg leading-none p-1 rounded-md hover:bg-accent"
+              className="text-slate-400 hover:text-slate-700 text-lg leading-none p-1 cursor-pointer"
             >
               ✕
             </button>
@@ -165,29 +166,29 @@ export const QuotationDetailModal: React.FC<QuotationDetailModalProps> = ({
         {/* Content Body */}
         <div className="p-6 overflow-y-auto flex-1 space-y-6">
           {error && (
-            <div className="p-3.5 bg-rose-50 border border-rose-200 text-rose-800 dark:bg-rose-950/40 dark:border-rose-800 dark:text-rose-300 rounded-lg text-xs flex justify-between items-center">
+            <div className="p-3.5 bg-rose-50 border border-rose-200 text-rose-800 dark:bg-rose-950/40 dark:border-rose-800 dark:text-rose-300 rounded-xl text-xs flex justify-between items-center shadow-sm">
               <span>{error}</span>
-              <button type="button" onClick={() => setError(null)} className="text-rose-600 hover:text-rose-800">
+              <button type="button" onClick={() => setError(null)} className="text-rose-600 hover:text-rose-800 font-bold ml-2">
                 ✕
               </button>
             </div>
           )}
 
           {successMessage && (
-            <div className="p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-800 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-300 rounded-lg text-xs font-medium flex justify-between items-center">
+            <div className="p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-800 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-300 rounded-xl text-xs font-semibold flex justify-between items-center shadow-sm">
               <span>✓ {successMessage}</span>
-              <button type="button" onClick={() => setSuccessMessage(null)} className="text-emerald-600 hover:text-emerald-800">
+              <button type="button" onClick={() => setSuccessMessage(null)} className="text-emerald-600 hover:text-emerald-800 font-bold ml-2">
                 ✕
               </button>
             </div>
           )}
 
           {isLoading ? (
-            <div className="py-20 text-center text-sm text-muted-foreground animate-pulse">
+            <div className="py-20 text-center text-sm text-slate-400 animate-pulse">
               Loading quotation details...
             </div>
           ) : !quotation ? (
-            <div className="py-16 text-center text-sm text-muted-foreground">
+            <div className="py-16 text-center text-sm text-slate-400">
               Quotation record not found.
             </div>
           ) : (
@@ -195,21 +196,21 @@ export const QuotationDetailModal: React.FC<QuotationDetailModalProps> = ({
               {/* Header Info Cards */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Customer Details */}
-                <div className="p-4 rounded-xl border border-border bg-card">
-                  <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40">
+                  <span className="text-[11px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider">
                     Customer Info
                   </span>
                   <div className="mt-2 space-y-1">
-                    <p className="font-semibold text-sm text-foreground">
+                    <p className="font-bold text-sm text-slate-900 dark:text-white">
                       {quotation.customerName || quotation.accountName || 'Counter Customer'}
                     </p>
                     {quotation.customerCode && (
-                      <p className="text-xs text-muted-foreground font-mono">
+                      <p className="text-xs text-slate-500 font-mono">
                         Code: {quotation.customerCode}
                       </p>
                     )}
                     {quotation.accountName && quotation.customerName && (
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-slate-500">
                         Account: {quotation.accountName}
                       </p>
                     )}
@@ -217,29 +218,29 @@ export const QuotationDetailModal: React.FC<QuotationDetailModalProps> = ({
                 </div>
 
                 {/* Dates & Validity */}
-                <div className="p-4 rounded-xl border border-border bg-card">
-                  <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40">
+                  <span className="text-[11px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider">
                     Timeline & Metal
                   </span>
-                  <div className="mt-2 space-y-1 text-xs">
+                  <div className="mt-2 space-y-1.5 text-xs">
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Quotation Date:</span>
-                      <span className="font-medium text-foreground">{formatDate(quotation.quotationDate)}</span>
+                      <span className="text-slate-500">Quotation Date:</span>
+                      <span className="font-semibold text-slate-800 dark:text-slate-200">{formatDate(quotation.quotationDate)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Valid Until:</span>
-                      <span className="font-medium text-amber-600 dark:text-amber-400">
+                      <span className="text-slate-500">Valid Until:</span>
+                      <span className="font-bold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-md border border-amber-200 dark:border-amber-800/60">
                         {formatDate(quotation.validUntil)}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Metal Type:</span>
-                      <span className="font-semibold text-foreground">{quotation.metalType || 'Gold'}</span>
+                      <span className="text-slate-500">Metal Type:</span>
+                      <span className="font-bold text-slate-900 dark:text-slate-100">{quotation.metalType || 'Gold'}</span>
                     </div>
                     {quotation.metalRateApplied > 0 && (
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Applied Rate:</span>
-                        <span className="font-mono font-medium text-foreground">
+                        <span className="text-slate-500">Applied Rate:</span>
+                        <span className="font-mono font-bold text-amber-800 dark:text-amber-300">
                           {formatCurrency(quotation.metalRateApplied)}/g
                         </span>
                       </div>
@@ -248,32 +249,32 @@ export const QuotationDetailModal: React.FC<QuotationDetailModalProps> = ({
                 </div>
 
                 {/* Conversion & Audit */}
-                <div className="p-4 rounded-xl border border-border bg-card">
-                  <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40">
+                  <span className="text-[11px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider">
                     Status & Tracking
                   </span>
-                  <div className="mt-2 space-y-1 text-xs">
+                  <div className="mt-2 space-y-1.5 text-xs">
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Status:</span>
-                      <span className="font-semibold text-foreground">{quotation.status}</span>
+                      <span className="text-slate-500">Status:</span>
+                      <span className="font-bold text-slate-900 dark:text-slate-100">{quotation.status}</span>
                     </div>
                     {quotation.convertedOrderId && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Order ID:</span>
-                        <span className="font-mono text-xs text-primary font-medium truncate max-w-[140px]">
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-500">Order ID:</span>
+                        <span className="font-mono text-xs text-purple-700 dark:text-purple-300 font-bold bg-purple-50 dark:bg-purple-950/40 px-1.5 py-0.5 rounded border border-purple-200 dark:border-purple-800 truncate max-w-[140px]">
                           {quotation.convertedOrderId}
                         </span>
                       </div>
                     )}
                     {quotation.createdBy && (
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Created By:</span>
-                        <span className="text-foreground">{quotation.createdBy}</span>
+                        <span className="text-slate-500">Created By:</span>
+                        <span className="text-slate-800 dark:text-slate-200">{quotation.createdBy}</span>
                       </div>
                     )}
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Created At:</span>
-                      <span className="text-foreground">{formatDate(quotation.createdAt)}</span>
+                      <span className="text-slate-500">Created At:</span>
+                      <span className="text-slate-800 dark:text-slate-200">{formatDate(quotation.createdAt)}</span>
                     </div>
                   </div>
                 </div>
@@ -281,17 +282,19 @@ export const QuotationDetailModal: React.FC<QuotationDetailModalProps> = ({
 
               {/* Items Table */}
               <div className="space-y-2">
-                <h3 className="text-sm font-semibold tracking-wide text-foreground flex items-center justify-between">
-                  <span>Quotation Line Items ({quotation.items?.length || 0})</span>
-                  <span className="text-xs font-normal text-muted-foreground">
-                    Total Gross: {formatWeight(quotation.totalGrossWeight)}g | Net: {formatWeight(quotation.totalNetWeight)}g
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                    <span>Quotation Line Items ({quotation.items?.length || 0})</span>
+                  </h3>
+                  <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg">
+                    Total Gross: <strong className="text-slate-800 dark:text-slate-200">{formatWeight(quotation.totalGrossWeight)}g</strong> | Net: <strong className="text-slate-800 dark:text-slate-200">{formatWeight(quotation.totalNetWeight)}g</strong>
                   </span>
-                </h3>
+                </div>
 
-                <div className="overflow-x-auto rounded-xl border border-border">
+                <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
                   <table className="w-full border-collapse text-left text-xs">
                     <thead>
-                      <tr className="bg-muted/50 border-b border-border text-muted-foreground font-medium">
+                      <tr className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 font-semibold">
                         <th className="p-3 text-center w-10">#</th>
                         <th className="p-3">Item Description</th>
                         <th className="p-3 text-center">Pcs</th>
@@ -305,40 +308,40 @@ export const QuotationDetailModal: React.FC<QuotationDetailModalProps> = ({
                         <th className="p-3 text-right">Total</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-border">
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                       {quotation.items && quotation.items.length > 0 ? (
                         quotation.items.map((it, idx) => (
-                          <tr key={it.id || idx} className="hover:bg-accent/40 transition-colors">
-                            <td className="p-3 text-center font-mono text-muted-foreground">{idx + 1}</td>
+                          <tr key={it.id || idx} className="hover:bg-amber-50/40 dark:hover:bg-slate-800/40 transition-colors">
+                            <td className="p-3 text-center font-mono text-slate-400">{idx + 1}</td>
                             <td className="p-3">
-                              <div className="font-semibold text-foreground">
+                              <div className="font-bold text-slate-900 dark:text-slate-100">
                                 {it.description || it.itemName || 'Jewellery Line Item'}
                               </div>
-                              <div className="text-[11px] text-muted-foreground mt-0.5 flex gap-2">
-                                <span>{it.metalType}</span>
-                                {it.barcode && <span className="font-mono">Barcode: {it.barcode}</span>}
+                              <div className="text-[11px] text-slate-500 mt-0.5 flex gap-2">
+                                <span className="bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 font-medium px-1.5 py-0.2 rounded">{it.metalType}</span>
+                                {it.barcode && <span className="font-mono text-slate-400">Barcode: {it.barcode}</span>}
                               </div>
                             </td>
-                            <td className="p-3 text-center font-mono">{it.pcs}</td>
-                            <td className="p-3 text-right font-mono">{formatWeight(it.grossWeight)}</td>
-                            <td className="p-3 text-right font-mono">{formatWeight(it.netWeight)}</td>
-                            <td className="p-3 text-center font-mono text-[11px]">
+                            <td className="p-3 text-center font-mono font-medium">{it.pcs}</td>
+                            <td className="p-3 text-right font-mono font-medium">{formatWeight(it.grossWeight)}</td>
+                            <td className="p-3 text-right font-mono font-medium">{formatWeight(it.netWeight)}</td>
+                            <td className="p-3 text-center font-mono text-[11px] text-slate-600 dark:text-slate-400">
                               {it.tunch}% {it.wastage > 0 ? `+${it.wastage}%` : ''}
                             </td>
-                            <td className="p-3 text-right font-mono">
+                            <td className="p-3 text-right font-mono font-medium">
                               {it.goldRate > 0 ? formatCurrency(it.goldRate, false) : '-'}
                             </td>
-                            <td className="p-3 text-right font-mono">{formatCurrency(it.metalValue, false)}</td>
-                            <td className="p-3 text-right font-mono">{formatCurrency(it.makingCharges, false)}</td>
-                            <td className="p-3 text-right font-mono">{formatCurrency(it.taxableAmount, false)}</td>
-                            <td className="p-3 text-right font-semibold font-mono text-foreground">
+                            <td className="p-3 text-right font-mono font-medium">{formatCurrency(it.metalValue, false)}</td>
+                            <td className="p-3 text-right font-mono font-medium">{formatCurrency(it.makingCharges, false)}</td>
+                            <td className="p-3 text-right font-mono font-medium">{formatCurrency(it.taxableAmount, false)}</td>
+                            <td className="p-3 text-right font-bold font-mono text-slate-900 dark:text-white">
                               {formatCurrency(it.lineTotal)}
                             </td>
                           </tr>
                         ))
                       ) : (
                         <tr>
-                          <td colSpan={11} className="p-6 text-center text-muted-foreground italic">
+                          <td colSpan={11} className="p-6 text-center text-slate-400 italic">
                             No items recorded in this quotation.
                           </td>
                         </tr>
@@ -352,20 +355,20 @@ export const QuotationDetailModal: React.FC<QuotationDetailModalProps> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start pt-2">
                 {/* Notes & Status Action Pills */}
                 <div className="space-y-4">
-                  <div className="p-4 rounded-xl border border-border bg-card">
-                    <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                      Remarks / Notes
+                  <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40">
+                    <span className="text-[11px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider">
+                      Remarks / Terms & Notes
                     </span>
-                    <p className="mt-2 text-xs text-foreground whitespace-pre-wrap">
+                    <p className="mt-2 text-xs text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">
                       {quotation.notes || 'No special notes or terms specified.'}
                     </p>
                   </div>
 
                   {/* Status Lifecycle Control (if not converted) */}
                   {quotation.status !== 'CONVERTED' && (
-                    <div className="p-4 rounded-xl border border-border bg-card">
-                      <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider block mb-2">
-                        Update Status
+                    <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40">
+                      <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider block mb-2.5">
+                        Change Quotation Status
                       </span>
                       <div className="flex flex-wrap gap-2">
                         {(['DRAFT', 'SENT', 'ACCEPTED', 'EXPIRED', 'REJECTED', 'CANCELLED'] as QuotationStatus[]).map(
@@ -375,11 +378,10 @@ export const QuotationDetailModal: React.FC<QuotationDetailModalProps> = ({
                               type="button"
                               disabled={isUpdatingStatus || quotation.status === st}
                               onClick={() => handleStatusChange(st)}
-                              className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors border ${
-                                quotation.status === st
-                                  ? 'border-primary bg-primary/10 text-primary cursor-default'
-                                  : 'border-border hover:bg-accent text-muted-foreground hover:text-foreground'
-                              }`}
+                              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${quotation.status === st
+                                  ? 'border-amber-500 bg-amber-500/10 text-amber-700 dark:text-amber-300 shadow-sm cursor-default'
+                                  : 'border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400'
+                                }`}
                             >
                               {STATUS_BADGE_MAP[st]?.label || st}
                             </button>
@@ -391,52 +393,52 @@ export const QuotationDetailModal: React.FC<QuotationDetailModalProps> = ({
                 </div>
 
                 {/* Financial Totals Card */}
-                <div className="p-4 rounded-xl border border-border bg-muted/30 space-y-2 text-xs">
-                  <div className="flex justify-between text-muted-foreground">
+                <div className="p-5 rounded-2xl border border-amber-200/80 dark:border-amber-900/50 bg-gradient-to-br from-amber-500/5 via-amber-500/10 to-transparent space-y-2.5 text-xs shadow-sm">
+                  <div className="flex justify-between text-slate-600 dark:text-slate-400">
                     <span>Total Items / Pieces:</span>
-                    <span className="font-mono font-medium text-foreground">{quotation.totalPcs} pcs</span>
+                    <span className="font-mono font-bold text-slate-900 dark:text-white">{quotation.totalPcs} pcs</span>
                   </div>
-                  <div className="flex justify-between text-muted-foreground">
+                  <div className="flex justify-between text-slate-600 dark:text-slate-400">
                     <span>Total Gross Weight:</span>
-                    <span className="font-mono font-medium text-foreground">{formatWeight(quotation.totalGrossWeight)} g</span>
+                    <span className="font-mono font-bold text-slate-900 dark:text-white">{formatWeight(quotation.totalGrossWeight)} g</span>
                   </div>
-                  <div className="flex justify-between text-muted-foreground">
+                  <div className="flex justify-between text-slate-600 dark:text-slate-400">
                     <span>Total Net Weight:</span>
-                    <span className="font-mono font-medium text-foreground">{formatWeight(quotation.totalNetWeight)} g</span>
+                    <span className="font-mono font-bold text-slate-900 dark:text-white">{formatWeight(quotation.totalNetWeight)} g</span>
                   </div>
-                  <div className="border-t border-border pt-2 flex justify-between text-muted-foreground">
+                  <div className="border-t border-amber-200/60 dark:border-slate-800 pt-2 flex justify-between text-slate-600 dark:text-slate-400">
                     <span>Metal Value:</span>
-                    <span className="font-mono font-medium text-foreground">{formatCurrency(quotation.metalValue)}</span>
+                    <span className="font-mono font-bold text-slate-900 dark:text-white">{formatCurrency(quotation.metalValue)}</span>
                   </div>
-                  <div className="flex justify-between text-muted-foreground">
+                  <div className="flex justify-between text-slate-600 dark:text-slate-400">
                     <span>Total Making Charges:</span>
-                    <span className="font-mono font-medium text-foreground">{formatCurrency(quotation.totalMajuri)}</span>
+                    <span className="font-mono font-bold text-slate-900 dark:text-white">{formatCurrency(quotation.totalMajuri)}</span>
                   </div>
                   {quotation.totalCharges > quotation.totalMajuri && (
-                    <div className="flex justify-between text-muted-foreground">
+                    <div className="flex justify-between text-slate-600 dark:text-slate-400">
                       <span>Other / Stone Charges:</span>
-                      <span className="font-mono font-medium text-foreground">
+                      <span className="font-mono font-bold text-slate-900 dark:text-white">
                         {formatCurrency(quotation.totalCharges - quotation.totalMajuri)}
                       </span>
                     </div>
                   )}
                   {quotation.discountAmount > 0 && (
-                    <div className="flex justify-between text-emerald-600 dark:text-emerald-400">
-                      <span>Discount:</span>
-                      <span className="font-mono font-medium">- {formatCurrency(quotation.discountAmount)}</span>
+                    <div className="flex justify-between text-emerald-600 dark:text-emerald-400 font-semibold">
+                      <span>Discount Applied:</span>
+                      <span className="font-mono">- {formatCurrency(quotation.discountAmount)}</span>
                     </div>
                   )}
-                  <div className="flex justify-between text-muted-foreground border-t border-border pt-2">
+                  <div className="flex justify-between text-slate-600 dark:text-slate-400 border-t border-amber-200/60 dark:border-slate-800 pt-2">
                     <span>Taxable Amount:</span>
-                    <span className="font-mono font-medium text-foreground">{formatCurrency(quotation.taxableAmount)}</span>
+                    <span className="font-mono font-bold text-slate-900 dark:text-white">{formatCurrency(quotation.taxableAmount)}</span>
                   </div>
-                  <div className="flex justify-between text-muted-foreground">
+                  <div className="flex justify-between text-slate-600 dark:text-slate-400">
                     <span>Estimated Tax (GST):</span>
-                    <span className="font-mono font-medium text-foreground">{formatCurrency(quotation.taxAmount)}</span>
+                    <span className="font-mono font-bold text-slate-900 dark:text-white">{formatCurrency(quotation.taxAmount)}</span>
                   </div>
-                  <div className="border-t-2 border-border pt-2 flex justify-between items-center text-sm font-bold text-foreground">
-                    <span>Grand Total:</span>
-                    <span className="text-base text-primary font-mono">
+                  <div className="border-t-2 border-amber-300 dark:border-amber-800 pt-2.5 flex justify-between items-center text-sm font-bold text-slate-900 dark:text-white">
+                    <span className="text-amber-900 dark:text-amber-300">Grand Total Estimate:</span>
+                    <span className="text-lg text-amber-700 dark:text-amber-400 font-mono font-black">
                       {formatCurrency(quotation.roundedTotal || quotation.grandTotal)}
                     </span>
                   </div>
@@ -447,14 +449,15 @@ export const QuotationDetailModal: React.FC<QuotationDetailModalProps> = ({
         </div>
 
         {/* Footer Actions */}
-        <div className="px-6 py-4 border-t border-border flex items-center justify-between bg-muted/20">
+        <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/80 dark:bg-slate-900/80">
           <div className="flex items-center gap-2">
             {quotation && quotation.status !== 'CONVERTED' && quotation.status !== 'CANCELLED' && quotation.status !== 'REJECTED' && (
               <button
                 type="button"
                 disabled={isConverting}
                 onClick={handleConvertToOrder}
-                className="px-4 py-2 bg-emerald-600 text-white font-medium rounded-lg text-xs hover:bg-emerald-700 transition-colors flex items-center gap-2 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ color: '#ffffff' }}
+                className="px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 !text-white font-bold rounded-xl text-xs transition-all flex items-center gap-2 shadow-md shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               >
                 {isConverting ? (
                   <>
@@ -466,7 +469,7 @@ export const QuotationDetailModal: React.FC<QuotationDetailModalProps> = ({
                   </>
                 ) : (
                   <>
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                     Convert to Customer Order
@@ -476,7 +479,7 @@ export const QuotationDetailModal: React.FC<QuotationDetailModalProps> = ({
             )}
 
             {quotation?.status === 'CONVERTED' && (
-              <span className="inline-flex items-center gap-1.5 text-xs text-purple-700 dark:text-purple-300 font-medium">
+              <span className="inline-flex items-center gap-1.5 text-xs text-purple-700 dark:text-purple-300 font-bold bg-purple-50 dark:bg-purple-950/40 px-3 py-1.5 rounded-xl border border-purple-200 dark:border-purple-800">
                 ✓ Converted to Order
               </span>
             )}
@@ -486,7 +489,7 @@ export const QuotationDetailModal: React.FC<QuotationDetailModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 bg-secondary text-secondary-foreground font-medium rounded-lg text-xs hover:bg-secondary/80 transition-colors"
+              className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-xl text-xs transition-colors border border-slate-300 dark:border-slate-700 cursor-pointer"
             >
               Close
             </button>
