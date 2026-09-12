@@ -137,7 +137,6 @@ export function useAccountMaster() {
         (account.otherName && account.otherName.toLowerCase().includes(keyword)) ||
         (account.accountType && account.accountType.toLowerCase().includes(keyword)) ||
         (account.groupName && account.groupName.toLowerCase().includes(keyword)) ||
-        (account.groupType && account.groupType.toLowerCase().includes(keyword)) ||
         (account.mobileNumber && account.mobileNumber.toLowerCase().includes(keyword)) ||
         (account.whatsappNumber && account.whatsappNumber.toLowerCase().includes(keyword)) ||
         (account.phone2 && account.phone2.toLowerCase().includes(keyword)) ||

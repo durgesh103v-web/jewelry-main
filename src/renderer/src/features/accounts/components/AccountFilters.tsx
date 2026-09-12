@@ -1,4 +1,5 @@
-import React from 'react'
+import React, { useMemo } from 'react'
+import { Select, SearchInput, SelectOption } from '@components/ui'
 import { ACCOUNT_TYPES, AccountGroupOption } from './AccountForm'
 
 export const STATUS_FILTERS = [
@@ -55,13 +56,42 @@ export function AccountFilters({
   setSearchText,
   totalCount,
   activeCount,
-  showingCount,
+  showingCount: _showingCount,
   onAddNew,
   onPrint,
   onExportCsv,
   onClearFilters,
   hasActiveFilters
 }: AccountFiltersProps): React.JSX.Element {
+  const accountTypeOptions: SelectOption[] = useMemo(
+    () => [
+      { label: 'All Account Types', value: 'All' },
+      ...ACCOUNT_TYPES.map((t) => ({ label: t, value: t }))
+    ],
+    []
+  )
+
+  const accountGroupOptions: SelectOption[] = useMemo(
+    () => [
+      { label: 'All Groups', value: 'All' },
+      ...accountGroups.map((g) => ({
+        label: `${g.groupName} (${g.groupType})`,
+        value: g.id
+      }))
+    ],
+    [accountGroups]
+  )
+
+  const statusOptions: SelectOption[] = useMemo(
+    () => STATUS_FILTERS.map((s) => ({ label: s.label, value: s.value })),
+    []
+  )
+
+  const balanceOptions: SelectOption[] = useMemo(
+    () => BALANCE_FILTERS.map((b) => ({ label: b.label, value: b.value })),
+    []
+  )
+
   return (
     <div className="px-6 pt-4 pb-2 shrink-0 space-y-3 no-print">
       {/* Action Toolbar */}
@@ -95,7 +125,7 @@ export function AccountFilters({
           <button
             type="button"
             onClick={onPrint}
-            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-md bg-white border border-slate-200 text-slate-700 text-xs font-medium hover:bg-slate-50 hover:border-slate-300 transition-colors shadow-sm"
+            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-md bg-slate-50 border border-slate-200 text-slate-600 text-xs font-semibold hover:bg-slate-200 hover:border-slate-400 hover:text-slate-900 transition-colors shadow-sm"
           >
             <svg
               width="14"
@@ -117,7 +147,7 @@ export function AccountFilters({
           <button
             type="button"
             onClick={onExportCsv}
-            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-md bg-white border border-slate-200 text-slate-700 text-xs font-medium hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-800 transition-colors shadow-sm"
+            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold hover:bg-emerald-200 hover:border-emerald-400 hover:text-emerald-900 transition-colors shadow-sm"
             title="Export filtered accounts to CSV"
           >
             <svg
@@ -150,101 +180,56 @@ export function AccountFilters({
       {!formOpen && (
         <div className="flex items-center gap-2.5 bg-white p-2.5 rounded-lg border border-slate-200 shadow-sm flex-wrap">
           {/* Account Type Filter */}
-          <select
-            value={accountTypeFilter}
-            onChange={(e) => setAccountTypeFilter(e.target.value)}
-            className="h-9 text-xs border border-slate-200 rounded-md px-2.5 bg-slate-50 hover:bg-white text-slate-700 cursor-pointer min-w-[145px] focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 font-medium transition-colors"
-          >
-            <option value="All">All Account Types</option>
-            {ACCOUNT_TYPES.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-          </select>
+          <div className="min-w-[155px]">
+            <Select
+              options={accountTypeOptions}
+              value={accountTypeFilter}
+              onChange={(e) => setAccountTypeFilter(e.target.value)}
+              size="md"
+              fullWidth={true}
+            />
+          </div>
 
           {/* Account Group Filter */}
-          <select
-            value={accountGroupFilter}
-            onChange={(e) => setAccountGroupFilter(e.target.value)}
-            className="h-9 text-xs border border-slate-200 rounded-md px-2.5 bg-slate-50 hover:bg-white text-slate-700 cursor-pointer min-w-[140px] focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 font-medium transition-colors"
-          >
-            <option value="All">All Groups</option>
-            {accountGroups.map((g) => (
-              <option key={g.id} value={g.id}>
-                {g.groupName} ({g.groupType})
-              </option>
-            ))}
-          </select>
+          <div className="min-w-[155px]">
+            <Select
+              options={accountGroupOptions}
+              value={accountGroupFilter}
+              onChange={(e) => setAccountGroupFilter(e.target.value)}
+              size="md"
+              fullWidth={true}
+            />
+          </div>
 
           {/* Status Filter */}
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="h-9 text-xs border border-slate-200 rounded-md px-2.5 bg-slate-50 hover:bg-white text-slate-700 cursor-pointer min-w-[110px] focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 font-medium transition-colors"
-          >
-            {STATUS_FILTERS.map((s) => (
-              <option key={s.value} value={s.value}>
-                {s.label}
-              </option>
-            ))}
-          </select>
+          <div className="min-w-[125px]">
+            <Select
+              options={statusOptions}
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              size="md"
+              fullWidth={true}
+            />
+          </div>
 
           {/* Balance Filter */}
-          <select
-            value={balanceFilter}
-            onChange={(e) => setBalanceFilter(e.target.value)}
-            className="h-9 text-xs border border-slate-200 rounded-md px-2.5 bg-slate-50 hover:bg-white text-slate-700 cursor-pointer min-w-[135px] focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 font-medium transition-colors"
-          >
-            {BALANCE_FILTERS.map((b) => (
-              <option key={b.value} value={b.value}>
-                {b.label}
-              </option>
-            ))}
-          </select>
+          <div className="min-w-[155px]">
+            <Select
+              options={balanceOptions}
+              value={balanceFilter}
+              onChange={(e) => setBalanceFilter(e.target.value)}
+              size="md"
+              fullWidth={true}
+            />
+          </div>
 
           {/* Search Input */}
-          <div className="relative flex-1 min-w-[180px]">
-            <svg
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-            >
-              <circle cx="11" cy="11" r="8" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-            <input
-              type="text"
+          <div className="flex-1 min-w-[200px]">
+            <SearchInput
               value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
+              onChange={setSearchText}
               placeholder="Search by name, phone, city, GST, bank A/C..."
-              className="w-full h-9 pl-9 pr-8 text-xs border border-slate-200 rounded-md bg-slate-50 hover:bg-white focus:bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors"
             />
-            {searchText && (
-              <button
-                type="button"
-                onClick={() => setSearchText('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-full p-0.5 transition-colors"
-              >
-                <svg
-                  width="12"
-                  height="12"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                >
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
-            )}
           </div>
 
           {/* Clear Filters button */}
@@ -252,7 +237,7 @@ export function AccountFilters({
             <button
               type="button"
               onClick={onClearFilters}
-              className="h-9 px-3 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold transition-colors flex items-center gap-1.5"
+              className="h-9 px-3 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer shrink-0"
               title="Reset all search filters"
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
@@ -264,17 +249,13 @@ export function AccountFilters({
           )}
 
           {/* Count Badges */}
-          <div className="flex items-center gap-2.5 text-[11px] text-slate-500 select-none ml-auto whitespace-nowrap bg-slate-50 px-3 py-1.5 rounded border border-slate-100">
+          <div className="flex items-center gap-2.5 text-[11px] text-slate-500 select-none ml-auto whitespace-nowrap bg-slate-50 px-3 py-1.5 rounded border border-slate-100 shrink-0">
             <span>
               Total <strong className="text-slate-700">{totalCount}</strong>
             </span>
             <div className="w-px h-3 bg-slate-300"></div>
             <span>
               Active <strong className="text-emerald-600">{activeCount}</strong>
-            </span>
-            <div className="w-px h-3 bg-slate-300"></div>
-            <span>
-              Showing <strong className="text-amber-700">{showingCount}</strong>
             </span>
           </div>
         </div>

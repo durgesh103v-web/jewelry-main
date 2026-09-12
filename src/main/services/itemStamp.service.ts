@@ -9,6 +9,10 @@ const itemStampRepository = new ItemStampRepository()
 const itemStampSchema = z.object({
   stampName: z.string().trim().min(1, 'Stamp name is required').max(80),
   metalType: z.enum(['Gold', 'Silver', 'Diamond', 'Platinum', 'Other']).default('Gold'),
+  purityKarat: z.string().trim().max(30).optional().default(''),
+  purityTanch: z.coerce.number().min(0).max(100).optional().default(0),
+  shortCode: z.string().trim().max(20).optional().default(''),
+  isHallmarked: z.boolean().optional().default(true),
   description: z.string().trim().max(255).optional().default(''),
   active: z.boolean().default(true)
 })
@@ -19,6 +23,10 @@ export interface ItemStampRecord {
   id: string
   stampName: string
   metalType: string
+  purityKarat: string
+  purityTanch: number
+  shortCode: string
+  isHallmarked: boolean
   description: string
   active: boolean
   createdAt: string
@@ -30,6 +38,10 @@ function mapRow(row: ItemStampRow): ItemStampRecord {
     id: row.id,
     stampName: row.stamp_name,
     metalType: row.metal_type,
+    purityKarat: row.purity_karat ?? '',
+    purityTanch: Number(row.purity_tanch ?? 0),
+    shortCode: row.short_code ?? '',
+    isHallmarked: row.is_hallmarked !== 0,
     description: row.description ?? '',
     active: Boolean(row.active),
     createdAt: row.created_at,
@@ -60,6 +72,10 @@ export const itemStampService = {
       id,
       stampName: data.stampName,
       metalType: data.metalType,
+      purityKarat: data.purityKarat,
+      purityTanch: data.purityTanch,
+      shortCode: data.shortCode,
+      isHallmarked: data.isHallmarked,
       description: data.description,
       active: data.active,
       createdAt: now,
@@ -89,6 +105,10 @@ export const itemStampService = {
     itemStampRepository.update(id, {
       stampName: data.stampName,
       metalType: data.metalType,
+      purityKarat: data.purityKarat,
+      purityTanch: data.purityTanch,
+      shortCode: data.shortCode,
+      isHallmarked: data.isHallmarked,
       description: data.description,
       active: data.active,
       updatedAt: now

@@ -95,6 +95,10 @@ type ItemStampPayload = {
 type ItemDesignPayload = {
   designName: string
   metalType: string
+  shortCode?: string
+  defaultLabourRate?: number
+  defaultLabourType?: 'PER_GRAM' | 'PER_PIECE' | 'PERCENT'
+  defaultWastage?: number
   description: string
   active: boolean
 }
@@ -124,6 +128,11 @@ type ItemOpeningStockPayload = {
   stampId: string
   designId: string
   barcode: string
+  huid?: string
+  location?: string
+  diamondCarats?: number
+  diamondPcs?: number
+  stoneAmount?: number
   remark: string
   pcs: number
   grossWeight: number
@@ -876,11 +885,14 @@ type SettlementRecord = {
 }
 
 type CashFineOpeningLinePayload = {
-  metalType: 'Gold' | 'Silver'
+  metalType: 'Gold' | 'Silver' | 'Platinum' | 'Diamond' | string
   entryType: string
   details: string
+  location?: string
   weight: number
   tanch: number
+  rate?: number
+  amount?: number
   ptStatus: string
 }
 
@@ -893,7 +905,13 @@ type CashFineOpeningSummaryPayload = {
   silverPurchaseAmount: number
   silverSaleFine: number
   silverSaleAmount: number
+  platinumPurchaseFine?: number
+  platinumPurchaseAmount?: number
+  platinumSaleFine?: number
+  platinumSaleAmount?: number
   openingCash: number
+  openingBankBalance?: number
+  openingPettyCash?: number
 }
 
 type CashFineOpeningRecord = {
@@ -903,6 +921,9 @@ type CashFineOpeningRecord = {
       id: string
       lineNo: number
       fine: number
+      location: string
+      rate: number
+      amount: number
       createdAt: string
       updatedAt: string
     }
@@ -1603,19 +1624,34 @@ type LastBackupInfo = {
 
 type FirmPayload = {
   firmName: string
+  tagline?: string
   ownerName: string
   address: string
   city: string
   state: string
+  stateCode?: string
   pincode: string
   mobileNumber: string
   whatsappNumber: string
   email: string
   gstNo: string
   panNo: string
+  bisLicenseNo?: string
+  hallmarkCenter?: string
+  legalMetrologyNo?: string
+  bankName?: string
+  bankBranch?: string
+  bankAccountNo?: string
+  bankIfsc?: string
+  bankAccountName?: string
+  upiId?: string
   billTitle: string
   billPrefix: string
   terms: string
+  invoiceFooterNote?: string
+  buybackPolicy?: string
+  authorisedSignatory?: string
+  logoUrl?: string
   active: boolean
 }
 

@@ -21,6 +21,12 @@ import { migration020 } from './020_seed_standard_account_groups'
 import { migration021 } from './021_item_master_expanded_fields'
 import { migration022 } from './022_seed_standard_items_and_groups'
 import { migration023 } from './023_item_group_enhanced_fields'
+import { migration024 } from './024_item_stamp_enhanced_fields'
+import { migration025 } from './025_item_design_enhanced_fields'
+import { migration026 } from './026_item_opening_stock_enhanced_fields'
+import { migration027 } from './027_seed_item_opening_stock_data'
+import { migration028 } from './028_firm_master_enhanced_fields'
+import { migration029 } from './029_cash_fine_opening_enhanced_fields'
 import { Migration } from './types'
 
 export const allMigrations: Migration[] = [
@@ -46,5 +52,11 @@ export const allMigrations: Migration[] = [
   migration020,
   migration021,
   migration022,
-  migration023
+  migration023,
+  migration024,
+  migration025,
+  migration026,
+  migration027,
+  migration028,
+  migration029
 ]

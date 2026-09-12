@@ -32,6 +32,11 @@ const openingStockSchema = z.object({
   stampId: z.string().trim().optional().default(''),
   designId: z.string().trim().optional().default(''),
   barcode: z.string().trim().max(80).optional().default(''),
+  huid: z.string().trim().max(30).optional().default(''),
+  location: z.string().trim().max(50).optional().default(''),
+  diamondCarats: z.coerce.number().default(0),
+  diamondPcs: z.coerce.number().default(0),
+  stoneAmount: z.coerce.number().default(0),
   remark: z.string().trim().max(255).optional().default(''),
   pcs: z.coerce.number().default(0),
   grossWeight: z.coerce.number().default(0),
@@ -63,6 +68,11 @@ type OpeningStockRow = {
   design_id: string | null
   design_name: string | null
   barcode: string | null
+  huid: string | null
+  location: string | null
+  diamond_carats: number | null
+  diamond_pcs: number | null
+  stone_amount: number | null
   remark: string | null
   pcs: number
   gross_weight: number
@@ -92,6 +102,11 @@ export type OpeningStockRecord = {
   designId: string
   designName: string
   barcode: string
+  huid: string
+  location: string
+  diamondCarats: number
+  diamondPcs: number
+  stoneAmount: number
   remark: string
   pcs: number
   grossWeight: number
@@ -126,6 +141,11 @@ function mapRow(row: OpeningStockRow): OpeningStockRecord {
     designId: row.design_id ?? '',
     designName: row.design_name ?? '',
     barcode: row.barcode ?? '',
+    huid: row.huid ?? '',
+    location: row.location ?? '',
+    diamondCarats: Number(row.diamond_carats ?? 0),
+    diamondPcs: Number(row.diamond_pcs ?? 0),
+    stoneAmount: Number(row.stone_amount ?? 0),
     remark: row.remark ?? '',
     pcs: Number(row.pcs ?? 0),
     grossWeight: Number(row.gross_weight ?? 0),
@@ -183,6 +203,11 @@ export const itemOpeningStockService = {
           os.design_id,
           idg.design_name,
           os.barcode,
+          os.huid,
+          os.location,
+          os.diamond_carats,
+          os.diamond_pcs,
+          os.stone_amount,
           os.remark,
           os.pcs,
           os.gross_weight,
@@ -239,12 +264,13 @@ export const itemOpeningStockService = {
       db.prepare(
         `
         INSERT INTO item_opening_stock (
-          id, stock_date, item_id, stamp_id, design_id, barcode, remark,
+          id, stock_date, item_id, stamp_id, design_id, barcode, huid, location,
+          diamond_carats, diamond_pcs, stone_amount, remark,
           pcs, gross_weight, less_weight, add_weight, net_weight, tanch,
           wastage, hishob, unit, fine, majuri_rate, majuri, active,
           created_at, updated_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `
       ).run(
         id,
@@ -253,6 +279,11 @@ export const itemOpeningStockService = {
         emptyToNull(data.stampId),
         emptyToNull(data.designId),
         data.barcode,
+        data.huid,
+        data.location,
+        data.diamondCarats,
+        data.diamondPcs,
+        data.stoneAmount,
         data.remark,
         data.pcs,
         data.grossWeight,
@@ -329,6 +360,7 @@ export const itemOpeningStockService = {
         UPDATE item_opening_stock
         SET
           stock_date = ?, item_id = ?, stamp_id = ?, design_id = ?, barcode = ?,
+          huid = ?, location = ?, diamond_carats = ?, diamond_pcs = ?, stone_amount = ?,
           remark = ?, pcs = ?, gross_weight = ?, less_weight = ?, add_weight = ?,
           net_weight = ?, tanch = ?, wastage = ?, hishob = ?, unit = ?, fine = ?,
           majuri_rate = ?, majuri = ?, active = ?, updated_at = ?
@@ -340,6 +372,11 @@ export const itemOpeningStockService = {
         emptyToNull(data.stampId),
         emptyToNull(data.designId),
         data.barcode,
+        data.huid,
+        data.location,
+        data.diamondCarats,
+        data.diamondPcs,
+        data.stoneAmount,
         data.remark,
         data.pcs,
         data.grossWeight,
@@ -421,6 +458,11 @@ export const itemOpeningStockService = {
           os.design_id,
           idg.design_name,
           os.barcode,
+          os.huid,
+          os.location,
+          os.diamond_carats,
+          os.diamond_pcs,
+          os.stone_amount,
           os.remark,
           os.pcs,
           os.gross_weight,

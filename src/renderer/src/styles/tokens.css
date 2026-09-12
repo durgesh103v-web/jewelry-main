@@ -6,55 +6,84 @@
   /* --------------------------------------------------------------------------
      1. BRAND COLORS (Premium Amber/Gold)
      -------------------------------------------------------------------------- */
-  --color-brand-primary: #b45309;        /* Rich Gold/Amber 700 */
-  --color-brand-primary-hover: #92400e;  /* Deep Gold/Amber 800 */
-  --color-brand-primary-active: #78350f; /* Dark Gold/Amber 900 */
-  --color-brand-soft: #fef3c7;           /* Soft Gold Wash/Amber 100 */
+  --color-brand-primary: #b45309;
+  /* Rich Gold/Amber 700 */
+  --color-brand-primary-hover: #92400e;
+  /* Deep Gold/Amber 800 */
+  --color-brand-primary-active: #78350f;
+  /* Dark Gold/Amber 900 */
+  --color-brand-soft: #fef3c7;
+  /* Soft Gold Wash/Amber 100 */
 
   /* --------------------------------------------------------------------------
      2. BACKGROUND COLORS (Pearl & Slate)
      -------------------------------------------------------------------------- */
-  --color-background-app: #f8fafc;       /* Soft Pearl/Slate 50 */
-  --color-background-surface: #ffffff;   /* Pure White */
-  --color-background-card: #ffffff;      /* Pure White */
-  --color-background-muted: #f1f5f9;     /* Slate 100 - For subtle contrast */
-  --color-background-elevated: #ffffff;  /* Pure White for floating elements */
+  --color-background-app: #eef2f6;
+  /* Clean Soft Slate - Standard ERP contrast */
+  --color-background-surface: #ffffff;
+  /* Pure White */
+  --color-background-card: #ffffff;
+  /* Pure White */
+  --color-background-muted: #e2e8f0;
+  /* Slate 200 - For subtle contrast */
+  --color-background-elevated: #ffffff;
+  /* Pure White for floating elements */
 
   /* --------------------------------------------------------------------------
      3. TEXT COLORS (Cool Slate for High Readability)
      -------------------------------------------------------------------------- */
-  --color-text-primary: #0f172a;         /* Slate 900 - Almost black but softer */
-  --color-text-secondary: #475569;       /* Slate 600 */
-  --color-text-muted: #64748b;           /* Slate 500 */
-  --color-text-disabled: #94a3b8;        /* Slate 400 */
-  --color-text-inverse: #ffffff;         /* Pure White */
+  --color-text-primary: #0f172a;
+  /* Slate 900 - Almost black but softer */
+  --color-text-secondary: #475569;
+  /* Slate 600 */
+  --color-text-muted: #64748b;
+  /* Slate 500 */
+  --color-text-disabled: #94a3b8;
+  /* Slate 400 */
+  --color-text-inverse: #ffffff;
+  /* Pure White */
 
   /* --------------------------------------------------------------------------
      4. BORDER COLORS
      -------------------------------------------------------------------------- */
-  --color-border-default: #e2e8f0;       /* Slate 200 */
-  --color-border-muted: #f8fafc;         /* Slate 50 */
-  --color-border-strong: #cbd5e1;        /* Slate 300 - For high contrast inputs */
+  --color-border-default: #e2e8f0;
+  /* Slate 200 */
+  --color-border-muted: #f8fafc;
+  /* Slate 50 */
+  --color-border-strong: #cbd5e1;
+  /* Slate 300 - For high contrast inputs */
 
   /* --------------------------------------------------------------------------
      5. STATUS COLORS (Jewel-toned indicators)
      -------------------------------------------------------------------------- */
-  --color-success: #047857;              /* Emerald 700 */
-  --color-success-soft: #d1fae5;         /* Emerald 100 */
-  --color-warning: #b45309;              /* Amber 700 */
-  --color-warning-soft: #fef3c7;         /* Amber 100 */
-  --color-error: #be123c;                /* Rose 700 - Softer than pure red */
-  --color-error-soft: #ffe4e6;           /* Rose 100 */
-  --color-info: #1d4ed8;                 /* Sapphire/Blue 700 */
-  --color-info-soft: #dbeafe;            /* Sapphire/Blue 100 */
+  --color-success: #047857;
+  /* Emerald 700 */
+  --color-success-soft: #d1fae5;
+  /* Emerald 100 */
+  --color-warning: #b45309;
+  /* Amber 700 */
+  --color-warning-soft: #fef3c7;
+  /* Amber 100 */
+  --color-error: #be123c;
+  /* Rose 700 - Softer than pure red */
+  --color-error-soft: #ffe4e6;
+  /* Rose 100 */
+  --color-info: #1d4ed8;
+  /* Sapphire/Blue 700 */
+  --color-info-soft: #dbeafe;
+  /* Sapphire/Blue 100 */
 
   /* --------------------------------------------------------------------------
      6. JEWELLERY DOMAIN COLORS (Authentic Material Tones)
      -------------------------------------------------------------------------- */
-  --color-gold: #d97706;                 /* 22k Gold tone */
-  --color-silver: #94a3b8;               /* Bright Sterling Silver */
-  --color-platinum: #475569;             /* Deep Platinum grey */
-  --color-diamond: #38bdf8;              /* Icy brilliant blue */
+  --color-gold: #d97706;
+  /* 22k Gold tone */
+  --color-silver: #94a3b8;
+  /* Bright Sterling Silver */
+  --color-platinum: #475569;
+  /* Deep Platinum grey */
+  --color-diamond: #38bdf8;
+  /* Icy brilliant blue */
 
   /* Legacy CSS Variable Mappings (For backwards compatibility with App.css) */
   --color-primary: var(--color-brand-primary);

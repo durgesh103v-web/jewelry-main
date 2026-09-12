@@ -1,5 +1,5 @@
 import React from 'react'
-import { Select } from '@components/ui/select/Select'
+import { Select, SearchInput } from '@components/ui'
 
 export const ITEM_GROUP_STATUS_FILTERS = [
   { value: 'ALL', label: 'All Status' },
@@ -86,7 +86,7 @@ export function ItemGroupFilters({
           <button
             type="button"
             onClick={onPrint}
-            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-md bg-white border border-slate-200 text-slate-700 text-xs font-medium hover:bg-slate-100 hover:text-slate-900 hover:border-slate-300 active:bg-slate-200 transition-all shadow-xs"
+            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-md bg-slate-50 border border-slate-200 text-slate-600 text-xs font-semibold hover:bg-slate-200 hover:border-slate-400 hover:text-slate-900 transition-colors shadow-sm"
             title="Print Item Groups list"
           >
             <svg
@@ -109,7 +109,7 @@ export function ItemGroupFilters({
           <button
             type="button"
             onClick={onExportCsv}
-            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-md bg-white border border-slate-200 text-slate-700 text-xs font-medium hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-800 active:bg-emerald-100 transition-all shadow-xs"
+            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold hover:bg-emerald-200 hover:border-emerald-400 hover:text-emerald-900 transition-colors shadow-sm"
             title="Export filtered groups to CSV"
           >
             <svg
@@ -141,7 +141,7 @@ export function ItemGroupFilters({
 
       {/* Filter and Search Bar */}
       {!formOpen && (
-        <div className="flex items-center gap-2.5 flex-wrap bg-slate-100/80 p-2 rounded-lg border border-slate-200/80">
+        <div className="flex items-center gap-2.5 bg-white p-2.5 rounded-lg border border-slate-200 shadow-sm flex-wrap">
           <div className="w-40">
             <Select
               value={metalTypeFilter}
@@ -158,54 +158,26 @@ export function ItemGroupFilters({
             />
           </div>
 
-          <div className="relative flex-1 min-w-[240px]">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-              >
-                <circle cx="11" cy="11" r="8" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" />
-              </svg>
-            </div>
-            <input
-              type="text"
+          <div className="flex-1 min-w-[220px]">
+            <SearchInput
               value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
+              onChange={setSearchText}
               placeholder="Search by group name, code, metal, HSN..."
-              className="w-full h-8.5 pl-8 pr-8 text-xs bg-white border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-slate-800 placeholder:text-slate-400 transition-all shadow-2xs"
             />
-            {searchText && (
-              <button
-                type="button"
-                onClick={() => setSearchText('')}
-                className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-slate-600"
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
-            )}
           </div>
 
           {hasActiveFilters && (
             <button
               type="button"
               onClick={onClearFilters}
-              className="h-8.5 px-2.5 text-xs text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-md font-medium transition-colors flex items-center gap-1 shrink-0"
+              className="inline-flex items-center gap-1 h-8 px-2.5 text-xs text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-md font-medium transition-colors cursor-pointer"
               title="Clear all filters"
             >
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <line x1="18" y1="6" x2="6" y2="18" />
                 <line x1="6" y1="6" x2="18" y2="18" />
               </svg>
-              Clear
+              Reset
             </button>
           )}
 
@@ -217,10 +189,14 @@ export function ItemGroupFilters({
             <span>
               Active <strong className="text-emerald-700 font-bold">{activeCount}</strong>
             </span>
-            <span className="text-slate-300">|</span>
-            <span>
-              Showing <strong className="text-amber-700 font-bold">{showingCount}</strong>
-            </span>
+            {showingCount !== totalCount && (
+              <>
+                <span className="text-slate-300">|</span>
+                <span>
+                  Showing <strong className="text-amber-700 font-bold">{showingCount}</strong>
+                </span>
+              </>
+            )}
           </div>
         </div>
       )}

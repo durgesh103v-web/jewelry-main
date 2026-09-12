@@ -1,5 +1,6 @@
 import React from 'react'
-import { FiEdit2, FiTrash2, FiLayers } from 'react-icons/fi'
+import { FiEdit2, FiTrash2 } from 'react-icons/fi'
+import { DataTable, Column } from '@components/ui'
 
 export interface ItemGroupRecord {
   id: string
@@ -32,45 +33,49 @@ function renderMetalBadge(metal: string): React.JSX.Element {
 
   if (normalized === 'gold') {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200 whitespace-nowrap">
-        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
-        GOLD
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200 whitespace-nowrap">
+        Gold
       </span>
     )
   }
 
   if (normalized === 'silver') {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-300 whitespace-nowrap">
-        <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
-        SILVER
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-800 border border-slate-300 whitespace-nowrap">
+        Silver
       </span>
     )
   }
 
   if (normalized === 'platinum') {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-sky-50 text-sky-700 border border-sky-200 whitespace-nowrap">
-        <span className="w-1.5 h-1.5 rounded-full bg-sky-500 shrink-0" />
-        PLATINUM
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-100 text-sky-800 border border-sky-200 whitespace-nowrap">
+        Platinum
       </span>
     )
   }
 
   if (normalized === 'diamond') {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-purple-50 text-purple-700 border border-purple-200 whitespace-nowrap">
-        <span className="w-1.5 h-1.5 rounded-full bg-purple-500 shrink-0" />
-        DIAMOND
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-violet-100 text-violet-800 border border-violet-200 whitespace-nowrap">
+        Diamond
       </span>
     )
   }
 
   return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-600 border border-slate-200 whitespace-nowrap">
-      {metal.toUpperCase()}
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-800 border border-slate-200 whitespace-nowrap">
+      {metal}
     </span>
   )
+}
+
+function renderStatus(active: boolean): React.JSX.Element {
+  if (active) {
+    return <span className="text-emerald-600 font-bold text-xs whitespace-nowrap">Active</span>
+  }
+
+  return <span className="text-slate-400 font-medium text-xs whitespace-nowrap">Inactive</span>
 }
 
 export function ItemGroupTable({
@@ -83,184 +88,161 @@ export function ItemGroupTable({
   onEdit,
   onDelete
 }: ItemGroupTableProps): React.JSX.Element {
-  if (loading) {
-    return (
-      <div className="h-full flex flex-col items-center justify-center text-slate-400 gap-3">
-        <div className="w-8 h-8 border-3 border-amber-500 border-t-transparent rounded-full animate-spin" />
-        <span className="text-xs font-medium">Loading item groups...</span>
-      </div>
-    )
-  }
-
-  if (groups.length === 0) {
-    return (
-      <div className="h-full flex flex-col items-center justify-center text-slate-400 gap-3 p-8 text-center">
-        <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 shadow-inner">
-          <FiLayers size={22} />
+  const columns: Column<ItemGroupRecord>[] = [
+    {
+      key: 'sr',
+      header: 'Sr No',
+      align: 'center',
+      width: '68px',
+      minWidth: '68px',
+      render: (_, i) => (
+        <span className="inline-block min-w-[22px] text-center font-semibold text-[11px] text-slate-500 bg-slate-100/80 px-1.5 py-0.5 rounded">
+          {i + 1}
+        </span>
+      )
+    },
+    {
+      key: 'prefix',
+      header: 'Code',
+      width: '90px',
+      render: (r) =>
+        r.prefix ? (
+          <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-800 border border-slate-200 shadow-2xs">
+            {r.prefix}
+          </span>
+        ) : (
+          <span className="text-slate-300 font-mono text-xs">-</span>
+        )
+    },
+    {
+      key: 'groupName',
+      header: 'Group Name',
+      minWidth: '200px',
+      render: (r) => <div className="font-semibold text-slate-900">{r.groupName}</div>
+    },
+    {
+      key: 'metalType',
+      header: 'Metal Type',
+      minWidth: '120px',
+      render: (r) => renderMetalBadge(r.metalType)
+    },
+    {
+      key: 'hsnCode',
+      header: 'HSN / GST',
+      minWidth: '130px',
+      render: (r) => (
+        <span className="font-mono text-[11px] text-slate-600">
+          <span className="font-semibold text-slate-800">{r.hsnCode || '7113'}</span>{' '}
+          <span className="text-slate-400">({r.gstRate ?? 3.0}%)</span>
+        </span>
+      )
+    },
+    {
+      key: 'defaultPurity',
+      header: 'Default Purity',
+      minWidth: '130px',
+      render: (r) =>
+        r.defaultPurity ? (
+          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-50 text-amber-900 border border-amber-200">
+            {r.defaultPurity}
+          </span>
+        ) : (
+          <span className="text-slate-300 text-xs">-</span>
+        )
+    },
+    {
+      key: 'defaultLabourRate',
+      header: 'Making (Labour)',
+      minWidth: '140px',
+      render: (r) =>
+        r.defaultLabourRate && r.defaultLabourRate > 0 ? (
+          <span className="font-mono text-[11px] text-slate-600">
+            ₹{r.defaultLabourRate}
+            <span className="text-[10px] text-slate-400 ml-1">
+              {r.defaultLabourType === 'PER_PIECE' ? '/pc' : r.defaultLabourType === 'PERCENT' ? '%' : '/gm'}
+            </span>
+          </span>
+        ) : (
+          <span className="text-slate-300 font-mono text-xs">-</span>
+        )
+    },
+    {
+      key: 'defaultWastage',
+      header: 'Wastage %',
+      align: 'right',
+      minWidth: '100px',
+      render: (r) =>
+        r.defaultWastage && r.defaultWastage > 0 ? (
+          <span className="font-mono text-[11px] text-slate-600">{r.defaultWastage}%</span>
+        ) : (
+          <span className="text-slate-300 font-mono text-xs">-</span>
+        )
+    },
+    {
+      key: 'description',
+      header: 'Description',
+      minWidth: '180px',
+      render: (r) => (
+        <span className="text-slate-600 line-clamp-1">{r.description || <span className="text-slate-300 font-mono">-</span>}</span>
+      )
+    },
+    {
+      key: 'active',
+      header: 'Status',
+      align: 'center',
+      width: '100px',
+      render: (r) => renderStatus(r.active)
+    },
+    {
+      key: 'actions',
+      header: 'Actions',
+      align: 'center',
+      width: '90px',
+      headerClassName: 'no-print',
+      className: 'no-print',
+      render: (r) => (
+        <div className="flex items-center justify-center gap-1.5">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation()
+              onEdit?.(r)
+            }}
+            className="p-1.5 rounded-md text-amber-600 hover:text-amber-900 hover:bg-amber-100 transition-all"
+            title="Edit Item Group"
+          >
+            <FiEdit2 size={16} className="stroke-[2.2]" />
+          </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation()
+              onDelete?.(r)
+            }}
+            className="p-1.5 rounded-md text-rose-500 hover:text-rose-800 hover:bg-rose-100 transition-all"
+            title="Delete Item Group"
+          >
+            <FiTrash2 size={16} className="stroke-[2.2]" />
+          </button>
         </div>
-        <div>
-          <h4 className="text-sm font-bold text-slate-700">No Item Groups Found</h4>
-          <p className="text-xs text-slate-400 mt-0.5 max-w-sm">
-            {searchText
-              ? `No item groups match your search "${searchText}". Try adjusting your filters.`
-              : 'Start by creating your first jewellery item group or category.'}
-          </p>
-        </div>
-      </div>
-    )
-  }
+      )
+    }
+  ]
 
   return (
-    <div className="h-full overflow-auto select-none">
-      <table className="w-full text-left text-xs border-collapse">
-        <thead className="bg-slate-50 text-[11px] font-bold text-slate-600 uppercase tracking-wider sticky top-0 z-10 border-b border-slate-200 shadow-xs">
-          <tr>
-            <th className="py-2.5 px-3 w-12 text-center font-bold">#</th>
-            <th className="py-2.5 px-3 w-24">Code</th>
-            <th className="py-2.5 px-4 min-w-[200px]">Group Name</th>
-            <th className="py-2.5 px-3 w-28">Metal Type</th>
-            <th className="py-2.5 px-3 w-32">HSN / GST</th>
-            <th className="py-2.5 px-3 w-32">Default Purity</th>
-            <th className="py-2.5 px-3 w-36">Making (Labour)</th>
-            <th className="py-2.5 px-3 w-24">Wastage %</th>
-            <th className="py-2.5 px-4">Description</th>
-            <th className="py-2.5 px-3 w-24 text-center">Status</th>
-            <th className="py-2.5 px-3 w-24 text-right no-print">Actions</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-slate-100 bg-white font-normal text-slate-700">
-          {groups.map((group, index) => {
-            const isSelected = selectedId === group.id
-
-            return (
-              <tr
-                key={group.id}
-                onClick={() => onSelect(group.id)}
-                onDoubleClick={() => onDoubleClick?.(group)}
-                className={`cursor-pointer transition-colors ${
-                  isSelected
-                    ? 'bg-amber-50/70 border-l-4 border-l-amber-500 font-medium'
-                    : 'hover:bg-slate-50/80'
-                }`}
-              >
-                {/* Sr No */}
-                <td className="py-2.5 px-3 text-center text-slate-400 font-mono text-[11px]">
-                  {index + 1}
-                </td>
-
-                {/* Code / Prefix */}
-                <td className="py-2.5 px-3">
-                  {group.prefix ? (
-                    <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-800 border border-slate-200 shadow-2xs">
-                      {group.prefix}
-                    </span>
-                  ) : (
-                    <span className="text-slate-300 font-mono text-xs">-</span>
-                  )}
-                </td>
-
-                {/* Group Name */}
-                <td className="py-2.5 px-4">
-                  <div className="font-bold text-slate-900 leading-tight">{group.groupName}</div>
-                </td>
-
-                {/* Metal Type Badge */}
-                <td className="py-2.5 px-3">{renderMetalBadge(group.metalType)}</td>
-
-                {/* HSN & GST */}
-                <td className="py-2.5 px-3 font-mono text-[11px] text-slate-600">
-                  <span className="font-semibold text-slate-800">{group.hsnCode || '7113'}</span>{' '}
-                  <span className="text-slate-400">({group.gstRate ?? 3.0}%)</span>
-                </td>
-
-                {/* Default Purity */}
-                <td className="py-2.5 px-3">
-                  {group.defaultPurity ? (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-50 text-amber-900 border border-amber-200">
-                      {group.defaultPurity}
-                    </span>
-                  ) : (
-                    <span className="text-slate-300 text-xs">-</span>
-                  )}
-                </td>
-
-                {/* Default Making (Labour) */}
-                <td className="py-2.5 px-3 font-mono text-[11px] text-slate-600">
-                  {group.defaultLabourRate && group.defaultLabourRate > 0 ? (
-                    <span>
-                      ₹{group.defaultLabourRate}
-                      <span className="text-[10px] text-slate-400 ml-1">
-                        {group.defaultLabourType === 'PER_PIECE'
-                          ? '/pc'
-                          : group.defaultLabourType === 'PERCENT'
-                            ? '%'
-                            : '/gm'}
-                      </span>
-                    </span>
-                  ) : (
-                    <span className="text-slate-300">-</span>
-                  )}
-                </td>
-
-                {/* Default Wastage */}
-                <td className="py-2.5 px-3 font-mono text-[11px] text-slate-600">
-                  {group.defaultWastage && group.defaultWastage > 0 ? (
-                    <span>{group.defaultWastage}%</span>
-                  ) : (
-                    <span className="text-slate-300">-</span>
-                  )}
-                </td>
-
-                {/* Description */}
-                <td className="py-2.5 px-4 text-slate-500 truncate max-w-[200px]" title={group.description}>
-                  {group.description || <span className="text-slate-300">-</span>}
-                </td>
-
-                {/* Status */}
-                <td className="py-2.5 px-3 text-center">
-                  <span
-                    className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                      group.active
-                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                        : 'bg-slate-100 text-slate-500 border border-slate-200'
-                    }`}
-                  >
-                    {group.active ? 'Active' : 'Inactive'}
-                  </span>
-                </td>
-
-                {/* Actions */}
-                <td className="py-2.5 px-3 text-right no-print">
-                  <div className="flex items-center justify-end gap-1">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        onEdit?.(group)
-                      }}
-                      className="p-1 rounded text-slate-400 hover:text-amber-700 hover:bg-amber-50 transition-colors"
-                      title="Edit Item Group"
-                    >
-                      <FiEdit2 size={14} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        onDelete?.(group)
-                      }}
-                      className="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
-                      title="Delete Item Group"
-                    >
-                      <FiTrash2 size={14} />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            )
-          })}
-        </tbody>
-      </table>
-    </div>
+    <DataTable
+      columns={columns}
+      data={groups}
+      keyExtractor={(r) => r.id}
+      loading={loading}
+      loadingMessage="Loading item groups..."
+      searchText={searchText}
+      emptyTitle="No item groups found."
+      emptyActionText="Add New Group"
+      selectedId={selectedId}
+      onSelect={(id) => onSelect(String(id))}
+      onDoubleClick={(r) => onDoubleClick?.(r)}
+      printTitle="ITEM GROUP DIRECTORY"
+    />
   )
 }

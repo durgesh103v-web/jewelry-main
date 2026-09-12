@@ -5,26 +5,36 @@
    ========================================================================== */
 :root {
   /* Colors - Pearl/Slate Neutrals & Gold/Amber Primary */
-  --color-background-app: #f8fafc;       /* Soft Pearl/Slate 50 */
-  --color-background-surface: #ffffff;   /* Pure White */
-  --color-background-muted: #f1f5f9;     /* Slate 100 */
-  
-  --color-border-default: #e2e8f0;       /* Slate 200 */
-  --color-border-muted: #f8fafc;         /* Slate 50 */
-  
-  --color-text-primary: #0f172a;         /* Slate 900 */
-  --color-text-muted: #64748b;           /* Slate 500 */
+  --color-background-app: #f8fafc;
+  /* Soft Pearl/Slate 50 */
+  --color-background-surface: #ffffff;
+  /* Pure White */
+  --color-background-muted: #f1f5f9;
+  /* Slate 100 */
+
+  --color-border-default: #e2e8f0;
+  /* Slate 200 */
+  --color-border-muted: #f8fafc;
+  /* Slate 50 */
+
+  --color-text-primary: #0f172a;
+  /* Slate 900 */
+  --color-text-muted: #64748b;
+  /* Slate 500 */
   --color-text-inverse: #ffffff;
-  
-  --color-brand-primary: #b45309;        /* Amber 700 (Gold) */
-  --color-brand-primary-hover: #92400e;  /* Amber 800 */
-  --color-brand-light: #fef3c7;          /* Amber 100 */
+
+  --color-brand-primary: #b45309;
+  /* Amber 700 (Gold) */
+  --color-brand-primary-hover: #92400e;
+  /* Amber 800 */
+  --color-brand-light: #fef3c7;
+  /* Amber 100 */
 
   /* Typography */
   --font-family-base: 'Inter', system-ui, -apple-system, sans-serif;
   --font-family-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
   --font-size-body: 13px;
-  
+
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
   --font-weight-bold: 700;
@@ -40,10 +50,10 @@
   --radius-md: 8px;
   --radius-lg: 12px;
   --radius-pill: 9999px;
-  
+
   --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
   --shadow-sm: 0 2px 4px -1px rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.02);
-  
+
   /* Transitions */
   --duration-fast: 150ms;
   --duration-normal: 250ms;
@@ -87,19 +97,47 @@
 }
 
 /* ==========================================================================
+   GLOBAL BUTTON & TEXT CONSISTENCY ENFORCEMENT
+   ========================================================================== */
+.text-white,
+[class*="text-white"],
+button.bg-amber-600,
+button.bg-amber-500,
+button.bg-amber-700,
+button.bg-emerald-600,
+button.bg-blue-600,
+button.bg-rose-600 {
+  color: #ffffff !important;
+}
+
+.text-white *,
+[class*="text-white"] *,
+button.bg-amber-600 *,
+button.bg-amber-500 *,
+button.bg-amber-700 *,
+button.bg-emerald-600 *,
+button.bg-blue-600 *,
+button.bg-rose-600 * {
+  color: #ffffff !important;
+}
+
+/* ==========================================================================
    CUSTOM SCROLLBARS (Minimalist)
    ========================================================================== */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
+
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
   background: var(--color-border-default);
   border-radius: var(--radius-pill);
 }
+
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-text-muted);
 }
@@ -108,6 +146,7 @@
    COMPONENTS
    ========================================================================== */
 @layer components {
+
   /* 1. Page Canvas Container */
   .erp-page-container {
     width: 100%;
@@ -167,7 +206,7 @@
 
   .erp-table {
     width: 100%;
-    border-collapse: separate; 
+    border-collapse: separate;
     border-spacing: 0;
     font-size: 12px;
   }
@@ -200,7 +239,7 @@
   .erp-table tr:hover td {
     background: var(--color-background-muted);
   }
-  
+
   .erp-table tr:last-child td {
     border-bottom: none;
   }
@@ -221,11 +260,35 @@
     letter-spacing: 0.01em;
   }
 
-  .erp-status-pill.in-progress { color: #1e40af; background: #dbeafe; border-color: #bfdbfe; }
-  .erp-status-pill.pending     { color: #92400e; background: #fef3c7; border-color: #fde68a; }
-  .erp-status-pill.partial     { color: #5b21b6; background: #ede9fe; border-color: #ddd6fe; }
-  .erp-status-pill.ready       { color: #065f46; background: #d1fae5; border-color: #a7f3d0; }
-  .erp-status-pill.expiring    { color: #b91c1c; background: #fee2e2; border-color: #fecaca; }
+  .erp-status-pill.in-progress {
+    color: #1e40af;
+    background: #dbeafe;
+    border-color: #bfdbfe;
+  }
+
+  .erp-status-pill.pending {
+    color: #92400e;
+    background: #fef3c7;
+    border-color: #fde68a;
+  }
+
+  .erp-status-pill.partial {
+    color: #5b21b6;
+    background: #ede9fe;
+    border-color: #ddd6fe;
+  }
+
+  .erp-status-pill.ready {
+    color: #065f46;
+    background: #d1fae5;
+    border-color: #a7f3d0;
+  }
+
+  .erp-status-pill.expiring {
+    color: #b91c1c;
+    background: #fee2e2;
+    border-color: #fecaca;
+  }
 
   /* 5. Quick Action Button Pills */
   .quick-action-pill-btn {
@@ -310,6 +373,7 @@
    UTILITIES
    ========================================================================== */
 @layer utilities {
+
   /* Numbers in Monospace for Accounting Accuracy */
   .erp-mono-num {
     font-family: var(--font-family-mono);

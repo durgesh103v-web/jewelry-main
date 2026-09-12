@@ -58,7 +58,7 @@ export function ItemMasterScreen({ onClose: _onClose }: ItemMasterScreenProps): 
   } = useItemMaster()
 
   return (
-    <div className="flex flex-col h-full bg-slate-50/50">
+    <div className="flex flex-col h-full bg-[var(--color-background-app,#eef2f6)]">
       {/* Alert Container */}
       {alert && (
         <div className="px-6 pt-4 shrink-0">

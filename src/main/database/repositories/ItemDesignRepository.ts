@@ -4,6 +4,10 @@ export interface ItemDesignRow {
   id: string
   design_name: string
   metal_type: string
+  short_code: string | null
+  default_labour_rate: number | null
+  default_labour_type: string | null
+  default_wastage: number | null
   description: string | null
   active: number
   created_at: string
@@ -15,7 +19,7 @@ export class ItemDesignRepository extends BaseRepository {
     return this.db
       .prepare(
         `
-        SELECT id, design_name, metal_type, description, active, created_at, updated_at
+        SELECT id, design_name, metal_type, short_code, default_labour_rate, default_labour_type, default_wastage, description, active, created_at, updated_at
         FROM item_designs
         WHERE deleted_at IS NULL
         ORDER BY design_name ASC
@@ -28,7 +32,7 @@ export class ItemDesignRepository extends BaseRepository {
     return this.db
       .prepare(
         `
-        SELECT id, design_name, metal_type, description, active, created_at, updated_at
+        SELECT id, design_name, metal_type, short_code, default_labour_rate, default_labour_type, default_wastage, description, active, created_at, updated_at
         FROM item_designs
         WHERE id = ? AND deleted_at IS NULL
       `
@@ -62,6 +66,10 @@ export class ItemDesignRepository extends BaseRepository {
     id: string
     designName: string
     metalType: string
+    shortCode?: string
+    defaultLabourRate?: number
+    defaultLabourType?: string
+    defaultWastage?: number
     description?: string
     active: boolean
     createdAt: string
@@ -70,14 +78,18 @@ export class ItemDesignRepository extends BaseRepository {
     this.db
       .prepare(
         `
-        INSERT INTO item_designs (id, design_name, metal_type, description, active, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO item_designs (id, design_name, metal_type, short_code, default_labour_rate, default_labour_type, default_wastage, description, active, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `
       )
       .run(
         data.id,
         data.designName,
         data.metalType,
+        data.shortCode ?? '',
+        data.defaultLabourRate ?? 0,
+        data.defaultLabourType ?? 'PER_GRAM',
+        data.defaultWastage ?? 0,
         data.description ?? '',
         data.active ? 1 : 0,
         data.createdAt,
@@ -90,6 +102,10 @@ export class ItemDesignRepository extends BaseRepository {
     data: {
       designName: string
       metalType: string
+      shortCode?: string
+      defaultLabourRate?: number
+      defaultLabourType?: string
+      defaultWastage?: number
       description?: string
       active: boolean
       updatedAt: string
@@ -99,11 +115,22 @@ export class ItemDesignRepository extends BaseRepository {
       .prepare(
         `
         UPDATE item_designs
-        SET design_name = ?, metal_type = ?, description = ?, active = ?, updated_at = ?
+        SET design_name = ?, metal_type = ?, short_code = ?, default_labour_rate = ?, default_labour_type = ?, default_wastage = ?, description = ?, active = ?, updated_at = ?
         WHERE id = ?
       `
       )
-      .run(data.designName, data.metalType, data.description ?? '', data.active ? 1 : 0, data.updatedAt, id)
+      .run(
+        data.designName,
+        data.metalType,
+        data.shortCode ?? '',
+        data.defaultLabourRate ?? 0,
+        data.defaultLabourType ?? 'PER_GRAM',
+        data.defaultWastage ?? 0,
+        data.description ?? '',
+        data.active ? 1 : 0,
+        data.updatedAt,
+        id
+      )
   }
 
   delete(id: string, now: string): void {
@@ -112,3 +139,4 @@ export class ItemDesignRepository extends BaseRepository {
       .run(now, now, id)
   }
 }
+

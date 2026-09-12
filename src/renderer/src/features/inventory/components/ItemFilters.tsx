@@ -1,5 +1,5 @@
 import React from 'react'
-import { Select } from '@components/ui/select/Select'
+import { Select, SearchInput } from '@components/ui'
 import type { ItemGroupOption } from './ItemForm'
 
 export const STATUS_FILTERS = [
@@ -99,7 +99,7 @@ export function ItemFilters({
           <button
             type="button"
             onClick={onPrint}
-            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-md bg-white border border-slate-200 text-slate-700 text-xs font-medium hover:bg-slate-50 hover:border-slate-300 transition-colors shadow-sm"
+            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-md bg-slate-50 border border-slate-200 text-slate-600 text-xs font-semibold hover:bg-slate-200 hover:border-slate-400 hover:text-slate-900 transition-colors shadow-sm"
           >
             <svg
               width="14"
@@ -121,7 +121,7 @@ export function ItemFilters({
           <button
             type="button"
             onClick={onExportCsv}
-            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-md bg-white border border-slate-200 text-slate-700 text-xs font-medium hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-800 transition-colors shadow-sm"
+            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold hover:bg-emerald-200 hover:border-emerald-400 hover:text-emerald-900 transition-colors shadow-sm"
             title="Export filtered items to CSV"
           >
             <svg
@@ -142,62 +142,25 @@ export function ItemFilters({
           </button>
         </div>
 
-        {/* Counts & Selection Status */}
-        <div className="flex items-center gap-2 text-xs">
-          {selectedItemName && !formOpen && (
-            <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 font-medium">
-              Selected: {selectedItemName}
-            </span>
-          )}
-          <span className="px-2.5 py-1 rounded-md bg-slate-100 text-slate-600 font-medium border border-slate-200/60">
-            Total: <strong className="text-slate-800">{totalCount}</strong>
+        {/* Selected Status */}
+        <div className="text-xs bg-slate-100 px-3 py-1.5 rounded-md border border-slate-200 text-slate-500 select-none">
+          Selected:{' '}
+          <span className={`font-bold ${selectedItemName ? 'text-amber-700' : 'text-slate-400'}`}>
+            {selectedItemName ?? 'None'}
           </span>
-          <span className="px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-700 font-medium border border-emerald-200/60">
-            Active: <strong>{activeCount}</strong>
-          </span>
-          {showingCount !== totalCount && (
-            <span className="px-2.5 py-1 rounded-md bg-amber-50 text-amber-700 font-medium border border-amber-200/60">
-              Showing: <strong>{showingCount}</strong>
-            </span>
-          )}
         </div>
       </div>
 
       {/* Filter Row */}
       {!formOpen && (
-        <div className="flex items-center gap-2.5 flex-wrap pt-1">
+        <div className="flex items-center gap-2.5 bg-white p-2.5 rounded-lg border border-slate-200 shadow-sm flex-wrap">
           {/* Search Box */}
-          <div className="relative min-w-[200px] max-w-xs flex-1">
-            <input
-              type="text"
+          <div className="min-w-[200px] max-w-xs flex-1">
+            <SearchInput
               value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
+              onChange={setSearchText}
               placeholder="Search code, name, HSN..."
-              className="w-full h-8 pl-8 pr-7 text-xs bg-white border border-slate-200 rounded-md text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs transition-all"
             />
-            <svg
-              className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
-              width="13"
-              height="13"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-            >
-              <circle cx="11" cy="11" r="8" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-            {searchText && (
-              <button
-                type="button"
-                onClick={() => setSearchText('')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                title="Clear search"
-              >
-                &times;
-              </button>
-            )}
           </div>
 
           {/* Metal Type Filter using common Select */}
@@ -255,15 +218,34 @@ export function ItemFilters({
             <button
               type="button"
               onClick={onClearFilters}
-              className="inline-flex items-center gap-1 h-8 px-2.5 text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-50 border border-rose-200/80 rounded-md font-medium transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1 h-8 px-2.5 text-xs text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-md font-medium transition-colors cursor-pointer"
             >
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <line x1="18" y1="6" x2="6" y2="18" />
                 <line x1="6" y1="6" x2="18" y2="18" />
               </svg>
-              Reset Filters
+              Reset
             </button>
           )}
+
+          {/* Counts */}
+          <div className="flex items-center gap-3 text-xs text-slate-500 font-medium ml-auto pr-1 select-none">
+            <span>
+              Total <strong className="text-slate-700 font-bold">{totalCount}</strong>
+            </span>
+            <span className="text-slate-300">|</span>
+            <span>
+              Active <strong className="text-emerald-700 font-bold">{activeCount}</strong>
+            </span>
+            {showingCount !== totalCount && (
+              <>
+                <span className="text-slate-300">|</span>
+                <span>
+                  Showing <strong className="text-amber-700 font-bold">{showingCount}</strong>
+                </span>
+              </>
+            )}
+          </div>
         </div>
       )}
     </div>

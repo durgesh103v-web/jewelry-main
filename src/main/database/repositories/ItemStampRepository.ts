@@ -4,6 +4,10 @@ export interface ItemStampRow {
   id: string
   stamp_name: string
   metal_type: string
+  purity_karat?: string | null
+  purity_tanch?: number | null
+  short_code?: string | null
+  is_hallmarked?: number | null
   description: string | null
   active: number
   created_at: string
@@ -15,7 +19,7 @@ export class ItemStampRepository extends BaseRepository {
     return this.db
       .prepare(
         `
-        SELECT id, stamp_name, metal_type, description, active, created_at, updated_at
+        SELECT id, stamp_name, metal_type, purity_karat, purity_tanch, short_code, is_hallmarked, description, active, created_at, updated_at
         FROM item_stamps
         WHERE deleted_at IS NULL
         ORDER BY stamp_name ASC
@@ -28,7 +32,7 @@ export class ItemStampRepository extends BaseRepository {
     return this.db
       .prepare(
         `
-        SELECT id, stamp_name, metal_type, description, active, created_at, updated_at
+        SELECT id, stamp_name, metal_type, purity_karat, purity_tanch, short_code, is_hallmarked, description, active, created_at, updated_at
         FROM item_stamps
         WHERE id = ? AND deleted_at IS NULL
       `
@@ -62,6 +66,10 @@ export class ItemStampRepository extends BaseRepository {
     id: string
     stampName: string
     metalType: string
+    purityKarat?: string
+    purityTanch?: number
+    shortCode?: string
+    isHallmarked?: boolean
     description?: string
     active: boolean
     createdAt: string
@@ -70,14 +78,18 @@ export class ItemStampRepository extends BaseRepository {
     this.db
       .prepare(
         `
-        INSERT INTO item_stamps (id, stamp_name, metal_type, description, active, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO item_stamps (id, stamp_name, metal_type, purity_karat, purity_tanch, short_code, is_hallmarked, description, active, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `
       )
       .run(
         data.id,
         data.stampName,
         data.metalType,
+        data.purityKarat ?? '',
+        data.purityTanch ?? 0,
+        data.shortCode ?? '',
+        data.isHallmarked !== false ? 1 : 0,
         data.description ?? '',
         data.active ? 1 : 0,
         data.createdAt,
@@ -90,6 +102,10 @@ export class ItemStampRepository extends BaseRepository {
     data: {
       stampName: string
       metalType: string
+      purityKarat?: string
+      purityTanch?: number
+      shortCode?: string
+      isHallmarked?: boolean
       description?: string
       active: boolean
       updatedAt: string
@@ -99,11 +115,22 @@ export class ItemStampRepository extends BaseRepository {
       .prepare(
         `
         UPDATE item_stamps
-        SET stamp_name = ?, metal_type = ?, description = ?, active = ?, updated_at = ?
+        SET stamp_name = ?, metal_type = ?, purity_karat = ?, purity_tanch = ?, short_code = ?, is_hallmarked = ?, description = ?, active = ?, updated_at = ?
         WHERE id = ?
       `
       )
-      .run(data.stampName, data.metalType, data.description ?? '', data.active ? 1 : 0, data.updatedAt, id)
+      .run(
+        data.stampName,
+        data.metalType,
+        data.purityKarat ?? '',
+        data.purityTanch ?? 0,
+        data.shortCode ?? '',
+        data.isHallmarked !== false ? 1 : 0,
+        data.description ?? '',
+        data.active ? 1 : 0,
+        data.updatedAt,
+        id
+      )
   }
 
   delete(id: string, now: string): void {

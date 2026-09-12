@@ -105,8 +105,7 @@ function renderGroupTypeBadge(type: string): React.JSX.Element {
 
   if (normalized.includes('customer')) {
     return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80 whitespace-nowrap shadow-2xs">
-        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-100 text-teal-800 border border-teal-200 whitespace-nowrap">
         Customer
       </span>
     )
@@ -114,8 +113,7 @@ function renderGroupTypeBadge(type: string): React.JSX.Element {
 
   if (normalized.includes('supplier') || normalized.includes('bullion')) {
     return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-purple-50 text-purple-700 border border-purple-200/80 whitespace-nowrap shadow-2xs">
-        <span className="w-1.5 h-1.5 rounded-full bg-purple-500 shrink-0" />
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-violet-100 text-violet-800 border border-violet-200 whitespace-nowrap">
         Supplier
       </span>
     )
@@ -123,8 +121,7 @@ function renderGroupTypeBadge(type: string): React.JSX.Element {
 
   if (normalized.includes('karagir') || normalized.includes('artisan')) {
     return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200/80 whitespace-nowrap shadow-2xs">
-        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200 whitespace-nowrap">
         Karagir
       </span>
     )
@@ -132,8 +129,7 @@ function renderGroupTypeBadge(type: string): React.JSX.Element {
 
   if (normalized.includes('cash')) {
     return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200/80 whitespace-nowrap shadow-2xs">
-        <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0" />
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200 whitespace-nowrap">
         Cash
       </span>
     )
@@ -141,8 +137,7 @@ function renderGroupTypeBadge(type: string): React.JSX.Element {
 
   if (normalized.includes('bank')) {
     return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-sky-50 text-sky-700 border border-sky-200/80 whitespace-nowrap shadow-2xs">
-        <span className="w-1.5 h-1.5 rounded-full bg-sky-500 shrink-0" />
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200 whitespace-nowrap">
         Bank
       </span>
     )
@@ -150,16 +145,14 @@ function renderGroupTypeBadge(type: string): React.JSX.Element {
 
   if (normalized.includes('expense')) {
     return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-rose-50 text-rose-700 border border-rose-200/80 whitespace-nowrap shadow-2xs">
-        <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-100 text-orange-800 border border-orange-200 whitespace-nowrap">
         Expense
       </span>
     )
   }
 
   return (
-    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-medium bg-slate-100 text-slate-700 border border-slate-200 whitespace-nowrap shadow-2xs">
-      <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-800 border border-slate-200 whitespace-nowrap">
       {type || 'Other'}
     </span>
   )
@@ -527,7 +520,7 @@ export function AccountGroupScreen({ onClose: _onClose }: { onClose?: () => void
 
 
   return (
-    <div className="flex flex-col h-full bg-slate-50/50">
+    <div className="flex flex-col h-full bg-[var(--color-background-app,#eef2f6)]">
       {/* Alert */}
       {alert && (
         <div className="px-6 pt-4 shrink-0">
@@ -556,7 +549,7 @@ export function AccountGroupScreen({ onClose: _onClose }: { onClose?: () => void
             <button
               type="button"
               onClick={handlePrint}
-              className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-md bg-white border border-slate-200 text-slate-700 text-xs font-medium hover:bg-slate-100 hover:text-slate-900 hover:border-slate-300 active:bg-slate-200 transition-all shadow-xs"
+              className="inline-flex items-center gap-1.5 h-9 px-4 rounded-md bg-slate-50 border border-slate-200 text-slate-600 text-xs font-semibold hover:bg-slate-200 hover:border-slate-400 hover:text-slate-900 transition-colors shadow-sm"
               title="Print Account Groups"
             >
               <FiPrinter size={14} />
@@ -566,7 +559,7 @@ export function AccountGroupScreen({ onClose: _onClose }: { onClose?: () => void
             <button
               type="button"
               onClick={handleExportCsv}
-              className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-md bg-white border border-slate-200 text-slate-700 text-xs font-medium hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-800 active:bg-emerald-100 transition-all shadow-xs"
+              className="inline-flex items-center gap-1.5 h-9 px-4 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold hover:bg-emerald-200 hover:border-emerald-400 hover:text-emerald-900 transition-colors shadow-sm"
               title="Export filtered groups to CSV"
             >
               <FiDownload size={14} />
@@ -682,7 +675,7 @@ export function AccountGroupScreen({ onClose: _onClose }: { onClose?: () => void
               <span className="text-[11px] text-slate-400 font-medium">Fields marked with * are mandatory</span>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6 max-w-4xl">
+            <div className="flex-1 overflow-y-auto p-6">
               <div className="space-y-6">
                 {/* Horizontal Row: Group Name & Group Type (2 Columns) */}
                 <div className="grid grid-cols-2 gap-6">
@@ -799,9 +792,9 @@ export function AccountGroupScreen({ onClose: _onClose }: { onClose?: () => void
 
               <div className="w-full h-full overflow-auto">
                 <table className="w-full text-xs text-left border-collapse print:text-[10px]">
-                  <thead className="sticky top-0 z-10 bg-slate-50/95 backdrop-blur-xs border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider select-none shadow-[0_1px_2px_rgba(0,0,0,0.02)] print:static">
-                    <tr>
-                      <th className="py-3 px-3 w-16 text-center text-[10px] font-bold text-slate-500">Sr No</th>
+                  <thead className="sticky top-0 z-10 bg-slate-200 text-slate-800 border-b border-slate-300 font-bold uppercase tracking-wider select-none print:static">
+                    <tr className="border-l-4 border-l-slate-200">
+                      <th className="py-3 px-3 w-16 text-center text-[10px] font-bold text-slate-700">Sr No</th>
                       <th className="py-3 px-4 min-w-[200px]">Group Name</th>
                       <th className="py-3 px-3 min-w-[130px]">Group Type</th>
                       <th className="py-3 px-3 text-center min-w-[120px]">Linked Accounts</th>
@@ -848,7 +841,7 @@ export function AccountGroupScreen({ onClose: _onClose }: { onClose?: () => void
                             className={`transition-colors cursor-pointer select-none group ${
                               isSelected
                                 ? 'bg-amber-50/90 border-l-4 border-l-amber-500 shadow-[inset_0_1px_3px_rgba(0,0,0,0.02)] relative'
-                                : 'border-l-4 border-l-transparent hover:bg-slate-50/80'
+                                : 'border-l-4 border-l-transparent hover:bg-slate-100 hover:border-l-amber-300 hover:shadow-[0_2px_4px_rgba(0,0,0,0.02)]'
                             }`}
                           >
                             {/* Sr No */}
@@ -873,11 +866,11 @@ export function AccountGroupScreen({ onClose: _onClose }: { onClose?: () => void
                             {/* Linked Accounts Count */}
                             <td className="py-3 px-3 text-center">
                               {group.accountCount && group.accountCount > 0 ? (
-                                <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200/80 shadow-2xs">
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
                                   {group.accountCount} {group.accountCount === 1 ? 'account' : 'accounts'}
                                 </span>
                               ) : (
-                                <span className="text-slate-300 font-mono text-xs">0</span>
+                                <span className="text-slate-300 font-mono text-xs">-</span>
                               )}
                             </td>
 
@@ -904,7 +897,7 @@ export function AccountGroupScreen({ onClose: _onClose }: { onClose?: () => void
                                     e.stopPropagation()
                                     openEditForm(group)
                                   }}
-                                  className="p-1.5 rounded-md text-slate-500 hover:text-amber-800 hover:bg-amber-100 transition-all shadow-none hover:shadow-sm"
+                                  className="p-1.5 rounded-md text-amber-600 hover:text-amber-900 hover:bg-amber-100 transition-all"
                                   title="Edit Account Group"
                                 >
                                   <FiEdit2 size={16} className="stroke-[2.2]" />
@@ -915,7 +908,7 @@ export function AccountGroupScreen({ onClose: _onClose }: { onClose?: () => void
                                     e.stopPropagation()
                                     requestDelete(group)
                                   }}
-                                  className="p-1.5 rounded-md text-slate-400 hover:text-rose-700 hover:bg-rose-100 transition-all shadow-none hover:shadow-sm"
+                                  className="p-1.5 rounded-md text-rose-500 hover:text-rose-800 hover:bg-rose-100 transition-all"
                                   title="Delete Account Group"
                                 >
                                   <FiTrash2 size={16} className="stroke-[2.2]" />

@@ -93,38 +93,13 @@ export function AccountForm({
   return (
     <div className="flex flex-col h-full bg-white">
       {/* Header Bar */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50/50 shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-sm shadow-sm border border-amber-200">
-            {editingId ? '✎' : '+'}
-          </div>
-          <div>
-            <h3 className="text-sm font-bold text-slate-900 tracking-tight">
-              {editingId ? 'Edit Account Master' : 'Create New Account Master'}
-            </h3>
-            <p className="text-[11px] text-slate-500">
-              Configure party identity, opening metal/cash ledgers, credit thresholds, and banking credentials.
-            </p>
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-200 hover:text-slate-700 transition-colors"
-          title="Cancel and close (Esc)"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
-        </button>
-      </div>
+     
 
       <div className="flex-1 overflow-y-auto p-6 space-y-8">
         {/* 1. Basic Details */}
         <section>
           <div className="flex items-center gap-2 pb-2 mb-4 border-b border-slate-100">
-            <div className="w-1.5 h-4 bg-amber-500 rounded-full" />
+           
             <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
               1. Account Identification &amp; Grouping
             </h4>
@@ -197,20 +172,10 @@ export function AccountForm({
         <section>
           <div className="flex items-center justify-between pb-2 mb-4 border-b border-slate-100 flex-wrap gap-2">
             <div className="flex items-center gap-2">
-              <div className="w-1.5 h-4 bg-amber-500 rounded-full" />
+             
               <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
                 2. Opening Balances &amp; Credit Limits
               </h4>
-            </div>
-            <div className="flex items-center gap-2 text-[11px]">
-              <span className="text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded border border-emerald-200 font-semibold flex items-center gap-1">
-                <span>(+) Positive =</span>
-                <span>Payable / देणे (Dr)</span>
-              </span>
-              <span className="text-rose-700 bg-rose-50 px-2.5 py-0.5 rounded border border-rose-200 font-semibold flex items-center gap-1">
-                <span>(-) Negative =</span>
-                <span>Receivable / घेणे (Cr)</span>
-              </span>
             </div>
           </div>
 
@@ -386,7 +351,6 @@ export function AccountForm({
         {/* 3. Bank & Settlement Details */}
         <section>
           <div className="flex items-center gap-2 pb-2 mb-4 border-b border-slate-100">
-            <div className="w-1.5 h-4 bg-amber-500 rounded-full" />
             <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
               3. Banking &amp; Electronic Settlement Details (NEFT / RTGS / UPI)
             </h4>
@@ -446,7 +410,7 @@ export function AccountForm({
         {/* 4. Contact & Location */}
         <section>
           <div className="flex items-center gap-2 pb-2 mb-4 border-b border-slate-100">
-            <div className="w-1.5 h-4 bg-amber-500 rounded-full" />
+           
             <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
               4. Contact &amp; Postal Address
             </h4>
@@ -554,7 +518,7 @@ export function AccountForm({
         {/* 5. Tax & Statutory Details */}
         <section>
           <div className="flex items-center gap-2 pb-2 mb-4 border-b border-slate-100">
-            <div className="w-1.5 h-4 bg-amber-500 rounded-full" />
+     
             <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
               5. Taxation &amp; Compliance Details
             </h4>

@@ -6,11 +6,14 @@ import { getDatabase } from '../database/connection'
 const DEFAULT_ID = 'default-cash-fine-opening'
 
 const lineSchema = z.object({
-  metalType: z.enum(['Gold', 'Silver']),
+  metalType: z.string().trim().default('Gold'),
   entryType: z.string().trim().optional().default(''),
   details: z.string().trim().optional().default(''),
+  location: z.string().trim().optional().default(''),
   weight: z.coerce.number().default(0),
   tanch: z.coerce.number().default(0),
+  rate: z.coerce.number().default(0),
+  amount: z.coerce.number().default(0),
   ptStatus: z.string().trim().optional().default('')
 })
 
@@ -23,7 +26,13 @@ const summarySchema = z.object({
   silverPurchaseAmount: z.coerce.number().default(0),
   silverSaleFine: z.coerce.number().default(0),
   silverSaleAmount: z.coerce.number().default(0),
-  openingCash: z.coerce.number().default(0)
+  platinumPurchaseFine: z.coerce.number().default(0),
+  platinumPurchaseAmount: z.coerce.number().default(0),
+  platinumSaleFine: z.coerce.number().default(0),
+  platinumSaleAmount: z.coerce.number().default(0),
+  openingCash: z.coerce.number().default(0),
+  openingBankBalance: z.coerce.number().default(0),
+  openingPettyCash: z.coerce.number().default(0)
 })
 
 const saveSchema = z.object({
@@ -41,7 +50,13 @@ type SummaryRow = {
   silver_purchase_amount: number
   silver_sale_fine: number
   silver_sale_amount: number
+  platinum_purchase_fine?: number
+  platinum_purchase_amount?: number
+  platinum_sale_fine?: number
+  platinum_sale_amount?: number
   opening_cash: number
+  opening_bank_balance?: number
+  opening_petty_cash?: number
   created_at: string
   updated_at: string
 }
@@ -55,7 +70,13 @@ type OpeningSummary = {
   silverPurchaseAmount: number
   silverSaleFine: number
   silverSaleAmount: number
+  platinumPurchaseFine: number
+  platinumPurchaseAmount: number
+  platinumSaleFine: number
+  platinumSaleAmount: number
   openingCash: number
+  openingBankBalance: number
+  openingPettyCash: number
 }
 
 type OpeningLineRecord = {
@@ -64,22 +85,29 @@ type OpeningLineRecord = {
   metalType: string
   entryType: string
   details: string
+  location: string
   weight: number
   tanch: number
   fine: number
+  rate: number
+  amount: number
   ptStatus: string
   createdAt: string
   updatedAt: string
 }
+
 type LineRow = {
   id: string
   line_no: number
   metal_type: string
   entry_type: string
   details: string
+  location?: string
   weight: number
   tanch: number
   fine: number
+  rate?: number
+  amount?: number
   pt_status: string
   created_at: string
   updated_at: string
@@ -104,7 +132,13 @@ function getEmptySummary(): OpeningSummary {
     silverPurchaseAmount: 0,
     silverSaleFine: 0,
     silverSaleAmount: 0,
-    openingCash: 0
+    platinumPurchaseFine: 0,
+    platinumPurchaseAmount: 0,
+    platinumSaleFine: 0,
+    platinumSaleAmount: 0,
+    openingCash: 0,
+    openingBankBalance: 0,
+    openingPettyCash: 0
   }
 }
 
@@ -120,7 +154,13 @@ function mapSummary(row?: SummaryRow): OpeningSummary {
     silverPurchaseAmount: Number(row.silver_purchase_amount || 0),
     silverSaleFine: Number(row.silver_sale_fine || 0),
     silverSaleAmount: Number(row.silver_sale_amount || 0),
-    openingCash: Number(row.opening_cash || 0)
+    platinumPurchaseFine: Number(row.platinum_purchase_fine || 0),
+    platinumPurchaseAmount: Number(row.platinum_purchase_amount || 0),
+    platinumSaleFine: Number(row.platinum_sale_fine || 0),
+    platinumSaleAmount: Number(row.platinum_sale_amount || 0),
+    openingCash: Number(row.opening_cash || 0),
+    openingBankBalance: Number(row.opening_bank_balance || 0),
+    openingPettyCash: Number(row.opening_petty_cash || 0)
   }
 }
 
@@ -129,12 +169,15 @@ function mapLine(row: LineRow): OpeningLineRecord {
     id: row.id,
     lineNo: row.line_no,
     metalType: row.metal_type,
-    entryType: row.entry_type,
-    details: row.details,
+    entryType: row.entry_type || '',
+    details: row.details || '',
+    location: row.location || '',
     weight: Number(row.weight || 0),
     tanch: Number(row.tanch || 0),
     fine: Number(row.fine || 0),
-    ptStatus: row.pt_status,
+    rate: Number(row.rate || 0),
+    amount: Number(row.amount || 0),
+    ptStatus: row.pt_status || '',
     createdAt: row.created_at,
     updatedAt: row.updated_at
   }
@@ -175,17 +218,31 @@ export const cashFineOpeningService = {
     const db = getDatabase()
     const now = dayjs().format('YYYY-MM-DD HH:mm:ss')
 
-    const preparedLines = data.lines.map((line, index) => ({
-      id: randomUUID(),
-      lineNo: index + 1,
-      metalType: line.metalType,
-      entryType: line.entryType,
-      details: line.details,
-      weight: Number(line.weight || 0),
-      tanch: Number(line.tanch || 0),
-      fine: calculateFine(Number(line.weight || 0), Number(line.tanch || 0)),
-      ptStatus: line.ptStatus
-    }))
+    const preparedLines = data.lines.map((line, index) => {
+      const weight = Number(line.weight || 0)
+      const tanch = Number(line.tanch || 0)
+      const fine = calculateFine(weight, tanch)
+      const rate = Number(line.rate || 0)
+      let amount = Number(line.amount || 0)
+      if (amount === 0 && rate > 0) {
+        amount = roundNumber(fine * rate, 2)
+      }
+
+      return {
+        id: randomUUID(),
+        lineNo: index + 1,
+        metalType: line.metalType,
+        entryType: line.entryType,
+        details: line.details,
+        location: line.location,
+        weight,
+        tanch,
+        fine,
+        rate,
+        amount,
+        ptStatus: line.ptStatus
+      }
+    })
 
     const transaction = db.transaction(() => {
       const existing = db
@@ -211,7 +268,13 @@ export const cashFineOpeningService = {
             silver_purchase_amount = ?,
             silver_sale_fine = ?,
             silver_sale_amount = ?,
+            platinum_purchase_fine = ?,
+            platinum_purchase_amount = ?,
+            platinum_sale_fine = ?,
+            platinum_sale_amount = ?,
             opening_cash = ?,
+            opening_bank_balance = ?,
+            opening_petty_cash = ?,
             updated_at = ?
           WHERE id = ?
         `
@@ -224,7 +287,13 @@ export const cashFineOpeningService = {
           data.summary.silverPurchaseAmount,
           data.summary.silverSaleFine,
           data.summary.silverSaleAmount,
+          data.summary.platinumPurchaseFine,
+          data.summary.platinumPurchaseAmount,
+          data.summary.platinumSaleFine,
+          data.summary.platinumSaleAmount,
           data.summary.openingCash,
+          data.summary.openingBankBalance,
+          data.summary.openingPettyCash,
           now,
           DEFAULT_ID
         )
@@ -241,11 +310,17 @@ export const cashFineOpeningService = {
             silver_purchase_amount,
             silver_sale_fine,
             silver_sale_amount,
+            platinum_purchase_fine,
+            platinum_purchase_amount,
+            platinum_sale_fine,
+            platinum_sale_amount,
             opening_cash,
+            opening_bank_balance,
+            opening_petty_cash,
             created_at,
             updated_at
           )
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `
         ).run(
           DEFAULT_ID,
@@ -257,7 +332,13 @@ export const cashFineOpeningService = {
           data.summary.silverPurchaseAmount,
           data.summary.silverSaleFine,
           data.summary.silverSaleAmount,
+          data.summary.platinumPurchaseFine,
+          data.summary.platinumPurchaseAmount,
+          data.summary.platinumSaleFine,
+          data.summary.platinumSaleAmount,
           data.summary.openingCash,
+          data.summary.openingBankBalance,
+          data.summary.openingPettyCash,
           now,
           now
         )
@@ -273,14 +354,17 @@ export const cashFineOpeningService = {
           metal_type,
           entry_type,
           details,
+          location,
           weight,
           tanch,
           fine,
+          rate,
+          amount,
           pt_status,
           created_at,
           updated_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `
       )
 
@@ -291,9 +375,12 @@ export const cashFineOpeningService = {
           line.metalType,
           line.entryType,
           line.details,
+          line.location,
           line.weight,
           line.tanch,
           line.fine,
+          line.rate,
+          line.amount,
           line.ptStatus,
           now,
           now

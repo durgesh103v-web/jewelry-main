@@ -9,6 +9,10 @@ const itemDesignRepository = new ItemDesignRepository()
 const itemDesignSchema = z.object({
   designName: z.string().trim().min(1, 'Design name is required').max(80),
   metalType: z.enum(['Gold', 'Silver', 'Diamond', 'Platinum', 'Other']).default('Gold'),
+  shortCode: z.string().trim().max(15).optional().default(''),
+  defaultLabourRate: z.number().min(0).optional().default(0),
+  defaultLabourType: z.enum(['PER_GRAM', 'PER_PIECE', 'PERCENT']).optional().default('PER_GRAM'),
+  defaultWastage: z.number().min(0).optional().default(0),
   description: z.string().trim().max(255).optional().default(''),
   active: z.boolean().default(true)
 })
@@ -19,6 +23,10 @@ export interface ItemDesignRecord {
   id: string
   designName: string
   metalType: string
+  shortCode: string
+  defaultLabourRate: number
+  defaultLabourType: 'PER_GRAM' | 'PER_PIECE' | 'PERCENT'
+  defaultWastage: number
   description: string
   active: boolean
   createdAt: string
@@ -30,6 +38,10 @@ function mapRow(row: ItemDesignRow): ItemDesignRecord {
     id: row.id,
     designName: row.design_name,
     metalType: row.metal_type,
+    shortCode: row.short_code ?? '',
+    defaultLabourRate: Number(row.default_labour_rate) || 0,
+    defaultLabourType: (row.default_labour_type as 'PER_GRAM' | 'PER_PIECE' | 'PERCENT') || 'PER_GRAM',
+    defaultWastage: Number(row.default_wastage) || 0,
     description: row.description ?? '',
     active: Boolean(row.active),
     createdAt: row.created_at,
@@ -60,6 +72,10 @@ export const itemDesignService = {
       id,
       designName: data.designName,
       metalType: data.metalType,
+      shortCode: data.shortCode,
+      defaultLabourRate: data.defaultLabourRate,
+      defaultLabourType: data.defaultLabourType,
+      defaultWastage: data.defaultWastage,
       description: data.description,
       active: data.active,
       createdAt: now,
@@ -89,6 +105,10 @@ export const itemDesignService = {
     itemDesignRepository.update(id, {
       designName: data.designName,
       metalType: data.metalType,
+      shortCode: data.shortCode,
+      defaultLabourRate: data.defaultLabourRate,
+      defaultLabourType: data.defaultLabourType,
+      defaultWastage: data.defaultWastage,
       description: data.description,
       active: data.active,
       updatedAt: now
