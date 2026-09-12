@@ -180,7 +180,7 @@ export const VendorSettlementModal: React.FC<VendorSettlementModalProps> = ({
     } catch (err: unknown) {
       console.error('Failed to process consignment settlement:', err)
       setError(getFriendlyErrorMessage(err))
-      setStep('FORM') // Return to form so operator can adjust amount or review
+      setStep('FORM')
     } finally {
       setIsSubmitting(false)
     }
@@ -189,19 +189,19 @@ export const VendorSettlementModal: React.FC<VendorSettlementModalProps> = ({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden flex flex-col my-auto animate-in fade-in zoom-in-95 duration-150">
+    <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+      <div className="bg-white border border-slate-200 rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden flex flex-col my-auto text-xs">
         {/* Header */}
-        <header className="px-6 py-4 border-b border-border flex items-center justify-between bg-card/80">
+        <header className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-white">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-lg font-bold shadow-sm">
+            <div className="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center text-lg font-bold shadow-2xs">
               💳
             </div>
             <div>
-              <h2 className="text-base font-bold text-foreground">
+              <h2 className="text-base font-bold text-slate-900">
                 {step === 'SUCCESS' ? 'Settlement Confirmation' : 'Vendor Consignment Settlement'}
               </h2>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-slate-500 font-medium">
                 Memo #{inward.consignmentNumber} • {inward.supplierName}
               </p>
             </div>
@@ -212,7 +212,7 @@ export const VendorSettlementModal: React.FC<VendorSettlementModalProps> = ({
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="h-8 w-8 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors disabled:opacity-40"
+              className="h-8 w-8 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 flex items-center justify-center transition-colors disabled:opacity-40"
               title="Close modal"
             >
               ✕
@@ -221,10 +221,10 @@ export const VendorSettlementModal: React.FC<VendorSettlementModalProps> = ({
         </header>
 
         {/* Modal Body */}
-        <div className="p-6 overflow-y-auto max-h-[calc(85vh-140px)]">
+        <div className="p-6 overflow-y-auto max-h-[calc(85vh-140px)] bg-slate-50/50">
           {/* Error Banner */}
           {error && (
-            <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 text-destructive rounded-xl text-xs flex justify-between items-center shadow-sm">
+            <div className="mb-4 p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs flex justify-between items-center shadow-2xs font-medium">
               <span className="flex items-center gap-2">
                 <span>⚠️</span>
                 <span>{error}</span>
@@ -232,7 +232,7 @@ export const VendorSettlementModal: React.FC<VendorSettlementModalProps> = ({
               <button
                 type="button"
                 onClick={() => setError(null)}
-                className="text-xs font-bold px-1.5 py-0.5 rounded hover:bg-destructive/20"
+                className="text-xs font-bold px-1.5 py-0.5 rounded hover:bg-rose-100"
               >
                 ✕
               </button>
@@ -242,52 +242,54 @@ export const VendorSettlementModal: React.FC<VendorSettlementModalProps> = ({
           {/* STEP 1: FORM */}
           {step === 'FORM' && (
             <form onSubmit={handleProceedToConfirm} className="space-y-4">
-              {/* Financial Snapshot Card (Direct Authoritative Values) */}
-              <div className="p-4 bg-muted/30 border border-border rounded-xl space-y-3 font-mono text-xs">
-                <div className="flex items-center justify-between text-[11px] text-muted-foreground font-sans uppercase font-semibold border-b border-border/60 pb-2">
+              {/* Financial Snapshot Card */}
+              <div className="p-4 bg-white border border-slate-200 rounded-xl space-y-3 text-xs shadow-2xs">
+                <div className="flex items-center justify-between text-[11px] text-slate-500 uppercase font-bold border-b border-slate-100 pb-2">
                   <span>Authoritative Financial Position</span>
-                  <span className="text-foreground">{inward.settlementStatus ?? 'UNSETTLED'}</span>
+                  <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                    {inward.settlementStatus ?? 'UNSETTLED'}
+                  </span>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="bg-background/60 p-2.5 rounded-lg border border-border/60">
-                    <span className="text-[10px] text-muted-foreground uppercase block font-sans">
+                <div className="grid grid-cols-3 gap-2.5">
+                  <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                    <span className="text-[10px] text-slate-500 uppercase block font-semibold">
                       Recognized Payable
                     </span>
-                    <span className="text-sm font-bold text-purple-600 dark:text-purple-400">
+                    <span className="text-sm font-bold text-purple-700">
                       {formatCurrency(inward.totalSoldVendorCost ?? 0)}
                     </span>
-                    <span className="text-[9px] text-muted-foreground block font-sans mt-0.5">
+                    <span className="text-[9px] text-slate-500 block mt-0.5">
                       From sold pieces
                     </span>
                   </div>
 
-                  <div className="bg-background/60 p-2.5 rounded-lg border border-border/60">
-                    <span className="text-[10px] text-muted-foreground uppercase block font-sans">
+                  <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                    <span className="text-[10px] text-slate-500 uppercase block font-semibold">
                       Settled to Date
                     </span>
-                    <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                    <span className="text-sm font-bold text-emerald-700">
                       {formatCurrency(inward.totalSettledAmount ?? 0)}
                     </span>
-                    <span className="text-[9px] text-muted-foreground block font-sans mt-0.5">
+                    <span className="text-[9px] text-slate-500 block mt-0.5">
                       Prior payments
                     </span>
                   </div>
 
-                  <div className="bg-background/60 p-2.5 rounded-lg border border-border/60">
-                    <span className="text-[10px] text-muted-foreground uppercase block font-sans">
+                  <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                    <span className="text-[10px] text-slate-500 uppercase block font-semibold">
                       Outstanding Due
                     </span>
                     <span
                       className={`text-sm font-bold ${
                         outstandingLiability > 0
-                          ? 'text-rose-600 dark:text-rose-400'
-                          : 'text-emerald-600 dark:text-emerald-400'
+                          ? 'text-rose-600'
+                          : 'text-emerald-600'
                       }`}
                     >
                       {formatCurrency(outstandingLiability)}
                     </span>
-                    <span className="text-[9px] text-muted-foreground block font-sans mt-0.5">
+                    <span className="text-[9px] text-slate-500 block mt-0.5">
                       Authoritative balance
                     </span>
                   </div>
@@ -297,7 +299,7 @@ export const VendorSettlementModal: React.FC<VendorSettlementModalProps> = ({
               {/* Settlement Amount Field */}
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <label htmlFor="settlement-amount-input" className="text-xs font-semibold text-foreground flex items-center gap-1">
+                  <label htmlFor="settlement-amount-input" className="text-xs font-semibold text-slate-700 flex items-center gap-1">
                     <span>Settlement Amount</span>
                     <span className="text-rose-500">*</span>
                   </label>
@@ -307,7 +309,7 @@ export const VendorSettlementModal: React.FC<VendorSettlementModalProps> = ({
                     <button
                       type="button"
                       onClick={() => handleSetAmount(outstandingLiability)}
-                      className="px-2 py-0.5 text-[11px] bg-primary/10 hover:bg-primary/20 text-primary font-medium rounded transition-colors"
+                      className="px-2 py-0.5 text-[11px] bg-amber-50 hover:bg-amber-100 text-amber-800 font-semibold rounded border border-amber-200 transition-colors"
                       title="Settle total remaining outstanding balance"
                     >
                       Full Due (₹{outstandingLiability.toLocaleString()})
@@ -316,7 +318,7 @@ export const VendorSettlementModal: React.FC<VendorSettlementModalProps> = ({
                       <button
                         type="button"
                         onClick={() => handleSetAmount(outstandingLiability / 2)}
-                        className="px-2 py-0.5 text-[11px] bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground font-medium rounded transition-colors"
+                        className="px-2 py-0.5 text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded border border-slate-200 transition-colors"
                       >
                         50% Due
                       </button>
@@ -325,7 +327,7 @@ export const VendorSettlementModal: React.FC<VendorSettlementModalProps> = ({
                 </div>
 
                 <div className="relative">
-                  <span className="absolute left-3.5 top-2.5 text-muted-foreground text-sm font-bold">
+                  <span className="absolute left-3.5 top-2.5 text-slate-400 text-sm font-bold">
                     ₹
                   </span>
                   <input
@@ -341,13 +343,13 @@ export const VendorSettlementModal: React.FC<VendorSettlementModalProps> = ({
                     }}
                     placeholder="0.00"
                     required
-                    className="w-full h-10 pl-8 pr-4 bg-background border border-input rounded-xl text-base font-bold font-mono text-foreground focus:outline-none focus:ring-2 focus:ring-primary shadow-sm"
+                    className="w-full h-10 pl-8 pr-4 bg-white border border-slate-300 rounded-lg text-base font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 shadow-2xs"
                   />
                 </div>
 
-                {/* Overpayment Early Warning (Advisory; backend rejects strictly) */}
+                {/* Overpayment Early Warning */}
                 {isOverpaying && (
-                  <p className="text-[11px] text-amber-600 dark:text-amber-400 font-medium flex items-center gap-1 mt-1">
+                  <p className="text-[11px] text-amber-700 font-medium flex items-center gap-1 mt-1">
                     <span>⚠️</span>
                     <span>
                       Amount exceeds remaining liability of {formatCurrency(outstandingLiability)}. Backend will reject overpayment.
@@ -358,7 +360,7 @@ export const VendorSettlementModal: React.FC<VendorSettlementModalProps> = ({
 
               {/* Payment Method Selector */}
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-foreground block">
+                <label className="text-xs font-semibold text-slate-700 block">
                   Payment Method <span className="text-rose-500">*</span>
                 </label>
                 <div className="grid grid-cols-5 gap-1.5">
@@ -371,8 +373,8 @@ export const VendorSettlementModal: React.FC<VendorSettlementModalProps> = ({
                         onClick={() => setPaymentMethod(method.value)}
                         className={`py-2 px-2 rounded-xl text-xs font-medium flex flex-col items-center justify-center gap-1 border transition-all ${
                           isSelected
-                            ? 'bg-primary/10 border-primary text-primary font-bold shadow-sm ring-1 ring-primary'
-                            : 'bg-background hover:bg-muted/50 border-input text-muted-foreground hover:text-foreground'
+                            ? 'bg-amber-50 border-amber-400 text-amber-900 font-bold ring-1 ring-amber-400 shadow-2xs'
+                            : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700 shadow-2xs'
                         }`}
                       >
                         <span className="text-base">{method.icon}</span>
@@ -383,13 +385,13 @@ export const VendorSettlementModal: React.FC<VendorSettlementModalProps> = ({
                 </div>
               </div>
 
-              {/* Payment Reference (Dynamic placeholder per method) */}
+              {/* Payment Reference */}
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <label htmlFor="settlement-ref-input" className="text-xs font-semibold text-foreground">
+                  <label htmlFor="settlement-ref-input" className="text-xs font-semibold text-slate-700">
                     {currentMethodConfig.referenceLabel}
                     {paymentMethod !== 'CASH' && (
-                      <span className="text-muted-foreground text-[10px] font-normal ml-1">
+                      <span className="text-slate-400 text-[10px] font-normal ml-1">
                         (Recommended for audit)
                       </span>
                     )}
@@ -401,14 +403,14 @@ export const VendorSettlementModal: React.FC<VendorSettlementModalProps> = ({
                   value={paymentReference}
                   onChange={(e) => setPaymentReference(e.target.value)}
                   placeholder={currentMethodConfig.placeholder}
-                  className="w-full h-9 px-3 bg-background border border-input rounded-xl text-xs font-mono text-foreground focus:outline-none focus:ring-2 focus:ring-primary shadow-sm"
+                  className="w-full h-9 px-3 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 shadow-2xs font-mono"
                 />
               </div>
 
               {/* Settlement Date & Notes Grid */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <label htmlFor="settlement-date-input" className="text-xs font-semibold text-foreground">
+                  <label htmlFor="settlement-date-input" className="text-xs font-semibold text-slate-700">
                     Settlement Date <span className="text-rose-500">*</span>
                   </label>
                   <input
@@ -417,12 +419,12 @@ export const VendorSettlementModal: React.FC<VendorSettlementModalProps> = ({
                     value={settlementDate}
                     onChange={(e) => setSettlementDate(e.target.value)}
                     required
-                    className="w-full h-9 px-3 bg-background border border-input rounded-xl text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary shadow-sm"
+                    className="w-full h-9 px-3 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 shadow-2xs"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label htmlFor="settlement-notes-input" className="text-xs font-semibold text-foreground">
+                  <label htmlFor="settlement-notes-input" className="text-xs font-semibold text-slate-700">
                     Narration / Notes
                   </label>
                   <input
@@ -431,22 +433,22 @@ export const VendorSettlementModal: React.FC<VendorSettlementModalProps> = ({
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     placeholder="Optional settlement remark..."
-                    className="w-full h-9 px-3 bg-background border border-input rounded-xl text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary shadow-sm"
+                    className="w-full h-9 px-3 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 shadow-2xs"
                   />
                 </div>
               </div>
 
               {/* Accounting Notice */}
-              <div className="p-2.5 bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 rounded-lg text-[11px]">
-                ℹ️ <strong>Ledger Integration:</strong> Confirming settlement will post an atomic double-entry debit to <strong className="text-foreground">{inward.supplierName}</strong>'s ledger account and reduce recognized liability.
+              <div className="p-2.5 bg-blue-50 border border-blue-200 text-blue-800 rounded-lg text-[11px] leading-relaxed">
+                ℹ️ <strong>Ledger Integration:</strong> Confirming settlement will post an atomic double-entry debit to <strong className="text-slate-900">{inward.supplierName}</strong>'s ledger account and reduce recognized liability.
               </div>
 
               {/* Form Action Buttons */}
-              <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-border">
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-200">
                 <button
                   type="button"
                   onClick={onClose}
-                  className="h-9 px-4 bg-muted hover:bg-muted/80 text-foreground text-xs font-semibold rounded-xl transition-colors border border-border"
+                  className="h-9 px-4 bg-white hover:bg-slate-100 text-slate-700 text-xs font-semibold rounded-lg transition-colors border border-slate-300 shadow-2xs"
                 >
                   Cancel
                 </button>
@@ -454,7 +456,8 @@ export const VendorSettlementModal: React.FC<VendorSettlementModalProps> = ({
                 <button
                   type="submit"
                   disabled={isZeroOrNegative}
-                  className="h-9 px-5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-all shadow-md disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
+                  style={{ color: '#ffffff' }}
+                  className="h-9 px-5 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 !text-white text-xs font-bold rounded-lg transition-all shadow-2xs disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
                 >
                   <span>Review Settlement ({formatCurrency(parsedAmount)})</span>
                   <span>→</span>
@@ -465,77 +468,77 @@ export const VendorSettlementModal: React.FC<VendorSettlementModalProps> = ({
 
           {/* STEP 2: CONFIRMATION REVIEW */}
           {step === 'CONFIRM' && (
-            <div className="space-y-4 animate-in fade-in zoom-in-95 duration-150">
+            <div className="space-y-4">
               <div className="text-center">
-                <div className="w-12 h-12 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xl mx-auto mb-2 shadow-sm">
+                <div className="w-12 h-12 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center text-xl mx-auto mb-2 shadow-2xs">
                   ✓
                 </div>
-                <h3 className="text-base font-bold text-foreground">Confirm Vendor Settlement</h3>
-                <p className="text-xs text-muted-foreground mt-0.5">
+                <h3 className="text-base font-bold text-slate-900">Confirm Vendor Settlement</h3>
+                <p className="text-xs text-slate-500 mt-0.5">
                   Please review the transaction summary before posting to accounting ledgers.
                 </p>
               </div>
 
               {/* Review Summary Breakdown */}
-              <div className="bg-muted/40 p-4 rounded-xl border border-border text-xs font-mono space-y-2">
+              <div className="bg-white p-4 rounded-xl border border-slate-200 text-xs space-y-2.5 shadow-2xs">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground font-sans">Consignment Memo:</span>
-                  <span className="font-bold text-foreground">{inward.consignmentNumber}</span>
+                  <span className="text-slate-500">Consignment Memo:</span>
+                  <span className="font-bold text-slate-900">{inward.consignmentNumber}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground font-sans">Vendor / Supplier:</span>
-                  <span className="font-semibold text-foreground">{inward.supplierName}</span>
+                  <span className="text-slate-500">Vendor / Supplier:</span>
+                  <span className="font-semibold text-slate-900">{inward.supplierName}</span>
                 </div>
-                <div className="flex justify-between border-t border-border/60 pt-2">
-                  <span className="text-muted-foreground font-sans">Outstanding Before Settle:</span>
-                  <span className="font-bold text-rose-600 dark:text-rose-400">
+                <div className="flex justify-between border-t border-slate-100 pt-2">
+                  <span className="text-slate-500">Outstanding Before Settle:</span>
+                  <span className="font-bold text-rose-600">
                     {formatCurrency(outstandingLiability)}
                   </span>
                 </div>
-                <div className="flex justify-between items-baseline py-1 bg-background/60 px-2 rounded-lg border border-border/80">
-                  <span className="font-sans font-bold text-foreground">Settlement Amount:</span>
-                  <span className="text-base font-extrabold text-emerald-600 dark:text-emerald-400">
+                <div className="flex justify-between items-baseline py-1.5 bg-emerald-50 px-3 rounded-lg border border-emerald-200">
+                  <span className="font-bold text-emerald-900">Settlement Amount:</span>
+                  <span className="text-base font-black text-emerald-700">
                     {formatCurrency(parsedAmount)}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground font-sans">Payment Method:</span>
-                  <span className="font-bold text-foreground">
+                  <span className="text-slate-500">Payment Method:</span>
+                  <span className="font-bold text-slate-900">
                     {currentMethodConfig.icon} {currentMethodConfig.label}
                   </span>
                 </div>
                 {paymentReference && (
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground font-sans">Payment Reference:</span>
-                    <span className="font-mono text-foreground">{paymentReference}</span>
+                    <span className="text-slate-500">Payment Reference:</span>
+                    <span className="font-mono text-slate-900">{paymentReference}</span>
                   </div>
                 )}
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground font-sans">Settlement Date:</span>
-                  <span className="font-semibold text-foreground">{formatDate(settlementDate)}</span>
+                  <span className="text-slate-500">Settlement Date:</span>
+                  <span className="font-semibold text-slate-900">{formatDate(settlementDate)}</span>
                 </div>
                 {notes && (
-                  <div className="pt-2 border-t border-border/60 text-[11px]">
-                    <span className="text-muted-foreground font-sans block text-[10px] uppercase">
+                  <div className="pt-2 border-t border-slate-100 text-[11px]">
+                    <span className="text-slate-500 block text-[10px] uppercase font-bold">
                       Notes:
                     </span>
-                    <span className="text-foreground italic">{notes}</span>
+                    <span className="text-slate-700 italic">{notes}</span>
                   </div>
                 )}
               </div>
 
               {/* Double-Entry Accounting Notice */}
-              <div className="p-3 bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 rounded-xl text-[11px]">
+              <div className="p-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl text-[11px] leading-relaxed">
                 ⚖️ <strong>Authoritative Accounting Posting:</strong> Confirming will atomically record this payment voucher, update memo settled totals, and debit supplier account ledger.
               </div>
 
               {/* Confirmation Buttons */}
-              <div className="flex items-center justify-end gap-3 pt-2 border-t border-border">
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200">
                 <button
                   type="button"
                   disabled={isSubmitting}
                   onClick={() => setStep('FORM')}
-                  className="h-9 px-4 bg-muted hover:bg-muted/80 text-foreground text-xs font-semibold rounded-xl transition-colors border border-border disabled:opacity-40"
+                  className="h-9 px-4 bg-white hover:bg-slate-100 text-slate-700 text-xs font-semibold rounded-lg transition-colors border border-slate-300 shadow-2xs disabled:opacity-40"
                 >
                   ← Back to Edit
                 </button>
@@ -544,7 +547,8 @@ export const VendorSettlementModal: React.FC<VendorSettlementModalProps> = ({
                   type="button"
                   disabled={isSubmitting}
                   onClick={() => void handleConfirmAndSettle()}
-                  className="h-9 px-5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-all shadow-md flex items-center gap-2 disabled:opacity-50"
+                  style={{ color: '#ffffff' }}
+                  className="h-9 px-5 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 !text-white text-xs font-bold rounded-lg transition-all shadow-2xs flex items-center gap-2 disabled:opacity-50"
                 >
                   {isSubmitting ? (
                     <>
@@ -563,59 +567,59 @@ export const VendorSettlementModal: React.FC<VendorSettlementModalProps> = ({
 
           {/* STEP 3: SUCCESS RESULT */}
           {step === 'SUCCESS' && settlementResult && (
-            <div className="py-4 space-y-4 text-center animate-in fade-in zoom-in-95 duration-150">
-              <div className="w-14 h-14 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-2xl mx-auto shadow-sm">
+            <div className="py-4 space-y-4 text-center">
+              <div className="w-14 h-14 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center text-2xl mx-auto shadow-2xs">
                 ✓
               </div>
 
               <div>
-                <h3 className="text-base font-bold text-foreground">
+                <h3 className="text-base font-bold text-slate-900">
                   Vendor Settlement Recorded Successfully!
                 </h3>
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-xs text-slate-500 mt-1">
                   Payment voucher created and supplier ledger updated atomically.
                 </p>
               </div>
 
               {/* Authoritative Settlement Voucher Summary */}
-              <div className="bg-muted/40 p-4 rounded-xl border border-border text-left font-mono text-xs space-y-2 max-w-md mx-auto">
+              <div className="bg-white p-4 rounded-xl border border-slate-200 text-left text-xs space-y-2 max-w-md mx-auto shadow-2xs">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground font-sans">Settlement Voucher #:</span>
-                  <span className="font-bold text-primary text-sm">
+                  <span className="text-slate-500">Settlement Voucher #:</span>
+                  <span className="font-bold text-amber-700 text-sm">
                     {settlementResult.settlementNumber}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground font-sans">Consignment Memo:</span>
-                  <span className="font-bold text-foreground">{inward.consignmentNumber}</span>
+                  <span className="text-slate-500">Consignment Memo:</span>
+                  <span className="font-bold text-slate-900">{inward.consignmentNumber}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground font-sans">Vendor / Consignor:</span>
-                  <span className="font-semibold text-foreground">{inward.supplierName}</span>
+                  <span className="text-slate-500">Vendor / Consignor:</span>
+                  <span className="font-semibold text-slate-900">{inward.supplierName}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground font-sans">Settled Amount:</span>
-                  <span className="font-bold text-emerald-600 dark:text-emerald-400 text-sm">
+                  <span className="text-slate-500">Settled Amount:</span>
+                  <span className="font-bold text-emerald-700 text-sm">
                     {formatCurrency(settlementResult.settledAmount)}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground font-sans">Payment Method:</span>
-                  <span className="font-bold text-foreground">
+                  <span className="text-slate-500">Payment Method:</span>
+                  <span className="font-bold text-slate-900">
                     {settlementResult.paymentMethod}
                   </span>
                 </div>
                 {settlementResult.paymentReference && (
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground font-sans">Reference:</span>
-                    <span className="font-mono text-foreground">
+                    <span className="text-slate-500">Reference:</span>
+                    <span className="font-mono text-slate-900">
                       {settlementResult.paymentReference}
                     </span>
                   </div>
                 )}
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground font-sans">Settlement Date:</span>
-                  <span className="font-semibold text-foreground">
+                  <span className="text-slate-500">Settlement Date:</span>
+                  <span className="font-semibold text-slate-900">
                     {formatDate(settlementResult.settlementDate)}
                   </span>
                 </div>
@@ -625,7 +629,8 @@ export const VendorSettlementModal: React.FC<VendorSettlementModalProps> = ({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="h-9 px-6 bg-primary text-primary-foreground text-xs font-semibold rounded-xl hover:bg-primary/90 transition-colors shadow-sm"
+                  style={{ color: '#ffffff' }}
+                  className="h-9 px-6 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 !text-white text-xs font-bold rounded-lg transition-colors shadow-2xs"
                 >
                   Done &amp; View Updated Memo
                 </button>
@@ -639,3 +644,4 @@ export const VendorSettlementModal: React.FC<VendorSettlementModalProps> = ({
 }
 
 export default VendorSettlementModal
+

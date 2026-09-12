@@ -11,7 +11,6 @@ import { getFriendlyErrorMessage } from '../../../utils/getFriendlyErrorMessage'
 import { ConsignmentInwardScreen } from './ConsignmentInwardScreen'
 import { ConsignmentDetailScreen } from './ConsignmentDetailScreen'
 import { ConsignmentReportsScreen } from './ConsignmentReportsScreen'
-import { StatusPill } from '../../../components/ui'
 
 export interface ConsignmentHubScreenProps {
   onClose?: () => void
@@ -19,6 +18,19 @@ export interface ConsignmentHubScreenProps {
 }
 
 type TabFilter = 'ALL' | 'ACTIVE' | 'PARTIALLY_SETTLED' | 'COMPLETED' | 'CLOSED'
+
+const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string; border: string }> = {
+  ACTIVE: { label: 'Active In Showroom', bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200' },
+  PARTIALLY_SETTLED: { label: 'Partially Settled', bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' },
+  COMPLETED: { label: 'Completed', bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' },
+  CLOSED: { label: 'Closed / Returned', bg: 'bg-slate-100', text: 'text-slate-600', border: 'border-slate-200' }
+}
+
+const SETTLEMENT_CONFIG: Record<string, { label: string; bg: string; text: string; border: string }> = {
+  UNSETTLED: { label: 'Unsettled', bg: 'bg-rose-50', text: 'text-rose-700', border: 'border-rose-200' },
+  PARTIALLY_SETTLED: { label: 'Partially Paid', bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' },
+  SETTLED: { label: 'Fully Settled', bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' }
+}
 
 export const ConsignmentHubScreen: React.FC<ConsignmentHubScreenProps> = ({
   onClose,
@@ -32,7 +44,7 @@ export const ConsignmentHubScreen: React.FC<ConsignmentHubScreenProps> = ({
   const [dashboard, setDashboard] = useState<ConsignmentDashboardSummary | null>(null)
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
-  const [infoMessage, setInfoMessage] = useState<string | null>(null)
+  const [toastMessage, setToastMessage] = useState<string | null>(null)
 
   // Filters
   const [activeTab, setActiveTab] = useState<TabFilter>('ALL')
@@ -55,7 +67,7 @@ export const ConsignmentHubScreen: React.FC<ConsignmentHubScreenProps> = ({
         })
       ])
       setDashboard(dash)
-      setInwards(list)
+      setInwards(list || [])
     } catch (err: unknown) {
       console.error('Error fetching consignment data:', err)
       setError(getFriendlyErrorMessage(err))
@@ -86,31 +98,33 @@ export const ConsignmentHubScreen: React.FC<ConsignmentHubScreenProps> = ({
 
   // Physical status badge renderer
   const renderPhysicalStatusBadge = (status: ConsignmentStatus) => {
-    switch (status) {
-      case 'ACTIVE':
-        return <StatusPill variant="in-progress">ACTIVE (IN SHOWROOM)</StatusPill>
-      case 'PARTIALLY_SETTLED':
-        return <StatusPill variant="pending">PARTIAL</StatusPill>
-      case 'COMPLETED':
-        return <StatusPill variant="ready">COMPLETED</StatusPill>
-      case 'CLOSED':
-        return <StatusPill variant="neutral">CLOSED</StatusPill>
-      default:
-        return <StatusPill variant="neutral">{status}</StatusPill>
+    const cfg = STATUS_CONFIG[status] || {
+      label: status,
+      bg: 'bg-slate-100',
+      text: 'text-slate-700',
+      border: 'border-slate-200'
     }
+    return (
+      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap border ${cfg.bg} ${cfg.text} ${cfg.border}`}>
+        {cfg.label}
+      </span>
+    )
   }
 
   // Financial settlement status badge renderer
   const renderSettlementStatusBadge = (status?: ConsignmentSettlementStatus) => {
-    switch (status) {
-      case 'SETTLED':
-        return <StatusPill variant="ready">SETTLED</StatusPill>
-      case 'PARTIALLY_SETTLED':
-        return <StatusPill variant="pending">PARTIALLY PAID</StatusPill>
-      case 'UNSETTLED':
-      default:
-        return <StatusPill variant="expiring">UNSETTLED</StatusPill>
+    const key = status || 'UNSETTLED'
+    const cfg = SETTLEMENT_CONFIG[key] || {
+      label: key,
+      bg: 'bg-slate-100',
+      text: 'text-slate-700',
+      border: 'border-slate-200'
     }
+    return (
+      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap border ${cfg.bg} ${cfg.text} ${cfg.border}`}>
+        {cfg.label}
+      </span>
+    )
   }
 
   if (currentView === 'INWARD') {
@@ -160,27 +174,25 @@ export const ConsignmentHubScreen: React.FC<ConsignmentHubScreenProps> = ({
   }
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-background text-foreground overflow-hidden">
+    <div className="flex flex-col h-full bg-[var(--color-background-app,#f8fafc)] text-slate-900 overflow-hidden select-none font-sans">
       {/* 1. Header Bar */}
-      <header className="flex items-center justify-between px-5 py-3 border-b border-border bg-card/60 backdrop-blur-sm shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold text-base shadow-sm">
-            💎
-          </div>
-          <div>
-            <h1 className="text-base font-bold tracking-tight text-foreground flex items-center gap-2">
-              Vendor Consignment &amp; Memo Hub
-              <span className="text-[10px] uppercase font-semibold px-2 py-0.5 bg-primary/10 text-primary rounded-full">
-                Phase 21
+      <div className="px-6 py-3 border-b border-slate-200 bg-white flex items-center justify-between flex-wrap gap-3 shadow-2xs shrink-0">
+        <div>
+          <div className="flex items-center gap-2.5">
+            <span className="text-xl">💎</span>
+            <h1 className="text-base font-bold text-slate-900 tracking-tight flex items-center gap-2">
+              <span>Vendor Consignment &amp; Memo Hub</span>
+              <span className="text-[10px] px-2 py-0.5 rounded bg-amber-100 text-amber-900 font-mono font-bold">
+                MEMO DESK
               </span>
             </h1>
-            <p className="text-xs text-muted-foreground">
-              Vendor-owned showroom stock custody, POS sales recognition, and supplier settlements
-            </p>
           </div>
+          <p className="text-xs text-slate-500 font-medium mt-0.5">
+            Vendor-owned showroom stock custody, POS sales recognition, and supplier settlements
+          </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
           <button
             type="button"
             onClick={() => {
@@ -190,7 +202,7 @@ export const ConsignmentHubScreen: React.FC<ConsignmentHubScreenProps> = ({
                 setCurrentView('REPORTS')
               }
             }}
-            className="h-8 px-3 text-xs bg-muted hover:bg-muted/80 text-foreground font-semibold rounded-lg transition-colors flex items-center gap-1.5 border border-border shadow-sm"
+            className="h-8 px-3 border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-semibold shadow-2xs transition-colors cursor-pointer flex items-center gap-1.5"
             title="Consignment Reports & Analytics"
           >
             <span>📊</span>
@@ -201,40 +213,64 @@ export const ConsignmentHubScreen: React.FC<ConsignmentHubScreenProps> = ({
             type="button"
             onClick={() => void loadConsignmentData()}
             disabled={isLoading}
-            className="h-8 px-3 text-xs bg-muted hover:bg-muted/80 text-foreground font-medium rounded-lg transition-colors flex items-center gap-1.5 border border-border"
+            className="h-8 px-3 border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-semibold shadow-2xs transition-colors cursor-pointer flex items-center gap-1.5"
             title="Refresh data"
           >
-            <span className={isLoading ? 'animate-spin' : ''}>🔄</span>
-            <span>Refresh</span>
+            <svg
+              className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin text-slate-500' : 'text-slate-500'}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            <span>Reload</span>
           </button>
 
           <button
             type="button"
             onClick={() => setCurrentView('INWARD')}
-            className="h-8 px-3.5 text-xs bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 transition-colors shadow-sm flex items-center gap-1.5"
+            className="h-8 px-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 !text-white font-bold rounded-lg text-xs flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer"
+            style={{ color: '#ffffff' }}
           >
-            <span>+</span>
-            <span>New Consignment Inward</span>
+            <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+            </svg>
+            <span className="!text-white font-bold" style={{ color: '#ffffff' }}>New Consignment Inward</span>
           </button>
 
           {onClose && (
             <button
               type="button"
               onClick={onClose}
-              className="h-8 w-8 text-xs text-muted-foreground hover:text-foreground rounded-lg transition-colors flex items-center justify-center ml-1"
+              className="h-8 w-8 inline-flex items-center justify-center text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg border border-slate-200 transition-colors cursor-pointer"
               title="Close Tab"
             >
               ✕
             </button>
           )}
         </div>
-      </header>
+      </div>
 
       {/* Main Workspace */}
-      <div className="flex-1 flex flex-col p-4 gap-3.5 overflow-hidden">
+      <div className="flex-1 overflow-y-auto p-4 space-y-3.5 flex flex-col min-h-0">
+        {/* Toast Notification Banner */}
+        {toastMessage && (
+          <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-semibold flex justify-between items-center shadow-2xs">
+            <span>{toastMessage}</span>
+            <button
+              type="button"
+              onClick={() => setToastMessage(null)}
+              className="text-emerald-700 hover:bg-emerald-100 px-2 py-0.5 rounded font-bold cursor-pointer"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
         {/* Error Banner */}
         {error && (
-          <div className="p-3 bg-destructive/10 border border-destructive/20 text-destructive rounded-xl text-xs flex justify-between items-center shadow-sm">
+          <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs font-semibold flex justify-between items-center shadow-2xs">
             <span className="flex items-center gap-2">
               <span>⚠️</span>
               <span>{error}</span>
@@ -250,7 +286,7 @@ export const ConsignmentHubScreen: React.FC<ConsignmentHubScreenProps> = ({
               <button
                 type="button"
                 onClick={() => setError(null)}
-                className="text-xs font-bold px-1.5 py-0.5 rounded hover:bg-destructive/20"
+                className="text-xs font-bold px-1.5 py-0.5 rounded hover:bg-rose-100"
               >
                 ✕
               </button>
@@ -258,48 +294,26 @@ export const ConsignmentHubScreen: React.FC<ConsignmentHubScreenProps> = ({
           </div>
         )}
 
-        {/* Info Banner */}
-        {infoMessage && (
-          <div className="p-3 bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 rounded-xl text-xs flex justify-between items-center shadow-sm">
-            <span className="flex items-center gap-2">
-              <span>ℹ️</span>
-              <span>{infoMessage}</span>
-            </span>
-            <button
-              type="button"
-              onClick={() => setInfoMessage(null)}
-              className="text-xs font-bold px-1.5 py-0.5 rounded hover:bg-blue-500/20"
-            >
-              ✕
-            </button>
-          </div>
-        )}
-
         {/* 2. KPI Summary Cards */}
-        <section className="grid grid-cols-4 gap-3 shrink-0">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 shrink-0">
           {/* Card 1: Active Memos */}
-          <div className="bg-card p-3.5 rounded-xl border border-border shadow-sm flex flex-col justify-between">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Active Memos
-              </span>
-              <span className="p-1 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-bold">
-                📑
-              </span>
-            </div>
-            <div className="mt-2 flex items-baseline gap-2">
-              <span className="text-2xl font-bold font-mono text-foreground">
+          <div className="p-3.5 rounded-xl border border-slate-200 bg-white shadow-2xs flex flex-col justify-between">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+              Active Consignment Memos
+            </span>
+            <div className="mt-1 flex items-baseline justify-between">
+              <span className="text-xl font-extrabold text-slate-900">
                 {isLoading && !dashboard ? '...' : dashboard?.activeConsignmentsCount ?? 0}
               </span>
-              <span className="text-xs text-muted-foreground">inwards</span>
+              <span className="text-[11px] text-slate-500 font-medium">inward batches</span>
             </div>
-            <div className="mt-1 text-[11px] text-muted-foreground flex items-center justify-between">
+            <div className="mt-1 text-[11px] text-slate-500 flex items-center justify-between">
               <span>Overdue return:</span>
               <span
-                className={`font-semibold font-mono ${
+                className={`font-semibold ${
                   (dashboard?.overdueMemosCount ?? 0) > 0
-                    ? 'text-amber-600 dark:text-amber-400 font-bold'
-                    : 'text-muted-foreground'
+                    ? 'text-rose-600 font-bold'
+                    : 'text-slate-500'
                 }`}
               >
                 {dashboard?.overdueMemosCount ?? 0} Memos
@@ -307,145 +321,122 @@ export const ConsignmentHubScreen: React.FC<ConsignmentHubScreenProps> = ({
             </div>
           </div>
 
-          {/* Card 2: Vendor Stock in Showroom */}
-          <div className="bg-card p-3.5 rounded-xl border border-border shadow-sm flex flex-col justify-between">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Showroom Custody
-              </span>
-              <span className="p-1 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold">
-                🏪
-              </span>
-            </div>
-            <div className="mt-2 flex items-baseline gap-2">
-              <span className="text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400">
+          {/* Card 2: Showroom Custody */}
+          <div className="p-3.5 rounded-xl border border-slate-200 bg-white shadow-2xs flex flex-col justify-between">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+              Showroom Custody Stock
+            </span>
+            <div className="mt-1 flex items-baseline justify-between">
+              <span className="text-xl font-extrabold text-emerald-700">
                 {isLoading && !dashboard ? '...' : `${dashboard?.piecesInShowroomCount ?? 0} Pcs`}
               </span>
-              <span className="text-xs text-muted-foreground font-mono">
+              <span className="text-xs text-slate-600 font-semibold">
                 {formatWeight(dashboard?.totalShowroomGrossWeight ?? 0)}
               </span>
             </div>
-            <div className="mt-1 text-[11px] text-muted-foreground flex items-center justify-between">
+            <div className="mt-1 text-[11px] text-slate-500 flex items-center justify-between">
               <span>Vendor Valuation:</span>
-              <span className="font-semibold font-mono text-foreground">
+              <span className="font-semibold text-slate-800">
                 {formatCurrency(dashboard?.totalShowroomVendorValue ?? 0)}
               </span>
             </div>
           </div>
 
           {/* Card 3: Sold Pieces */}
-          <div className="bg-card p-3.5 rounded-xl border border-border shadow-sm flex flex-col justify-between">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Sold Pieces
-              </span>
-              <span className="p-1 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400 text-xs font-bold">
-                🏷️
-              </span>
-            </div>
-            <div className="mt-2 flex items-baseline gap-2">
-              <span className="text-2xl font-bold font-mono text-purple-600 dark:text-purple-400">
+          <div className="p-3.5 rounded-xl border border-slate-200 bg-white shadow-2xs flex flex-col justify-between">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+              Sold Pieces &amp; Cost
+            </span>
+            <div className="mt-1 flex items-baseline justify-between">
+              <span className="text-xl font-extrabold text-purple-700">
                 {isLoading && !dashboard ? '...' : `${dashboard?.piecesSoldTotal ?? 0} Sold`}
               </span>
-              <span className="text-[11px] text-muted-foreground font-mono">
+              <span className="text-[11px] text-slate-500 font-medium">
                 ({dashboard?.piecesReturnedTotal ?? 0} returned)
               </span>
             </div>
-            <div className="mt-1 text-[11px] text-muted-foreground flex items-center justify-between">
+            <div className="mt-1 text-[11px] text-slate-500 flex items-center justify-between">
               <span>Recognized Cost:</span>
-              <span className="font-semibold font-mono text-foreground">
+              <span className="font-semibold text-slate-800">
                 {formatCurrency(dashboard?.totalSoldVendorValue ?? 0)}
               </span>
             </div>
           </div>
 
           {/* Card 4: Outstanding Vendor Due */}
-          <div className="bg-card p-3.5 rounded-xl border border-border shadow-sm flex flex-col justify-between">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Outstanding Vendor Due
-              </span>
-              <span className="p-1 rounded-md bg-rose-500/10 text-rose-600 dark:text-rose-400 text-xs font-bold">
-                💳
-              </span>
-            </div>
-            <div className="mt-2 flex items-baseline gap-2">
-              <span className="text-2xl font-bold font-mono text-rose-600 dark:text-rose-400">
+          <div className="p-3.5 rounded-xl border border-rose-200 bg-rose-50/70 shadow-2xs flex flex-col justify-between">
+            <span className="text-[11px] font-bold text-rose-900 uppercase tracking-wider">
+              Outstanding Vendor Liability
+            </span>
+            <div className="mt-1 flex items-baseline justify-between">
+              <span className="text-xl font-black text-rose-900">
                 {isLoading && !dashboard
                   ? '...'
                   : formatCurrency(dashboard?.totalSettlementDueToSuppliers ?? 0)}
               </span>
             </div>
-            <div className="mt-1 text-[11px] text-muted-foreground flex items-center justify-between">
+            <div className="mt-1 text-[11px] text-rose-800 flex items-center justify-between font-medium">
               <span>Settled Paid:</span>
-              <span className="font-semibold font-mono text-emerald-600 dark:text-emerald-400">
+              <span className="font-bold text-emerald-800">
                 {formatCurrency(dashboard?.totalSettlementPaid ?? 0)}
               </span>
             </div>
           </div>
-        </section>
+        </div>
 
         {/* 3. Filter & Search Toolbar */}
-        <section className="bg-card p-3 rounded-xl border border-border shadow-sm flex items-center justify-between gap-3 text-xs shrink-0">
-          <div className="flex items-center gap-2 flex-1">
-            {/* Search */}
-            <div className="relative w-72">
+        <div className="flex items-center justify-between gap-3 shrink-0 flex-wrap">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+            {(
+              [
+                { key: 'ALL', label: 'All Memos' },
+                { key: 'ACTIVE', label: 'Active In Showroom' },
+                { key: 'PARTIALLY_SETTLED', label: 'Partially Settled' },
+                { key: 'COMPLETED', label: 'Completed' },
+                { key: 'CLOSED', label: 'Closed' }
+              ] as const
+            ).map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setActiveTab(tab.key)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                  activeTab === tab.key
+                    ? 'bg-amber-500 !text-white shadow-2xs font-bold'
+                    : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <div className="relative">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search memo #, supplier, phone..."
-                className="w-full h-8 pl-8 pr-3 text-xs bg-background border border-input rounded-lg focus:outline-none focus:ring-1 focus:ring-primary font-medium"
+                className="w-64 h-8 px-3 text-xs bg-white border border-slate-300 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-500/40 focus:border-amber-500 font-medium"
               />
-              <span className="absolute left-2.5 top-2 text-muted-foreground pointer-events-none text-xs">
-                🔍
-              </span>
               {searchQuery && (
                 <button
                   type="button"
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-2 top-2 text-muted-foreground hover:text-foreground text-xs"
+                  className="absolute right-2 top-2 text-slate-400 hover:text-slate-700 text-xs"
                 >
                   ✕
                 </button>
               )}
             </div>
 
-            {/* Quick Status Tabs */}
-            <div className="flex items-center gap-1 bg-muted/60 p-0.5 rounded-lg border border-border/80">
-              {(
-                [
-                  { key: 'ALL', label: 'All Memos' },
-                  { key: 'ACTIVE', label: 'Active In Showroom' },
-                  { key: 'PARTIALLY_SETTLED', label: 'Partially Settled' },
-                  { key: 'COMPLETED', label: 'Completed' },
-                  { key: 'CLOSED', label: 'Closed' }
-                ] as const
-              ).map((tab) => (
-                <button
-                  key={tab.key}
-                  type="button"
-                  onClick={() => setActiveTab(tab.key)}
-                  className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all ${
-                    activeTab === tab.key
-                      ? 'bg-primary text-primary-foreground shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {/* Settlement Status Filter */}
             <div className="flex items-center gap-1.5">
-              <span className="text-muted-foreground font-medium">Settlement:</span>
+              <span className="text-slate-500 font-medium text-xs">Settlement:</span>
               <select
                 value={settlementFilter}
                 onChange={(e) => setSettlementFilter(e.target.value)}
-                className="h-8 px-2.5 text-xs bg-background border border-input rounded-lg focus:outline-none focus:ring-1 focus:ring-primary"
+                className="h-8 px-2.5 text-xs bg-white border border-slate-300 rounded-lg text-slate-700 font-medium focus:outline-none focus:ring-1 focus:ring-amber-500/40 focus:border-amber-500"
               >
                 <option value="ALL">All Settlement States</option>
                 <option value="UNSETTLED">Unsettled Only</option>
@@ -462,183 +453,184 @@ export const ConsignmentHubScreen: React.FC<ConsignmentHubScreenProps> = ({
                   setSettlementFilter('ALL')
                   setActiveTab('ALL')
                 }}
-                className="h-8 px-2.5 text-xs bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground rounded-lg border border-border font-medium"
+                className="h-8 px-2.5 text-xs bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 rounded-lg border border-slate-300 font-medium cursor-pointer"
               >
-                Clear Filters
+                Clear
               </button>
             )}
           </div>
-        </section>
+        </div>
 
         {/* 4. Consignment Register Table */}
-        <section className="flex-1 overflow-auto border border-border rounded-xl bg-card shadow-sm flex flex-col">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead className="bg-muted/60 text-muted-foreground uppercase text-[11px] font-semibold sticky top-0 z-10 border-b border-border select-none">
-              <tr>
-                <th className="py-2.5 px-3">Memo No.</th>
-                <th className="py-2.5 px-3">Vendor / Supplier</th>
-                <th className="py-2.5 px-3 text-center">Inward Date</th>
-                <th className="py-2.5 px-3 text-center">Return Due</th>
-                <th className="py-2.5 px-3 text-center">Pcs &amp; Weight</th>
-                <th className="py-2.5 px-3 text-right">Vendor Value</th>
-                <th className="py-2.5 px-3 text-right">Sold Cost</th>
-                <th className="py-2.5 px-3 text-right">Settled</th>
-                <th className="py-2.5 px-3 text-right">Outstanding Due</th>
-                <th className="py-2.5 px-3 text-center">Settlement Status</th>
-                <th className="py-2.5 px-3 text-center">Memo Status</th>
-                <th className="py-2.5 px-3 text-center">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border/60">
-              {isLoading && inwards.length === 0 ? (
+        <div className="flex-1 flex flex-col min-h-0 border border-slate-200 rounded-xl bg-white shadow-2xs overflow-hidden">
+          <div className="flex-1 overflow-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead className="bg-slate-100/90 text-slate-700 uppercase text-[11px] font-extrabold sticky top-0 z-10 border-b border-slate-200 tracking-tight">
                 <tr>
-                  <td colSpan={12} className="py-12 text-center text-muted-foreground">
-                    <div className="flex flex-col items-center justify-center gap-2">
-                      <span className="animate-spin text-xl">⏳</span>
-                      <span className="font-medium text-xs">Loading consignment register...</span>
-                    </div>
-                  </td>
+                  <th className="py-2.5 px-3">Memo No.</th>
+                  <th className="py-2.5 px-3">Vendor / Supplier</th>
+                  <th className="py-2.5 px-3 text-center">Inward Date</th>
+                  <th className="py-2.5 px-3 text-center">Return Due</th>
+                  <th className="py-2.5 px-3 text-center">Pcs &amp; Weight</th>
+                  <th className="py-2.5 px-3 text-right">Vendor Value</th>
+                  <th className="py-2.5 px-3 text-right">Sold Cost</th>
+                  <th className="py-2.5 px-3 text-right">Settled</th>
+                  <th className="py-2.5 px-3 text-right">Outstanding Due</th>
+                  <th className="py-2.5 px-3 text-center">Settlement Status</th>
+                  <th className="py-2.5 px-3 text-center">Memo Status</th>
+                  <th className="py-2.5 px-3 text-center">Action</th>
                 </tr>
-              ) : filteredInwards.length === 0 ? (
-                <tr>
-                  <td colSpan={12} className="py-12 text-center text-muted-foreground">
-                    <div className="flex flex-col items-center justify-center gap-2">
-                      <span className="text-2xl">📦</span>
-                      <span className="font-semibold text-foreground text-sm">
-                        No consignment memos found
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {searchQuery || settlementFilter !== 'ALL' || activeTab !== 'ALL'
-                          ? 'Try changing or clearing your search query and filters.'
-                          : 'No vendor consignment inwards have been recorded yet.'}
-                      </span>
-                      {!searchQuery && settlementFilter === 'ALL' && activeTab === 'ALL' && (
-                        <button
-                          type="button"
-                          onClick={() => setCurrentView('INWARD')}
-                          className="mt-2 px-3 py-1.5 bg-primary text-primary-foreground text-xs font-semibold rounded-lg hover:bg-primary/90 transition-colors shadow-sm flex items-center gap-1.5"
-                        >
-                          <span>+</span>
-                          <span>Create Consignment Inward</span>
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                filteredInwards.map((inward) => {
-                  const isOverdue =
-                    inward.expectedReturnDate &&
-                    inward.status !== 'CLOSED' &&
-                    inward.status !== 'COMPLETED' &&
-                    inward.expectedReturnDate < new Date().toISOString().split('T')[0]
-
-                  const outstanding = inward.outstandingLiability ?? 0
-
-                  return (
-                    <tr
-                      key={inward.id}
-                      className="hover:bg-muted/30 transition-colors cursor-pointer group"
-                      onClick={() => void handleOpenDetails(inward.id)}
-                    >
-                      <td className="py-2.5 px-3 font-mono font-bold text-foreground">
-                        <span className="group-hover:text-primary transition-colors">
-                          {inward.consignmentNumber}
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {isLoading && inwards.length === 0 ? (
+                  <tr>
+                    <td colSpan={12} className="py-12 text-center text-slate-400">
+                      <div className="flex flex-col items-center justify-center gap-2">
+                        <span className="animate-spin text-xl">⏳</span>
+                        <span className="font-medium text-xs">Loading consignment register...</span>
+                      </div>
+                    </td>
+                  </tr>
+                ) : filteredInwards.length === 0 ? (
+                  <tr>
+                    <td colSpan={12} className="py-12 text-center text-slate-400">
+                      <div className="flex flex-col items-center justify-center gap-2">
+                        <span className="text-2xl">📦</span>
+                        <span className="font-semibold text-slate-800 text-sm">
+                          No consignment memos found
                         </span>
-                      </td>
-
-                      <td className="py-2.5 px-3">
-                        <div className="font-semibold text-foreground">
-                          {inward.supplierName || 'Unknown Supplier'}
-                        </div>
-                        {inward.supplierMobile && (
-                          <div className="text-[10px] text-muted-foreground font-mono">
-                            {inward.supplierMobile}
-                          </div>
+                        <span className="text-xs text-slate-500">
+                          {searchQuery || settlementFilter !== 'ALL' || activeTab !== 'ALL'
+                            ? 'Try changing or clearing your search query and filters.'
+                            : 'No vendor consignment inwards have been recorded yet.'}
+                        </span>
+                        {!searchQuery && settlementFilter === 'ALL' && activeTab === 'ALL' && (
+                          <button
+                            type="button"
+                            onClick={() => setCurrentView('INWARD')}
+                            className="mt-2 px-4 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 !text-white text-xs font-bold rounded-lg shadow-2xs flex items-center gap-1.5 cursor-pointer"
+                            style={{ color: '#ffffff' }}
+                          >
+                            <span>+</span>
+                            <span>Create Consignment Inward</span>
+                          </button>
                         )}
-                      </td>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  filteredInwards.map((inward) => {
+                    const isOverdue =
+                      inward.expectedReturnDate &&
+                      inward.status !== 'CLOSED' &&
+                      inward.status !== 'COMPLETED' &&
+                      inward.expectedReturnDate < new Date().toISOString().split('T')[0]
 
-                      <td className="py-2.5 px-3 text-center font-mono text-[11px] text-muted-foreground">
-                        {formatDate(inward.inwardDate)}
-                      </td>
+                    const outstanding = inward.outstandingLiability ?? 0
 
-                      <td className="py-2.5 px-3 text-center font-mono text-[11px]">
-                        {inward.expectedReturnDate ? (
+                    return (
+                      <tr
+                        key={inward.id}
+                        className="hover:bg-amber-50/30 transition-colors cursor-pointer group"
+                        onClick={() => void handleOpenDetails(inward.id)}
+                      >
+                        <td className="py-2.5 px-3 font-semibold text-slate-900 whitespace-nowrap">
+                          <span className="group-hover:text-amber-700 transition-colors">
+                            {inward.consignmentNumber}
+                          </span>
+                        </td>
+
+                        <td className="py-2.5 px-3">
+                          <div className="font-semibold text-slate-900">
+                            {inward.supplierName || 'Unknown Supplier'}
+                          </div>
+                          {inward.supplierMobile && (
+                            <div className="text-[11px] text-slate-500">
+                              {inward.supplierMobile}
+                            </div>
+                          )}
+                        </td>
+
+                        <td className="py-2.5 px-3 text-center text-slate-600 font-medium">
+                          {formatDate(inward.inwardDate)}
+                        </td>
+
+                        <td className="py-2.5 px-3 text-center font-medium">
+                          {inward.expectedReturnDate ? (
+                            isOverdue ? (
+                              <span className="text-rose-700 font-bold bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200 inline-block text-[11px]">
+                                {formatDate(inward.expectedReturnDate)} ⚠️ Overdue
+                              </span>
+                            ) : (
+                              <span className="text-slate-600 text-[11px]">
+                                {formatDate(inward.expectedReturnDate)}
+                              </span>
+                            )
+                          ) : (
+                            <span className="text-slate-400">-</span>
+                          )}
+                        </td>
+
+                        <td className="py-2.5 px-3 text-center">
+                          <span className="font-semibold text-slate-900">{inward.totalPieces} Pcs</span>
+                          <div className="text-[11px] text-slate-500">
+                            {formatWeight(inward.totalGrossWeight)}
+                          </div>
+                        </td>
+
+                        <td className="py-2.5 px-3 text-right font-semibold text-slate-900">
+                          {formatCurrency(inward.totalVendorCost)}
+                        </td>
+
+                        <td className="py-2.5 px-3 text-right font-bold text-purple-700">
+                          {formatCurrency(inward.totalSoldVendorCost ?? 0)}
+                        </td>
+
+                        <td className="py-2.5 px-3 text-right font-bold text-emerald-700">
+                          {formatCurrency(inward.totalSettledAmount ?? 0)}
+                        </td>
+
+                        <td className="py-2.5 px-3 text-right font-bold">
                           <span
                             className={
-                              isOverdue
-                                ? 'text-rose-600 dark:text-rose-400 font-bold'
-                                : 'text-muted-foreground'
+                              outstanding > 0
+                                ? 'text-rose-700'
+                                : 'text-slate-500'
                             }
                           >
-                            {formatDate(inward.expectedReturnDate)}
-                            {isOverdue && ' ⚠️'}
+                            {formatCurrency(outstanding)}
                           </span>
-                        ) : (
-                          <span className="text-muted-foreground">-</span>
-                        )}
-                      </td>
+                        </td>
 
-                      <td className="py-2.5 px-3 text-center">
-                        <span className="font-bold font-mono">{inward.totalPieces} Pcs</span>
-                        <div className="text-[10px] text-muted-foreground font-mono">
-                          {formatWeight(inward.totalGrossWeight)}
-                        </div>
-                      </td>
+                        <td className="py-2.5 px-3 text-center">
+                          {renderSettlementStatusBadge(inward.settlementStatus)}
+                        </td>
 
-                      <td className="py-2.5 px-3 text-right font-mono font-medium text-foreground">
-                        {formatCurrency(inward.totalVendorCost)}
-                      </td>
+                        <td className="py-2.5 px-3 text-center">
+                          {renderPhysicalStatusBadge(inward.status)}
+                        </td>
 
-                      <td className="py-2.5 px-3 text-right font-mono font-medium text-purple-600 dark:text-purple-400">
-                        {formatCurrency(inward.totalSoldVendorCost ?? 0)}
-                      </td>
-
-                      <td className="py-2.5 px-3 text-right font-mono font-medium text-emerald-600 dark:text-emerald-400">
-                        {formatCurrency(inward.totalSettledAmount ?? 0)}
-                      </td>
-
-                      <td className="py-2.5 px-3 text-right font-mono font-bold">
-                        <span
-                          className={
-                            outstanding > 0
-                              ? 'text-rose-600 dark:text-rose-400'
-                              : 'text-muted-foreground'
-                          }
+                        <td
+                          className="py-2.5 px-3 text-center"
+                          onClick={(e) => e.stopPropagation()}
                         >
-                          {formatCurrency(outstanding)}
-                        </span>
-                      </td>
-
-                      <td className="py-2.5 px-3 text-center">
-                        {renderSettlementStatusBadge(inward.settlementStatus)}
-                      </td>
-
-                      <td className="py-2.5 px-3 text-center">
-                        {renderPhysicalStatusBadge(inward.status)}
-                      </td>
-
-                      <td
-                        className="py-2.5 px-3 text-center"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <button
-                          type="button"
-                          onClick={() => void handleOpenDetails(inward.id)}
-                          className="px-2.5 py-1 bg-muted hover:bg-primary hover:text-primary-foreground rounded text-[11px] font-semibold transition-colors shadow-sm"
-                        >
-                          View Details
-                        </button>
-                      </td>
-                    </tr>
-                  )
-                })
-              )}
-            </tbody>
-          </table>
-        </section>
+                          <button
+                            type="button"
+                            onClick={() => void handleOpenDetails(inward.id)}
+                            className="px-2.5 py-1 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-md text-xs font-semibold shadow-2xs transition-colors cursor-pointer whitespace-nowrap"
+                          >
+                            View Details
+                          </button>
+                        </td>
+                      </tr>
+                    )
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
-
     </div>
   )
 }

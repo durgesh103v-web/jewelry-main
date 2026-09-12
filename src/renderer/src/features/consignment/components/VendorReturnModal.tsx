@@ -18,6 +18,12 @@ export interface VendorReturnModalProps {
 
 type ModalStep = 'SELECTION' | 'CONFIRM' | 'SUCCESS'
 
+const ITEM_STATUS_CONFIG: Record<string, { label: string; bg: string; text: string; border: string }> = {
+  IN_SHOWROOM: { label: 'In Showroom', bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200' },
+  SOLD: { label: 'Sold (Not Returnable)', bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200' },
+  RETURNED: { label: 'Already Returned', bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' }
+}
+
 export const VendorReturnModal: React.FC<VendorReturnModalProps> = ({
   isOpen,
   onClose,
@@ -180,11 +186,10 @@ export const VendorReturnModal: React.FC<VendorReturnModalProps> = ({
 
     setIsSubmitting(true)
     setError(null)
-
     try {
       const payload: ReturnConsignmentItemsPayload = {
         consignmentInwardId: inward.id,
-        consignmentItemIds: selectedIds,
+        itemIds: selectedIds,
         returnDate,
         notes: notes.trim() || undefined
       }
@@ -194,8 +199,8 @@ export const VendorReturnModal: React.FC<VendorReturnModalProps> = ({
       setReturnResult({
         returnId: result.returnId,
         returnNumber: result.returnNumber,
-        returnedPieces: selectedSummary.totalPieces,
-        totalGrossWeight: selectedSummary.totalGrossWeight
+        returnedPieces: result.returnedPieces,
+        totalGrossWeight: result.totalGrossWeight
       })
 
       setStep('SUCCESS')
@@ -214,54 +219,39 @@ export const VendorReturnModal: React.FC<VendorReturnModalProps> = ({
   }
 
   const renderItemStatusBadge = (status: ConsignmentItemStatus) => {
-    switch (status) {
-      case 'IN_SHOWROOM':
-        return (
-          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
-            IN SHOWROOM
-          </span>
-        )
-      case 'SOLD':
-        return (
-          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
-            SOLD (NOT RETURNABLE)
-          </span>
-        )
-      case 'RETURNED':
-        return (
-          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-            ALREADY RETURNED
-          </span>
-        )
-      default:
-        return (
-          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-muted text-muted-foreground">
-            {status}
-          </span>
-        )
+    const cfg = ITEM_STATUS_CONFIG[status] || {
+      label: status,
+      bg: 'bg-slate-100',
+      text: 'text-slate-700',
+      border: 'border-slate-200'
     }
+    return (
+      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap border ${cfg.bg} ${cfg.text} ${cfg.border}`}>
+        {cfg.label}
+      </span>
+    )
   }
 
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150">
-      <div className="bg-card border border-border rounded-2xl max-w-4xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden text-xs">
+    <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+      <div className="bg-white border border-slate-200 rounded-2xl max-w-4xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden text-xs">
         {/* Modal Header */}
-        <header className="flex items-center justify-between px-5 py-3.5 border-b border-border bg-muted/40 shrink-0">
+        <header className="flex items-center justify-between px-6 py-3.5 border-b border-slate-200 bg-white shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold text-base shadow-sm">
+            <div className="w-8 h-8 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 flex items-center justify-center font-bold text-base shadow-2xs">
               ↩️
             </div>
             <div>
-              <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
+              <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                 <span>Vendor Consignment Return</span>
-                <span className="text-[10px] uppercase font-semibold px-2 py-0.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-full border border-amber-500/20">
+                <span className="text-[10px] uppercase font-bold px-2 py-0.5 bg-amber-100 text-amber-900 rounded-full border border-amber-200">
                   Unsold Pieces Custody Exit
                 </span>
               </h2>
-              <p className="text-[11px] text-muted-foreground">
-                Memo: <span className="font-mono font-semibold text-foreground">{inward.consignmentNumber}</span> • Vendor: <span className="font-semibold text-foreground">{inward.supplierName || 'Unknown Vendor'}</span>
+              <p className="text-[11px] text-slate-500 font-medium">
+                Memo: <span className="font-semibold text-slate-800">{inward.consignmentNumber}</span> • Vendor: <span className="font-semibold text-slate-800">{inward.supplierName || 'Unknown Vendor'}</span>
               </p>
             </div>
           </div>
@@ -271,7 +261,7 @@ export const VendorReturnModal: React.FC<VendorReturnModalProps> = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="h-7 w-7 text-muted-foreground hover:text-foreground rounded-lg flex items-center justify-center font-bold text-sm ml-2 transition-colors"
+                className="h-7 w-7 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg flex items-center justify-center font-bold text-sm transition-colors cursor-pointer"
                 title="Close"
               >
                 ✕
@@ -281,18 +271,18 @@ export const VendorReturnModal: React.FC<VendorReturnModalProps> = ({
         </header>
 
         {/* Modal Body */}
-        <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3.5">
+        <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-3.5">
           {/* Global Error Banner */}
           {error && (
-            <div className="p-3 bg-destructive/10 border border-destructive/20 text-destructive rounded-xl text-xs flex justify-between items-center shadow-sm shrink-0">
-              <span className="flex items-center gap-2">
+            <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs flex justify-between items-center shadow-2xs shrink-0">
+              <span className="flex items-center gap-2 font-medium">
                 <span>⚠️</span>
                 <span>{error}</span>
               </span>
               <button
                 type="button"
                 onClick={() => setError(null)}
-                className="text-xs font-bold px-1.5 py-0.5 rounded hover:bg-destructive/20"
+                className="text-xs font-bold text-rose-700 hover:bg-rose-100 px-1.5 py-0.5 rounded cursor-pointer"
               >
                 ✕
               </button>
@@ -303,7 +293,7 @@ export const VendorReturnModal: React.FC<VendorReturnModalProps> = ({
           {step === 'SELECTION' && (
             <>
               {/* Scan Bar & Quick Actions */}
-              <div className="bg-card p-3 rounded-xl border border-border shadow-sm flex flex-col gap-2 shrink-0">
+              <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex flex-col gap-2 shrink-0">
                 <div className="flex items-center justify-between gap-3">
                   {/* Barcode Scanner Input */}
                   <form onSubmit={handleBarcodeScanSubmit} className="flex-1 flex gap-2">
@@ -314,14 +304,14 @@ export const VendorReturnModal: React.FC<VendorReturnModalProps> = ({
                         value={scanQuery}
                         onChange={(e) => setScanQuery(e.target.value)}
                         placeholder="Scan or enter item barcode / tag to select for return (Press Enter)..."
-                        className="w-full h-8 pl-8 pr-3 bg-background border border-input rounded-lg font-mono text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                        className="w-full h-9 px-3 bg-white border border-slate-300 rounded-lg text-slate-900 font-medium text-xs focus:outline-none focus:ring-1 focus:ring-amber-500/40 focus:border-amber-500"
                       />
-                      <span className="absolute left-2.5 top-2 text-muted-foreground text-xs">🔍</span>
                     </div>
                     <button
                       type="submit"
                       disabled={!scanQuery.trim()}
-                      className="h-8 px-3 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 transition-colors shadow-sm disabled:opacity-50"
+                      className="h-9 px-3.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 !text-white font-bold rounded-lg shadow-2xs text-xs disabled:opacity-50 cursor-pointer"
+                      style={{ color: '#ffffff' }}
                     >
                       Scan &amp; Add
                     </button>
@@ -333,7 +323,7 @@ export const VendorReturnModal: React.FC<VendorReturnModalProps> = ({
                       type="button"
                       onClick={handleSelectAllEligible}
                       disabled={eligibleItems.length === 0 || selectedIds.length === eligibleItems.length}
-                      className="h-8 px-3 bg-muted hover:bg-muted/80 text-foreground font-semibold rounded-lg transition-colors border border-border disabled:opacity-50"
+                      className="h-9 px-3 bg-white hover:bg-slate-50 text-slate-700 font-semibold rounded-lg transition-colors border border-slate-300 shadow-2xs disabled:opacity-50 cursor-pointer"
                     >
                       Select All Eligible ({eligibleItems.length})
                     </button>
@@ -341,7 +331,7 @@ export const VendorReturnModal: React.FC<VendorReturnModalProps> = ({
                       <button
                         type="button"
                         onClick={handleClearSelection}
-                        className="h-8 px-2.5 text-xs text-muted-foreground hover:text-foreground font-medium rounded-lg transition-colors border border-border"
+                        className="h-9 px-3 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 font-medium rounded-lg border border-slate-300 shadow-2xs cursor-pointer"
                       >
                         Clear Selection
                       </button>
@@ -352,17 +342,17 @@ export const VendorReturnModal: React.FC<VendorReturnModalProps> = ({
                 {/* Scan Feedback Message */}
                 {scanMessage && (
                   <div
-                    className={`p-2 rounded-lg text-[11px] font-medium flex items-center justify-between ${
+                    className={`p-2.5 rounded-lg text-xs font-semibold flex items-center justify-between ${
                       scanMessage.type === 'success'
-                        ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
-                        : 'bg-destructive/10 text-destructive border border-destructive/20'
+                        ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                        : 'bg-rose-50 text-rose-800 border border-rose-200'
                     }`}
                   >
                     <span>{scanMessage.text}</span>
                     <button
                       type="button"
                       onClick={() => setScanMessage(null)}
-                      className="font-bold px-1 hover:opacity-80"
+                      className="font-bold px-1 hover:opacity-80 cursor-pointer"
                     >
                       ✕
                     </button>
@@ -371,24 +361,24 @@ export const VendorReturnModal: React.FC<VendorReturnModalProps> = ({
               </div>
 
               {/* Items Selection Table */}
-              <div className="flex-1 overflow-auto border border-border rounded-xl bg-card shadow-sm min-h-[220px]">
+              <div className="flex-1 overflow-auto border border-slate-200 rounded-xl bg-white shadow-2xs min-h-[220px]">
                 <table className="w-full text-left text-xs border-collapse">
-                  <thead className="bg-muted/60 text-muted-foreground uppercase text-[10px] font-semibold sticky top-0 z-10 border-b border-border select-none">
+                  <thead className="bg-slate-100/90 text-slate-700 uppercase text-[10px] font-extrabold sticky top-0 z-10 border-b border-slate-200 tracking-tight select-none">
                     <tr>
-                      <th className="py-2 px-3 w-10 text-center">
+                      <th className="py-2.5 px-3 w-10 text-center">
                         <span className="sr-only">Select</span>
                       </th>
-                      <th className="py-2 px-3">Barcode / Tag</th>
-                      <th className="py-2 px-3">Item Design / Master</th>
-                      <th className="py-2 px-3">Vendor Code</th>
-                      <th className="py-2 px-2 text-center">Purity</th>
-                      <th className="py-2 px-3 text-right">Gross Wt</th>
-                      <th className="py-2 px-3 text-right">Net Wt</th>
-                      <th className="py-2 px-3 text-right">Vendor Cost</th>
-                      <th className="py-2 px-3 text-center">Status</th>
+                      <th className="py-2.5 px-3">Barcode / Tag</th>
+                      <th className="py-2.5 px-3">Item Design / Master</th>
+                      <th className="py-2.5 px-3">Vendor Code</th>
+                      <th className="py-2.5 px-2 text-center">Purity</th>
+                      <th className="py-2.5 px-3 text-right">Gross Wt</th>
+                      <th className="py-2.5 px-3 text-right">Net Wt</th>
+                      <th className="py-2.5 px-3 text-right">Vendor Cost</th>
+                      <th className="py-2.5 px-3 text-center">Status</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-border/60">
+                  <tbody className="divide-y divide-slate-100">
                     {inward.items && inward.items.length > 0 ? (
                       inward.items.map((it: ConsignmentItemRecord) => {
                         const isEligible = it.status === 'IN_SHOWROOM'
@@ -400,56 +390,56 @@ export const VendorReturnModal: React.FC<VendorReturnModalProps> = ({
                             onClick={() => handleToggleItem(it.id, it.status)}
                             className={`transition-colors ${
                               !isEligible
-                                ? 'opacity-60 bg-muted/20 cursor-not-allowed'
+                                ? 'opacity-60 bg-slate-50 cursor-not-allowed'
                                 : isSelected
-                                  ? 'bg-primary/5 hover:bg-primary/10 cursor-pointer'
-                                  : 'hover:bg-muted/30 cursor-pointer'
+                                  ? 'bg-amber-50/70 hover:bg-amber-100/60 cursor-pointer font-semibold'
+                                  : 'hover:bg-amber-50/30 cursor-pointer'
                             }`}
                           >
-                            <td className="py-2 px-3 text-center" onClick={(e) => e.stopPropagation()}>
+                            <td className="py-2.5 px-3 text-center" onClick={(e) => e.stopPropagation()}>
                               <input
                                 type="checkbox"
                                 checked={isSelected}
                                 disabled={!isEligible}
                                 onChange={() => handleToggleItem(it.id, it.status)}
-                                className="h-4 w-4 rounded border-input text-primary focus:ring-primary disabled:opacity-30 cursor-pointer"
+                                className="h-4 w-4 rounded border-slate-300 text-amber-600 focus:ring-amber-500 disabled:opacity-30 cursor-pointer"
                               />
                             </td>
 
-                            <td className="py-2 px-3 font-mono font-bold text-foreground">
+                            <td className="py-2.5 px-3 font-semibold text-slate-900">
                               {it.barcode || it.stockItemCode}
                             </td>
 
-                            <td className="py-2 px-3 font-semibold text-foreground">
+                            <td className="py-2.5 px-3 font-semibold text-slate-900">
                               {it.itemName}
                               {it.notes && (
-                                <div className="text-[10px] text-muted-foreground italic font-normal">
+                                <div className="text-[10px] text-slate-500 italic font-normal">
                                   {it.notes}
                                 </div>
                               )}
                             </td>
 
-                            <td className="py-2 px-3 font-mono text-muted-foreground">
+                            <td className="py-2.5 px-3 text-slate-600 font-medium">
                               {it.vendorItemCode || '-'}
                             </td>
 
-                            <td className="py-2 px-2 text-center font-mono">
+                            <td className="py-2.5 px-2 text-center text-slate-700 font-medium">
                               {it.purityName} ({it.tunch}%)
                             </td>
 
-                            <td className="py-2 px-3 text-right font-mono font-bold text-foreground">
+                            <td className="py-2.5 px-3 text-right font-bold text-slate-900">
                               {formatWeight(it.grossWeight)}
                             </td>
 
-                            <td className="py-2 px-3 text-right font-mono text-muted-foreground">
+                            <td className="py-2.5 px-3 text-right text-slate-700">
                               {formatWeight(it.netWeight)}
                             </td>
 
-                            <td className="py-2 px-3 text-right font-mono font-bold text-foreground">
+                            <td className="py-2.5 px-3 text-right font-semibold text-slate-900">
                               {formatCurrency(it.vendorCost)}
                             </td>
 
-                            <td className="py-2 px-3 text-center">
+                            <td className="py-2.5 px-3 text-center">
                               {renderItemStatusBadge(it.status)}
                             </td>
                           </tr>
@@ -457,8 +447,8 @@ export const VendorReturnModal: React.FC<VendorReturnModalProps> = ({
                       })
                     ) : (
                       <tr>
-                        <td colSpan={9} className="py-12 text-center text-muted-foreground">
-                          No items found in this consignment inward.
+                        <td colSpan={9} className="py-8 text-center text-slate-400">
+                          No items in this memo.
                         </td>
                       </tr>
                     )}
@@ -466,56 +456,58 @@ export const VendorReturnModal: React.FC<VendorReturnModalProps> = ({
                 </table>
               </div>
 
-              {/* Return Metadata: Date & Notes */}
-              <div className="bg-card p-3 rounded-xl border border-border shadow-sm grid grid-cols-12 gap-3 shrink-0">
-                <div className="col-span-4">
-                  <label className="block text-[10px] font-bold text-foreground mb-1">
-                    Return Date <span className="text-destructive">*</span>
-                  </label>
-                  <input
-                    type="date"
-                    value={returnDate}
-                    onChange={(e) => setReturnDate(e.target.value)}
-                    className="w-full h-8 px-3 bg-background border border-input rounded-lg font-mono text-xs focus:outline-none focus:ring-1 focus:ring-primary"
-                  />
-                </div>
+              {/* Return Metadata & Action Toolbar */}
+              <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex items-center justify-between gap-4 shrink-0">
+                <div className="flex items-center gap-3 flex-1">
+                  <div className="w-48">
+                    <label className="block text-[10px] font-bold text-slate-700 mb-0.5">
+                      Return Date <span className="text-rose-600">*</span>
+                    </label>
+                    <input
+                      type="date"
+                      value={returnDate}
+                      onChange={(e) => setReturnDate(e.target.value)}
+                      className="w-full h-8 px-2.5 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500/40 focus:border-amber-500 font-medium"
+                    />
+                  </div>
 
-                <div className="col-span-8">
-                  <label className="block text-[10px] font-bold text-foreground mb-1">
-                    Return Remarks / Reason
-                  </label>
-                  <input
-                    type="text"
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    placeholder="e.g. 30-day memo period concluded, unsold stock returned in good order"
-                    className="w-full h-8 px-3 bg-background border border-input rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary"
-                  />
+                  <div className="flex-1">
+                    <label className="block text-[10px] font-bold text-slate-700 mb-0.5">
+                      Return Remarks / Reason
+                    </label>
+                    <input
+                      type="text"
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      placeholder="e.g. 30-day memo period concluded, unsold stock returned in good order"
+                      className="w-full h-8 px-2.5 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500/40 focus:border-amber-500"
+                    />
+                  </div>
                 </div>
               </div>
 
-              {/* Summary Strip & Action Bar */}
-              <footer className="bg-muted/40 p-3 rounded-xl border border-border flex items-center justify-between shrink-0">
-                <div className="flex items-center gap-6 font-mono text-xs">
+              {/* Bottom Selected Summary Footer */}
+              <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-6">
                   <div>
-                    <span className="text-[10px] uppercase text-muted-foreground block">Selected Return Pieces</span>
-                    <span className="text-base font-bold text-foreground">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase">Selected Return Pieces</span>
+                    <div className="text-base font-bold text-slate-900">
                       {selectedSummary.totalPieces} / {eligibleItems.length} Pcs
-                    </span>
+                    </div>
                   </div>
 
                   <div>
-                    <span className="text-[10px] uppercase text-muted-foreground block">Total Gross Weight</span>
-                    <span className="text-base font-bold text-foreground">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase">Total Gross Weight</span>
+                    <div className="text-base font-bold text-slate-900">
                       {formatWeight(selectedSummary.totalGrossWeight)}
-                    </span>
+                    </div>
                   </div>
 
                   <div>
-                    <span className="text-[10px] uppercase text-muted-foreground block">Total Vendor Agreed Value</span>
-                    <span className="text-base font-bold text-primary">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase">Total Vendor Agreed Value</span>
+                    <div className="text-base font-extrabold text-amber-700">
                       {formatCurrency(selectedSummary.totalVendorValuation)}
-                    </span>
+                    </div>
                   </div>
                 </div>
 
@@ -523,110 +515,93 @@ export const VendorReturnModal: React.FC<VendorReturnModalProps> = ({
                   <button
                     type="button"
                     onClick={onClose}
-                    className="h-8 px-4 bg-muted hover:bg-muted/80 text-foreground font-semibold rounded-lg transition-colors border border-border"
+                    className="h-8 px-3.5 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-semibold rounded-lg transition-colors shadow-2xs cursor-pointer"
                   >
                     Cancel
                   </button>
 
                   <button
                     type="button"
-                    disabled={selectedIds.length === 0}
                     onClick={() => setStep('CONFIRM')}
-                    className="h-8 px-4 bg-amber-500 text-white font-semibold rounded-lg hover:bg-amber-600 transition-colors shadow-sm disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
+                    disabled={selectedIds.length === 0}
+                    className="h-8 px-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 !text-white font-bold rounded-lg shadow-2xs disabled:opacity-50 cursor-pointer"
+                    style={selectedIds.length > 0 ? { color: '#ffffff' } : {}}
                   >
-                    <span>Review &amp; Return ({selectedIds.length})</span>
-                    <span>→</span>
+                    Review &amp; Return ({selectedIds.length}) →
                   </button>
                 </div>
-              </footer>
+              </div>
             </>
           )}
 
-          {/* STEP 2: CONFIRMATION STEP */}
+          {/* STEP 2: CONFIRMATION REVIEW */}
           {step === 'CONFIRM' && (
-            <div className="py-4 px-6 max-w-lg mx-auto w-full flex flex-col gap-4 text-center animate-in fade-in zoom-in-95 duration-150">
-              <div className="w-14 h-14 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center text-2xl mx-auto shadow-sm">
-                ⚠️
-              </div>
-
-              <div>
-                <h3 className="text-base font-bold text-foreground">
-                  Confirm Vendor Return of {selectedSummary.totalPieces} Piece(s)?
-                </h3>
-                <p className="text-xs text-muted-foreground mt-1">
-                  You are about to return unsold jewellery pieces from showroom custody back to <strong className="text-foreground">{inward.supplierName}</strong>.
+            <div className="flex-1 flex flex-col gap-4 max-w-xl mx-auto w-full py-2">
+              <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl text-xs space-y-2">
+                <div className="font-bold text-amber-900 text-sm flex items-center gap-2">
+                  <span>⚠️ Confirm Custody Exit &amp; Vendor Return</span>
+                </div>
+                <p className="text-amber-800 font-medium leading-relaxed">
+                  You are about to return <strong className="text-slate-900">{selectedSummary.totalPieces} unsold piece(s)</strong> totaling{' '}
+                  <strong className="text-slate-900">{formatWeight(selectedSummary.totalGrossWeight)}</strong> back to{' '}
+                  <strong className="text-slate-900">{inward.supplierName}</strong>.
+                </p>
+                <p className="text-[11px] text-amber-700">
+                  These physical stock items will immediately transition from `IN_STOCK` to `RETURNED` status, removing them from showroom active custody and releasing associated memo liability.
                 </p>
               </div>
 
-              {/* Confirmation Summary Box */}
-              <div className="bg-muted/40 p-4 rounded-xl border border-border text-left font-mono space-y-2">
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2 text-xs font-mono">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Consignment Memo:</span>
-                  <span className="font-bold text-foreground">{inward.consignmentNumber}</span>
+                  <span className="text-slate-500">Memo Number:</span>
+                  <span className="font-bold text-slate-900">{inward.consignmentNumber}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Vendor / Supplier:</span>
-                  <span className="font-bold text-foreground">{inward.supplierName}</span>
+                  <span className="text-slate-500">Vendor / Supplier:</span>
+                  <span className="font-semibold text-slate-800">{inward.supplierName}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Returning Pieces:</span>
-                  <span className="font-bold text-amber-600 dark:text-amber-400">
-                    {selectedSummary.totalPieces} Pcs
-                  </span>
+                  <span className="text-slate-500">Return Date:</span>
+                  <span className="font-semibold text-slate-800">{formatDate(returnDate)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Total Gross Weight:</span>
-                  <span className="font-bold text-foreground">
-                    {formatWeight(selectedSummary.totalGrossWeight)}
-                  </span>
+                  <span className="text-slate-500">Total Return Pieces:</span>
+                  <span className="font-bold text-slate-900">{selectedSummary.totalPieces} Pcs</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Vendor Valuation:</span>
-                  <span className="font-bold text-primary">
-                    {formatCurrency(selectedSummary.totalVendorValuation)}
-                  </span>
+                  <span className="text-slate-500">Total Return Weight:</span>
+                  <span className="font-bold text-slate-900">{formatWeight(selectedSummary.totalGrossWeight)}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Effective Return Date:</span>
-                  <span className="font-semibold text-foreground">{formatDate(returnDate)}</span>
+                <div className="flex justify-between border-t border-slate-200 pt-1.5">
+                  <span className="text-slate-500">Released Vendor Valuation:</span>
+                  <span className="font-bold text-amber-700 text-sm">{formatCurrency(selectedSummary.totalVendorValuation)}</span>
                 </div>
-                {notes && (
-                  <div className="pt-2 border-t border-border/80 text-xs">
-                    <span className="text-muted-foreground block text-[10px] uppercase">Remarks:</span>
-                    <span className="text-foreground italic">{notes}</span>
-                  </div>
-                )}
               </div>
 
-              <div className="p-2.5 bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 rounded-lg text-[11px] text-left">
-                ⚠️ <strong>Authoritative Custody Removal:</strong> These serialized items will be marked as <code className="font-bold">RETURNED_TO_VENDOR</code> in physical stock and removed from active showroom inventory. This operation cannot be undone.
-              </div>
-
-              <div className="flex items-center justify-center gap-3 pt-2">
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
                 <button
                   type="button"
-                  disabled={isSubmitting}
                   onClick={() => setStep('SELECTION')}
-                  className="h-9 px-4 bg-muted hover:bg-muted/80 text-foreground font-semibold rounded-lg transition-colors border border-border"
+                  disabled={isSubmitting}
+                  className="h-8 px-3.5 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-semibold rounded-lg transition-colors shadow-2xs cursor-pointer"
                 >
                   ← Back to Selection
                 </button>
 
                 <button
                   type="button"
-                  disabled={isSubmitting}
                   onClick={() => void handleConfirmReturn()}
-                  className="h-9 px-5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-lg transition-all shadow-md flex items-center gap-2 disabled:opacity-50"
+                  disabled={isSubmitting}
+                  className="h-8 px-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 !text-white font-bold rounded-lg shadow-2xs flex items-center gap-1.5 cursor-pointer"
+                  style={{ color: '#ffffff' }}
                 >
                   {isSubmitting ? (
                     <>
-                      <span className="animate-spin text-sm">⏳</span>
+                      <span className="animate-spin text-xs">⏳</span>
                       <span>Processing Return...</span>
                     </>
                   ) : (
-                    <>
-                      <span>Confirm &amp; Process Return</span>
-                    </>
+                    <span>Confirm &amp; Generate Return Voucher</span>
                   )}
                 </button>
               </div>
@@ -635,62 +610,43 @@ export const VendorReturnModal: React.FC<VendorReturnModalProps> = ({
 
           {/* STEP 3: SUCCESS RESULT */}
           {step === 'SUCCESS' && returnResult && (
-            <div className="py-6 px-6 max-w-md mx-auto w-full flex flex-col gap-4 text-center animate-in fade-in zoom-in-95 duration-150">
-              <div className="w-14 h-14 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-2xl mx-auto shadow-sm">
+            <div className="flex-1 flex flex-col items-center justify-center gap-4 py-8 text-center max-w-md mx-auto">
+              <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center justify-center text-2xl font-bold shadow-2xs">
                 ✓
               </div>
 
               <div>
-                <h3 className="text-base font-bold text-foreground">
-                  Vendor Return Processed Successfully!
+                <h3 className="text-base font-bold text-slate-900">
+                  Vendor Return Voucher Generated!
                 </h3>
-                <p className="text-xs text-muted-foreground mt-1">
-                  The returned pieces have been processed and removed from consignment showroom stock.
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Physical stock items have exited showroom custody.
                 </p>
               </div>
 
-              <div className="bg-muted/40 p-4 rounded-xl border border-border text-left font-mono space-y-2">
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 w-full space-y-2 text-xs font-mono text-left">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Return Number:</span>
-                  <span className="font-bold text-primary text-sm">{returnResult.returnNumber}</span>
+                  <span className="text-slate-500">Return Voucher No:</span>
+                  <span className="font-bold text-slate-900">{returnResult.returnNumber}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Consignment Memo:</span>
-                  <span className="font-bold text-foreground">{inward.consignmentNumber}</span>
+                  <span className="text-slate-500">Returned Pieces:</span>
+                  <span className="font-semibold text-slate-800">{returnResult.returnedPieces} Pcs</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Vendor:</span>
-                  <span className="font-semibold text-foreground">{inward.supplierName}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Returned Pieces:</span>
-                  <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                    {returnResult.returnedPieces} Pcs
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Total Gross Weight:</span>
-                  <span className="font-bold text-foreground">
-                    {formatWeight(returnResult.totalGrossWeight)}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Return Date:</span>
-                  <span className="font-semibold text-foreground">{formatDate(returnDate)}</span>
+                  <span className="text-slate-500">Total Return Weight:</span>
+                  <span className="font-semibold text-slate-800">{formatWeight(returnResult.totalGrossWeight)}</span>
                 </div>
               </div>
 
-              <div className="p-2.5 bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 rounded-lg text-[11px] text-left">
-                ℹ️ Physical items are updated to <code className="font-bold">RETURNED_TO_VENDOR</code>. Consignment memo physical status has been refreshed by the backend.
-              </div>
-
-              <div className="flex items-center justify-center gap-3 pt-2">
+              <div className="flex items-center justify-center gap-2 pt-2">
                 <button
                   type="button"
                   onClick={onClose}
-                  className="h-9 px-6 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 transition-colors shadow-sm"
+                  className="h-8 px-5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 !text-white font-bold rounded-lg shadow-2xs cursor-pointer"
+                  style={{ color: '#ffffff' }}
                 >
-                  Done &amp; View Updated Memo
+                  Done
                 </button>
               </div>
             </div>

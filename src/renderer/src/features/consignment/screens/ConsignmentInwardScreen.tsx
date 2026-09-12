@@ -103,7 +103,31 @@ export const ConsignmentInwardScreen: React.FC<ConsignmentInwardScreenProps> = (
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [items, selectedSupplier, isSubmitting])
 
-  // Automatically update Net Weight if Gross Weight changes and Net Weight is not manually customized
+  // Select item from F4 Search Modal
+  const handleSelectItem = (item: any) => {
+    setSelectedItemMaster(item)
+    setIsItemSearchOpen(false)
+    if (item.purity) {
+      setPurityName(item.purity)
+      const matched = PURITY_OPTIONS.find((p) => p.name === item.purity)
+      if (matched) setTunch(matched.tunch)
+    }
+    if (item.metal_type || item.metalType) {
+      // Keep selected metal type
+    }
+    setTimeout(() => grossWeightInputRef.current?.focus(), 50)
+  }
+
+  // Handle purity change to auto-set tunch
+  const handlePurityChange = (selectedPurity: string) => {
+    setPurityName(selectedPurity)
+    const found = PURITY_OPTIONS.find((p) => p.name === selectedPurity)
+    if (found) {
+      setTunch(found.tunch)
+    }
+  }
+
+  // Auto-sync gross and net weight if net weight hasn't been explicitly typed
   const handleGrossWeightChange = (val: string) => {
     setGrossWeight(val)
     if (!netWeight || netWeight === grossWeight) {
@@ -111,71 +135,49 @@ export const ConsignmentInwardScreen: React.FC<ConsignmentInwardScreenProps> = (
     }
   }
 
-  // Handle Purity preset change
-  const handlePurityChange = (presetName: string) => {
-    setPurityName(presetName)
-    const matched = PURITY_OPTIONS.find((p) => p.name === presetName)
-    if (matched) {
-      setTunch(matched.tunch)
-    }
-  }
-
-  // Handle selection from Item Search Modal
-  const handleSelectItem = (it: any) => {
-    setSelectedItemMaster(it)
-    setItemError(null)
-    if (it.metalType === 'Silver') {
-      setPurityName('Silver 925')
-      setTunch(92.5)
-    } else if (it.metalType === 'Gold') {
-      setPurityName('22K')
-      setTunch(91.6)
-    }
-    setTimeout(() => grossWeightInputRef.current?.focus(), 100)
-  }
-
-  // Add Item to Memo List
+  // Add Item to Draft Line Items
   const handleAddItem = (e?: React.FormEvent) => {
     if (e) e.preventDefault()
     setItemError(null)
 
     if (!selectedItemMaster) {
-      setItemError('Please select a jewellery item from the master (Press F4).')
+      setItemError('Please select a master jewellery item (Press F4).')
+      setIsItemSearchOpen(true)
       return
     }
 
-    const gWt = parseFloat(grossWeight)
-    if (isNaN(gWt) || gWt <= 0) {
+    const gWeight = parseFloat(grossWeight)
+    if (isNaN(gWeight) || gWeight <= 0) {
       setItemError('Gross weight must be greater than 0.')
       grossWeightInputRef.current?.focus()
       return
     }
 
-    const nWt = parseFloat(netWeight) || gWt
-    if (nWt > gWt) {
-      setItemError('Net weight cannot exceed gross weight.')
+    const nWeight = parseFloat(netWeight) || gWeight
+    if (nWeight <= 0 || nWeight > gWeight) {
+      setItemError('Net weight cannot be zero or exceed gross weight.')
       return
     }
 
-    const vCost = parseFloat(vendorCost) || 0
-    if (vCost <= 0) {
-      setItemError('Vendor cost must be greater than 0 (agreed vendor payable if sold).')
+    const vCost = parseFloat(vendorCost)
+    if (isNaN(vCost) || vCost <= 0) {
+      setItemError('Agreed vendor cost is required.')
       vendorCostInputRef.current?.focus()
       return
     }
 
     const rPrice = parseFloat(retailPrice) || 0
-    const calculatedFine = Number(((nWt * tunch) / 100).toFixed(3))
+    const calculatedFine = Number(((nWeight * tunch) / 100).toFixed(3))
 
     const newItem: DraftItemLine = {
-      tempId: `draft-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-      itemId: selectedItemMaster.itemId || selectedItemMaster.id,
-      itemName: selectedItemMaster.itemName || selectedItemMaster.item_name || 'Jewellery Piece',
+      tempId: `draft_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+      itemId: selectedItemMaster.id,
+      itemName: selectedItemMaster.itemName || selectedItemMaster.item_name || 'Jewellery Item',
       itemCode: selectedItemMaster.itemCode || selectedItemMaster.item_code,
-      metalType: selectedItemMaster.metalType || selectedItemMaster.metal_type || 'Gold',
+      metalType: selectedItemMaster.metalType || selectedItemMaster.metal_type || 'GOLD',
       vendorItemCode: vendorItemCode.trim() || undefined,
-      grossWeight: gWt,
-      netWeight: nWt,
+      grossWeight: gWeight,
+      netWeight: nWeight,
       fineWeight: calculatedFine,
       purityName,
       tunch,
@@ -271,18 +273,18 @@ export const ConsignmentInwardScreen: React.FC<ConsignmentInwardScreenProps> = (
         }))
       }
 
-      const result = await window.api.consignment.createInward(payload)
+      const created = await window.api.consignment.createInward(payload)
 
       setSuccessMemo({
-        inwardId: result.id,
-        consignmentNumber: result.consignmentNumber,
-        totalPieces: totals.totalPieces,
-        totalGrossWeight: totals.totalGrossWeight,
-        totalVendorCost: totals.totalVendorCost
+        inwardId: created.id,
+        consignmentNumber: created.consignmentNumber,
+        totalPieces: created.totalPieces,
+        totalGrossWeight: created.totalGrossWeight,
+        totalVendorCost: created.totalVendorCost
       })
 
       if (onSuccess) {
-        onSuccess(result.consignmentNumber)
+        onSuccess(created.consignmentNumber)
       }
     } catch (err: unknown) {
       console.error('Failed to create consignment inward:', err)
@@ -305,32 +307,30 @@ export const ConsignmentInwardScreen: React.FC<ConsignmentInwardScreenProps> = (
   }
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-background text-foreground overflow-hidden">
+    <div className="flex flex-col h-full bg-[var(--color-background-app,#f8fafc)] text-slate-900 overflow-hidden select-none font-sans">
       {/* 1. Screen Header */}
-      <header className="flex items-center justify-between px-5 py-3 border-b border-border bg-card/60 backdrop-blur-sm shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold text-base shadow-sm">
-            📥
-          </div>
-          <div>
-            <h1 className="text-base font-bold tracking-tight text-foreground flex items-center gap-2">
-              Vendor Consignment Inward Form
-              <span className="text-[10px] uppercase font-semibold px-2 py-0.5 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-full border border-blue-500/20">
-                Vendor Custody Only
+      <div className="px-6 py-3 border-b border-slate-200 bg-white flex items-center justify-between flex-wrap gap-3 shadow-2xs shrink-0">
+        <div>
+          <div className="flex items-center gap-2.5">
+            <span className="text-xl">📥</span>
+            <h1 className="text-base font-bold text-slate-900 tracking-tight flex items-center gap-2">
+              <span>Vendor Consignment Inward Form</span>
+              <span className="text-[10px] px-2 py-0.5 rounded bg-blue-100 text-blue-900 font-mono font-bold">
+                VENDOR CUSTODY ONLY
               </span>
             </h1>
-            <p className="text-xs text-muted-foreground">
-              Intake vendor jewellery into showroom custody with barcode serialization
-            </p>
           </div>
+          <p className="text-xs text-slate-500 font-medium mt-0.5">
+            Intake vendor jewellery into showroom custody with barcode serialization
+          </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
           {onClose && (
             <button
               type="button"
               onClick={onClose}
-              className="h-8 px-3 text-xs bg-muted hover:bg-muted/80 text-foreground font-medium rounded-lg transition-colors border border-border"
+              className="h-8 px-3 border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
             >
               Back to Hub
             </button>
@@ -340,11 +340,12 @@ export const ConsignmentInwardScreen: React.FC<ConsignmentInwardScreenProps> = (
             type="button"
             onClick={() => void handleSubmitInward()}
             disabled={isSubmitting || items.length === 0 || !selectedSupplier}
-            className={`h-8 px-4 text-xs font-semibold rounded-lg transition-all shadow-sm flex items-center gap-1.5 ${
+            className={`h-8 px-4 font-bold rounded-lg text-xs flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer ${
               isSubmitting || items.length === 0 || !selectedSupplier
-                ? 'bg-muted text-muted-foreground cursor-not-allowed border border-border'
-                : 'bg-primary text-primary-foreground hover:bg-primary/90'
+                ? 'bg-slate-200 text-slate-400 cursor-not-allowed border border-slate-300'
+                : 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 !text-white'
             }`}
+            style={!(isSubmitting || items.length === 0 || !selectedSupplier) ? { color: '#ffffff' } : {}}
           >
             {isSubmitting ? (
               <>
@@ -359,13 +360,13 @@ export const ConsignmentInwardScreen: React.FC<ConsignmentInwardScreenProps> = (
             )}
           </button>
         </div>
-      </header>
+      </div>
 
       {/* Main Form Content */}
       <div className="flex-1 flex flex-col p-4 gap-3.5 overflow-hidden">
         {/* Error Banner */}
         {formError && (
-          <div className="p-3 bg-destructive/10 border border-destructive/20 text-destructive rounded-xl text-xs flex justify-between items-center shadow-sm shrink-0">
+          <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs font-semibold flex justify-between items-center shadow-2xs shrink-0">
             <span className="flex items-center gap-2">
               <span>⚠️</span>
               <span>{formError}</span>
@@ -373,7 +374,7 @@ export const ConsignmentInwardScreen: React.FC<ConsignmentInwardScreenProps> = (
             <button
               type="button"
               onClick={() => setFormError(null)}
-              className="text-xs font-bold px-1.5 py-0.5 rounded hover:bg-destructive/20"
+              className="text-rose-700 hover:bg-rose-100 px-2 py-0.5 rounded font-bold cursor-pointer"
             >
               ✕
             </button>
@@ -381,11 +382,11 @@ export const ConsignmentInwardScreen: React.FC<ConsignmentInwardScreenProps> = (
         )}
 
         {/* 2. Top Header Grid: Supplier & Memo Details */}
-        <section className="bg-card p-3.5 rounded-xl border border-border shadow-sm shrink-0 grid grid-cols-12 gap-3 text-xs">
+        <section className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs shrink-0 grid grid-cols-12 gap-3 text-xs">
           {/* Supplier Selector (Col 1-5) */}
           <div className="col-span-5 flex flex-col justify-between">
-            <label className="block text-[11px] font-bold text-foreground mb-1">
-              Vendor / Consignor (F2) <span className="text-destructive">*</span>
+            <label className="block text-[11px] font-bold text-slate-800 mb-1">
+              Vendor / Consignor (F2) <span className="text-rose-600">*</span>
             </label>
             <SupplierSelector
               supplier={selectedSupplier}
@@ -397,21 +398,21 @@ export const ConsignmentInwardScreen: React.FC<ConsignmentInwardScreenProps> = (
 
           {/* Inward Date (Col 6-7) */}
           <div className="col-span-2">
-            <label className="block text-[11px] font-bold text-foreground mb-1">
-              Inward Date <span className="text-destructive">*</span>
+            <label className="block text-[11px] font-bold text-slate-800 mb-1">
+              Inward Date <span className="text-rose-600">*</span>
             </label>
             <input
               type="date"
               value={inwardDate}
               onChange={(e) => setInwardDate(e.target.value)}
               disabled={isSubmitting}
-              className="w-full h-10 px-3 bg-background border border-input rounded-lg font-mono text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+              className="w-full h-10 px-3 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs focus:outline-none focus:ring-1 focus:ring-amber-500/40 focus:border-amber-500 font-medium"
             />
           </div>
 
           {/* Expected Return Date (Col 8-9) */}
           <div className="col-span-2">
-            <label className="block text-[11px] font-bold text-foreground mb-1">
+            <label className="block text-[11px] font-bold text-slate-800 mb-1">
               Return Due Date
             </label>
             <input
@@ -419,16 +420,16 @@ export const ConsignmentInwardScreen: React.FC<ConsignmentInwardScreenProps> = (
               value={expectedReturnDate}
               onChange={(e) => setExpectedReturnDate(e.target.value)}
               disabled={isSubmitting}
-              className="w-full h-10 px-3 bg-background border border-input rounded-lg font-mono text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+              className="w-full h-10 px-3 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs focus:outline-none focus:ring-1 focus:ring-amber-500/40 focus:border-amber-500 font-medium"
             />
-            <span className="text-[10px] text-muted-foreground block mt-0.5">
+            <span className="text-[10px] text-slate-400 block mt-0.5">
               30 days default
             </span>
           </div>
 
           {/* Memo Notes / Terms (Col 10-12) */}
           <div className="col-span-3">
-            <label className="block text-[11px] font-bold text-foreground mb-1">
+            <label className="block text-[11px] font-bold text-slate-800 mb-1">
               Consignment Terms / Remarks
             </label>
             <input
@@ -437,22 +438,22 @@ export const ConsignmentInwardScreen: React.FC<ConsignmentInwardScreenProps> = (
               onChange={(e) => setNotes(e.target.value)}
               placeholder="e.g. Exhibition consignment, 30-day approval"
               disabled={isSubmitting}
-              className="w-full h-10 px-3 bg-background border border-input rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+              className="w-full h-10 px-3 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs focus:outline-none focus:ring-1 focus:ring-amber-500/40 focus:border-amber-500"
             />
           </div>
         </section>
 
         {/* 3. Item Entry Box */}
-        <section className="bg-card p-3.5 rounded-xl border border-border shadow-sm shrink-0 flex flex-col gap-2 text-xs">
-          <div className="flex items-center justify-between pb-1 border-b border-border">
-            <div className="font-bold text-xs text-foreground flex items-center gap-2">
+        <section className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs shrink-0 flex flex-col gap-2 text-xs">
+          <div className="flex items-center justify-between pb-1.5 border-b border-slate-100">
+            <div className="font-bold text-xs text-slate-900 flex items-center gap-2">
               <span>💎 Add Jewellery Piece to Inward</span>
-              <span className="text-[10px] text-muted-foreground font-normal">
+              <span className="text-[11px] text-slate-500 font-normal">
                 (Press F4 to open item search modal)
               </span>
             </div>
             {itemError && (
-              <span className="text-destructive font-semibold text-[11px] animate-pulse">
+              <span className="text-rose-600 font-semibold text-[11px] animate-pulse">
                 ⚠️ {itemError}
               </span>
             )}
@@ -461,28 +462,28 @@ export const ConsignmentInwardScreen: React.FC<ConsignmentInwardScreenProps> = (
           <form onSubmit={handleAddItem} className="grid grid-cols-12 gap-2.5 pt-1 items-end">
             {/* Item Master Search Trigger (Col 1-3) */}
             <div className="col-span-3">
-              <label className="block text-[10px] font-semibold text-muted-foreground mb-1">
-                Item Design / Master (F4) <span className="text-destructive">*</span>
+              <label className="block text-[10px] font-semibold text-slate-600 mb-1">
+                Item Design / Master (F4) <span className="text-rose-600">*</span>
               </label>
               <div className="flex gap-1.5">
                 <button
                   type="button"
                   onClick={() => setIsItemSearchOpen(true)}
-                  className="flex-1 h-9 px-3 bg-background border border-input rounded-lg text-left text-xs text-foreground flex items-center justify-between hover:border-primary transition-colors focus:ring-1 focus:ring-primary"
+                  className="flex-1 h-9 px-3 bg-white border border-slate-300 rounded-lg text-left text-xs text-slate-900 flex items-center justify-between hover:border-amber-500 transition-colors focus:ring-1 focus:ring-amber-500 cursor-pointer shadow-2xs"
                 >
                   <span className="truncate font-semibold">
                     {selectedItemMaster
                       ? selectedItemMaster.itemName || selectedItemMaster.item_name
                       : 'Search item (F4)...'}
                   </span>
-                  <span className="text-muted-foreground text-xs">🔍</span>
+                  <span className="text-slate-400 text-xs">🔍</span>
                 </button>
               </div>
             </div>
 
             {/* Vendor Item Code (Col 4-5) */}
             <div className="col-span-2">
-              <label className="block text-[10px] font-semibold text-muted-foreground mb-1">
+              <label className="block text-[10px] font-semibold text-slate-600 mb-1">
                 Vendor Tag Code
               </label>
               <input
@@ -490,20 +491,20 @@ export const ConsignmentInwardScreen: React.FC<ConsignmentInwardScreenProps> = (
                 value={vendorItemCode}
                 onChange={(e) => setVendorItemCode(e.target.value)}
                 placeholder="e.g. V-BRAC-01"
-                className="w-full h-9 px-2.5 bg-background border border-input rounded-lg text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
+                className="w-full h-9 px-2.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500/40 focus:border-amber-500"
               />
             </div>
 
             {/* Purity Preset & Tunch (Col 6-7) */}
             <div className="col-span-2 flex gap-1.5">
               <div className="w-2/3">
-                <label className="block text-[10px] font-semibold text-muted-foreground mb-1">
+                <label className="block text-[10px] font-semibold text-slate-600 mb-1">
                   Purity
                 </label>
                 <select
                   value={purityName}
                   onChange={(e) => handlePurityChange(e.target.value)}
-                  className="w-full h-9 px-2 bg-background border border-input rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary font-semibold"
+                  className="w-full h-9 px-2 bg-white border border-slate-300 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-amber-500/40 focus:border-amber-500 font-semibold text-slate-800"
                 >
                   {PURITY_OPTIONS.map((p) => (
                     <option key={p.name} value={p.name}>
@@ -513,7 +514,7 @@ export const ConsignmentInwardScreen: React.FC<ConsignmentInwardScreenProps> = (
                 </select>
               </div>
               <div className="w-1/3">
-                <label className="block text-[10px] font-semibold text-muted-foreground mb-1">
+                <label className="block text-[10px] font-semibold text-slate-600 mb-1">
                   Tunch %
                 </label>
                 <input
@@ -521,7 +522,7 @@ export const ConsignmentInwardScreen: React.FC<ConsignmentInwardScreenProps> = (
                   step="0.1"
                   value={tunch}
                   onChange={(e) => setTunch(parseFloat(e.target.value) || 0)}
-                  className="w-full h-9 px-1 text-center bg-background border border-input rounded-lg text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
+                  className="w-full h-9 px-1 text-center bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500/40 focus:border-amber-500"
                 />
               </div>
             </div>
@@ -529,8 +530,8 @@ export const ConsignmentInwardScreen: React.FC<ConsignmentInwardScreenProps> = (
             {/* Gross & Net Weight (Col 8-9) */}
             <div className="col-span-2 flex gap-1.5">
               <div className="w-1/2">
-                <label className="block text-[10px] font-semibold text-muted-foreground mb-1">
-                  Gross Wt (g) <span className="text-destructive">*</span>
+                <label className="block text-[10px] font-semibold text-slate-600 mb-1">
+                  Gross Wt (g) <span className="text-rose-600">*</span>
                 </label>
                 <input
                   ref={grossWeightInputRef}
@@ -540,11 +541,11 @@ export const ConsignmentInwardScreen: React.FC<ConsignmentInwardScreenProps> = (
                   value={grossWeight}
                   onChange={(e) => handleGrossWeightChange(e.target.value)}
                   placeholder="0.000"
-                  className="w-full h-9 px-2 text-right bg-background border border-input rounded-lg text-xs font-mono font-bold focus:outline-none focus:ring-1 focus:ring-primary"
+                  className="w-full h-9 px-2 text-right bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500/40 focus:border-amber-500"
                 />
               </div>
               <div className="w-1/2">
-                <label className="block text-[10px] font-semibold text-muted-foreground mb-1">
+                <label className="block text-[10px] font-semibold text-slate-600 mb-1">
                   Net Wt (g)
                 </label>
                 <input
@@ -554,15 +555,15 @@ export const ConsignmentInwardScreen: React.FC<ConsignmentInwardScreenProps> = (
                   value={netWeight}
                   onChange={(e) => setNetWeight(e.target.value)}
                   placeholder="0.000"
-                  className="w-full h-9 px-2 text-right bg-background border border-input rounded-lg text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
+                  className="w-full h-9 px-2 text-right bg-white border border-slate-300 rounded-lg text-xs font-medium text-slate-800 focus:outline-none focus:ring-1 focus:ring-amber-500/40 focus:border-amber-500"
                 />
               </div>
             </div>
 
             {/* Vendor Cost (Col 10) */}
             <div className="col-span-1">
-              <label className="block text-[10px] font-semibold text-muted-foreground mb-1">
-                Vendor Cost ₹ <span className="text-destructive">*</span>
+              <label className="block text-[10px] font-semibold text-slate-600 mb-1">
+                Vendor Cost ₹ <span className="text-rose-600">*</span>
               </label>
               <input
                 ref={vendorCostInputRef}
@@ -572,13 +573,13 @@ export const ConsignmentInwardScreen: React.FC<ConsignmentInwardScreenProps> = (
                 value={vendorCost}
                 onChange={(e) => setVendorCost(e.target.value)}
                 placeholder="50000"
-                className="w-full h-9 px-2 text-right bg-background border border-input rounded-lg text-xs font-mono font-semibold focus:outline-none focus:ring-1 focus:ring-primary"
+                className="w-full h-9 px-2 text-right bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500/40 focus:border-amber-500"
               />
             </div>
 
             {/* Retail Tag Price (Col 11) */}
             <div className="col-span-1">
-              <label className="block text-[10px] font-semibold text-muted-foreground mb-1">
+              <label className="block text-[10px] font-semibold text-slate-600 mb-1">
                 Retail Price ₹
               </label>
               <input
@@ -588,7 +589,7 @@ export const ConsignmentInwardScreen: React.FC<ConsignmentInwardScreenProps> = (
                 value={retailPrice}
                 onChange={(e) => setRetailPrice(e.target.value)}
                 placeholder="75000"
-                className="w-full h-9 px-2 text-right bg-background border border-input rounded-lg text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
+                className="w-full h-9 px-2 text-right bg-white border border-slate-300 rounded-lg text-xs font-medium text-slate-800 focus:outline-none focus:ring-1 focus:ring-amber-500/40 focus:border-amber-500"
               />
             </div>
 
@@ -596,7 +597,8 @@ export const ConsignmentInwardScreen: React.FC<ConsignmentInwardScreenProps> = (
             <div className="col-span-1">
               <button
                 type="submit"
-                className="w-full h-9 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 transition-colors shadow-sm flex items-center justify-center gap-1 text-xs"
+                className="w-full h-9 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 !text-white font-bold rounded-lg shadow-2xs flex items-center justify-center gap-1 text-xs cursor-pointer"
+                style={{ color: '#ffffff' }}
               >
                 <span>+</span>
                 <span>Add</span>
@@ -605,7 +607,7 @@ export const ConsignmentInwardScreen: React.FC<ConsignmentInwardScreenProps> = (
           </form>
 
           {/* Secondary placement options */}
-          <div className="flex items-center gap-4 text-[11px] text-muted-foreground pt-1">
+          <div className="flex items-center gap-4 text-[11px] text-slate-500 pt-1 border-t border-slate-100">
             <div className="flex items-center gap-1.5">
               <span>Counter:</span>
               <input
@@ -613,7 +615,7 @@ export const ConsignmentInwardScreen: React.FC<ConsignmentInwardScreenProps> = (
                 value={counter}
                 onChange={(e) => setCounter(e.target.value)}
                 placeholder="Counter"
-                className="h-6 px-2 bg-background border border-input rounded text-xs w-36 font-medium"
+                className="h-6 px-2 bg-white border border-slate-300 rounded text-xs w-36 font-medium text-slate-800"
               />
             </div>
             <div className="flex items-center gap-1.5">
@@ -623,7 +625,7 @@ export const ConsignmentInwardScreen: React.FC<ConsignmentInwardScreenProps> = (
                 value={tray}
                 onChange={(e) => setTray(e.target.value)}
                 placeholder="Tray"
-                className="h-6 px-2 bg-background border border-input rounded text-xs w-28 font-medium"
+                className="h-6 px-2 bg-white border border-slate-300 rounded text-xs w-28 font-medium text-slate-800"
               />
             </div>
             <div className="flex items-center gap-1.5 flex-1">
@@ -633,127 +635,129 @@ export const ConsignmentInwardScreen: React.FC<ConsignmentInwardScreenProps> = (
                 value={itemNotes}
                 onChange={(e) => setItemNotes(e.target.value)}
                 placeholder="Optional notes for this piece (e.g. Certificate #)"
-                className="h-6 px-2 bg-background border border-input rounded text-xs flex-1"
+                className="h-6 px-2 bg-white border border-slate-300 rounded text-xs flex-1 text-slate-800"
               />
             </div>
           </div>
         </section>
 
         {/* 4. Items Review Table */}
-        <section className="flex-1 overflow-auto border border-border rounded-xl bg-card shadow-sm flex flex-col">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead className="bg-muted/60 text-muted-foreground uppercase text-[11px] font-semibold sticky top-0 z-10 border-b border-border select-none">
-              <tr>
-                <th className="py-2.5 px-3 w-10 text-center">#</th>
-                <th className="py-2.5 px-3">Item Design / Group</th>
-                <th className="py-2.5 px-3">Vendor Code</th>
-                <th className="py-2.5 px-2 text-center">Purity</th>
-                <th className="py-2.5 px-3 text-right">Gross Wt</th>
-                <th className="py-2.5 px-3 text-right">Net Wt</th>
-                <th className="py-2.5 px-3 text-right">Fine Wt</th>
-                <th className="py-2.5 px-3">Placement</th>
-                <th className="py-2.5 px-3 text-right">Vendor Cost</th>
-                <th className="py-2.5 px-3 text-right">Retail Price</th>
-                <th className="py-2.5 px-3 text-center w-16">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border/60">
-              {items.length === 0 ? (
+        <div className="flex-1 flex flex-col min-h-0 border border-slate-200 rounded-xl bg-white shadow-2xs overflow-hidden">
+          <div className="flex-1 overflow-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead className="bg-slate-100/90 text-slate-700 uppercase text-[11px] font-extrabold sticky top-0 z-10 border-b border-slate-200 tracking-tight">
                 <tr>
-                  <td colSpan={11} className="py-16 text-center text-muted-foreground">
-                    <div className="flex flex-col items-center justify-center gap-1.5">
-                      <span className="text-3xl">📦</span>
-                      <span className="font-semibold text-foreground text-sm">
-                        No jewellery items added to this memo yet
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        Use the entry panel above or press <kbd className="px-1.5 py-0.5 bg-muted rounded font-mono border border-border text-[10px]">F4</kbd> to search and add pieces.
-                      </span>
-                    </div>
-                  </td>
+                  <th className="py-2.5 px-3 w-10 text-center">#</th>
+                  <th className="py-2.5 px-3">Item Design / Group</th>
+                  <th className="py-2.5 px-3">Vendor Code</th>
+                  <th className="py-2.5 px-2 text-center">Purity</th>
+                  <th className="py-2.5 px-3 text-right">Gross Wt</th>
+                  <th className="py-2.5 px-3 text-right">Net Wt</th>
+                  <th className="py-2.5 px-3 text-right">Fine Wt</th>
+                  <th className="py-2.5 px-3">Placement</th>
+                  <th className="py-2.5 px-3 text-right">Vendor Cost</th>
+                  <th className="py-2.5 px-3 text-right">Retail Price</th>
+                  <th className="py-2.5 px-3 text-center w-16">Action</th>
                 </tr>
-              ) : (
-                items.map((it, idx) => (
-                  <tr key={it.tempId} className="hover:bg-muted/30 transition-colors">
-                    <td className="py-2 px-3 text-center font-mono text-muted-foreground">
-                      {idx + 1}
-                    </td>
-                    <td className="py-2 px-3">
-                      <div className="font-semibold text-foreground">{it.itemName}</div>
-                      {it.notes && (
-                        <div className="text-[10px] text-muted-foreground italic">
-                          {it.notes}
-                        </div>
-                      )}
-                    </td>
-                    <td className="py-2 px-3 font-mono text-muted-foreground">
-                      {it.vendorItemCode || '-'}
-                    </td>
-                    <td className="py-2 px-2 text-center font-mono font-medium">
-                      {it.purityName} ({it.tunch}%)
-                    </td>
-                    <td className="py-2 px-3 text-right font-mono font-bold text-foreground">
-                      {formatWeight(it.grossWeight)}
-                    </td>
-                    <td className="py-2 px-3 text-right font-mono text-muted-foreground">
-                      {formatWeight(it.netWeight)}
-                    </td>
-                    <td className="py-2 px-3 text-right font-mono text-muted-foreground">
-                      {formatWeight(it.fineWeight || 0)}
-                    </td>
-                    <td className="py-2 px-3 text-muted-foreground">
-                      {it.counter || it.tray ? `${it.counter || ''} • ${it.tray || ''}` : '-'}
-                    </td>
-                    <td className="py-2 px-3 text-right font-mono font-semibold text-foreground">
-                      {formatCurrency(it.vendorCost)}
-                    </td>
-                    <td className="py-2 px-3 text-right font-mono text-muted-foreground">
-                      {it.retailPrice ? formatCurrency(it.retailPrice) : '-'}
-                    </td>
-                    <td className="py-2 px-3 text-center">
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveItem(it.tempId)}
-                        className="h-6 w-6 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded flex items-center justify-center transition-colors"
-                        title="Remove piece"
-                      >
-                        🗑️
-                      </button>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {items.length === 0 ? (
+                  <tr>
+                    <td colSpan={11} className="py-16 text-center text-slate-400">
+                      <div className="flex flex-col items-center justify-center gap-1.5">
+                        <span className="text-3xl">📦</span>
+                        <span className="font-semibold text-slate-800 text-sm">
+                          No jewellery items added to this memo yet
+                        </span>
+                        <span className="text-xs text-slate-500">
+                          Use the entry panel above or press <kbd className="px-1.5 py-0.5 bg-slate-100 rounded border border-slate-300 text-[10px] font-semibold text-slate-700">F4</kbd> to search and add pieces.
+                        </span>
+                      </div>
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </section>
+                ) : (
+                  items.map((it, idx) => (
+                    <tr key={it.tempId} className="hover:bg-amber-50/30 transition-colors">
+                      <td className="py-2 px-3 text-center text-slate-500">
+                        {idx + 1}
+                      </td>
+                      <td className="py-2 px-3">
+                        <div className="font-semibold text-slate-900">{it.itemName}</div>
+                        {it.notes && (
+                          <div className="text-[10px] text-slate-500 italic">
+                            {it.notes}
+                          </div>
+                        )}
+                      </td>
+                      <td className="py-2 px-3 text-slate-700 font-medium">
+                        {it.vendorItemCode || '-'}
+                      </td>
+                      <td className="py-2 px-2 text-center text-slate-700 font-medium">
+                        {it.purityName} ({it.tunch}%)
+                      </td>
+                      <td className="py-2 px-3 text-right font-bold text-slate-900">
+                        {formatWeight(it.grossWeight)}
+                      </td>
+                      <td className="py-2 px-3 text-right text-slate-700">
+                        {formatWeight(it.netWeight)}
+                      </td>
+                      <td className="py-2 px-3 text-right text-slate-700">
+                        {formatWeight(it.fineWeight || 0)}
+                      </td>
+                      <td className="py-2 px-3 text-slate-600">
+                        {it.counter || it.tray ? `${it.counter || ''} • ${it.tray || ''}` : '-'}
+                      </td>
+                      <td className="py-2 px-3 text-right font-semibold text-slate-900">
+                        {formatCurrency(it.vendorCost)}
+                      </td>
+                      <td className="py-2 px-3 text-right text-slate-600">
+                        {it.retailPrice ? formatCurrency(it.retailPrice) : '-'}
+                      </td>
+                      <td className="py-2 px-3 text-center">
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveItem(it.tempId)}
+                          className="h-6 w-6 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded flex items-center justify-center transition-colors cursor-pointer"
+                          title="Remove piece"
+                        >
+                          🗑️
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
 
         {/* 5. Bottom Totals Summary Strip */}
-        <footer className="bg-card p-3 rounded-xl border border-border shadow-sm shrink-0 flex items-center justify-between text-xs">
+        <footer className="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs shrink-0 flex items-center justify-between text-xs">
           <div className="flex items-center gap-6">
             <div className="flex items-baseline gap-1.5">
-              <span className="text-muted-foreground font-semibold">Total Pieces:</span>
-              <span className="text-base font-bold font-mono text-foreground">
+              <span className="text-slate-500 font-semibold">Total Pieces:</span>
+              <span className="text-base font-bold text-slate-900">
                 {totals.totalPieces} Pcs
               </span>
             </div>
 
             <div className="flex items-baseline gap-1.5">
-              <span className="text-muted-foreground font-semibold">Total Gross Wt:</span>
-              <span className="text-base font-bold font-mono text-foreground">
+              <span className="text-slate-500 font-semibold">Total Gross Wt:</span>
+              <span className="text-base font-bold text-slate-900">
                 {formatWeight(totals.totalGrossWeight)}
               </span>
             </div>
 
             <div className="flex items-baseline gap-1.5">
-              <span className="text-muted-foreground font-semibold">Total Net Wt:</span>
-              <span className="text-sm font-mono text-muted-foreground">
+              <span className="text-slate-500 font-semibold">Total Net Wt:</span>
+              <span className="text-sm font-semibold text-slate-700">
                 {formatWeight(totals.totalNetWeight)}
               </span>
             </div>
 
             <div className="flex items-baseline gap-1.5">
-              <span className="text-muted-foreground font-semibold">Total Fine Wt:</span>
-              <span className="text-sm font-mono text-muted-foreground">
+              <span className="text-slate-500 font-semibold">Total Fine Wt:</span>
+              <span className="text-sm font-semibold text-slate-700">
                 {formatWeight(totals.totalFineWeight)}
               </span>
             </div>
@@ -761,16 +765,16 @@ export const ConsignmentInwardScreen: React.FC<ConsignmentInwardScreenProps> = (
 
           <div className="flex items-center gap-6">
             <div className="flex items-baseline gap-1.5">
-              <span className="text-muted-foreground font-semibold">Total Vendor Valuation:</span>
-              <span className="text-base font-bold font-mono text-primary">
+              <span className="text-slate-500 font-semibold">Total Vendor Valuation:</span>
+              <span className="text-base font-extrabold text-amber-700">
                 {formatCurrency(totals.totalVendorCost)}
               </span>
             </div>
 
             {totals.totalRetailPrice > 0 && (
               <div className="flex items-baseline gap-1.5">
-                <span className="text-muted-foreground font-semibold">Total Retail Value:</span>
-                <span className="text-sm font-mono text-muted-foreground">
+                <span className="text-slate-500 font-semibold">Total Retail Value:</span>
+                <span className="text-sm font-semibold text-slate-700">
                   {formatCurrency(totals.totalRetailPrice)}
                 </span>
               </div>
@@ -788,75 +792,75 @@ export const ConsignmentInwardScreen: React.FC<ConsignmentInwardScreenProps> = (
 
       {/* 7. Success Confirmation Modal */}
       {successMemo && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-150">
-          <div className="bg-card border border-border p-6 rounded-2xl max-w-md w-full shadow-2xl space-y-4 text-xs">
-            <div className="flex items-center gap-3 border-b border-border pb-3">
-              <div className="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xl font-bold">
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white border border-slate-200 p-6 rounded-2xl max-w-md w-full shadow-2xl space-y-4 text-xs">
+            <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
+              <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center text-xl font-bold border border-emerald-200">
                 ✓
               </div>
               <div>
-                <h2 className="text-base font-bold text-foreground">
+                <h2 className="text-base font-bold text-slate-900">
                   Consignment Inward Created!
                 </h2>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-slate-500">
                   Physical stock items serialized &amp; barcodes generated
                 </p>
               </div>
             </div>
 
-            <div className="bg-muted/40 p-4 rounded-xl border border-border space-y-2 font-mono">
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Memo Number:</span>
-                <span className="font-bold text-primary text-sm">
+                <span className="text-slate-500">Memo Number:</span>
+                <span className="font-bold text-slate-900 text-sm">
                   {successMemo.consignmentNumber}
                 </span>
               </div>
 
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Vendor / Supplier:</span>
-                <span className="font-semibold text-foreground">
+                <span className="text-slate-500">Vendor / Supplier:</span>
+                <span className="font-semibold text-slate-800">
                   {selectedSupplier?.name}
                 </span>
               </div>
 
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Inward Date:</span>
-                <span className="font-semibold text-foreground">
+                <span className="text-slate-500">Inward Date:</span>
+                <span className="font-semibold text-slate-800">
                   {formatDate(inwardDate)}
                 </span>
               </div>
 
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Total Pieces:</span>
-                <span className="font-bold text-foreground">
+                <span className="text-slate-500">Total Pieces:</span>
+                <span className="font-bold text-slate-900">
                   {successMemo.totalPieces} Pcs
                 </span>
               </div>
 
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Total Gross Weight:</span>
-                <span className="font-bold text-foreground">
+                <span className="text-slate-500">Total Gross Weight:</span>
+                <span className="font-bold text-slate-900">
                   {formatWeight(successMemo.totalGrossWeight)}
                 </span>
               </div>
 
-              <div className="flex justify-between border-t border-border/80 pt-1.5">
-                <span className="text-muted-foreground">Vendor Agreed Cost:</span>
-                <span className="font-bold text-emerald-600 dark:text-emerald-400 text-sm">
+              <div className="flex justify-between border-t border-slate-200 pt-1.5">
+                <span className="text-slate-500">Vendor Agreed Cost:</span>
+                <span className="font-bold text-emerald-700 text-sm">
                   {formatCurrency(successMemo.totalVendorCost)}
                 </span>
               </div>
             </div>
 
-            <div className="p-2.5 bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 rounded-lg text-[11px]">
-              ℹ️ Items are now in showroom consignment custody (`CONSIGNMENT`). No purchase liability was recognized; liability will be automatically recognized upon sale at POS.
+            <div className="p-2.5 bg-blue-50 border border-blue-200 text-blue-800 rounded-lg text-[11px] font-medium">
+              ℹ️ Items are now in showroom consignment custody. No purchase liability was recognized; liability will be automatically recognized upon sale at POS.
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
               <button
                 type="button"
                 onClick={handleResetForAnother}
-                className="h-8 px-3.5 bg-muted hover:bg-muted/80 text-foreground font-semibold rounded-lg transition-colors"
+                className="h-8 px-3.5 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-semibold rounded-lg transition-colors cursor-pointer shadow-2xs"
               >
                 Inward Another Memo
               </button>
@@ -865,7 +869,7 @@ export const ConsignmentInwardScreen: React.FC<ConsignmentInwardScreenProps> = (
                 <button
                   type="button"
                   onClick={() => onViewMemo(successMemo.inwardId!)}
-                  className="h-8 px-3.5 bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 font-semibold rounded-lg transition-colors"
+                  className="h-8 px-3.5 bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100 font-bold rounded-lg transition-colors cursor-pointer"
                 >
                   View Memo Details
                 </button>
@@ -877,7 +881,8 @@ export const ConsignmentInwardScreen: React.FC<ConsignmentInwardScreenProps> = (
                   if (onClose) onClose()
                   else if (onNavigate) onNavigate('consignment-hub', 'Vendor Consignment & Memo Hub', 'transaction')
                 }}
-                className="h-8 px-4 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 transition-colors shadow-sm"
+                className="h-8 px-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 !text-white font-bold rounded-lg shadow-2xs cursor-pointer"
+                style={{ color: '#ffffff' }}
               >
                 Go to Consignment Hub
               </button>
