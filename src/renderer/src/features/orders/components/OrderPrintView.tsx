@@ -32,14 +32,14 @@ export const OrderPrintView: React.FC<OrderPrintViewProps> = ({ order, onClose }
   const balanceDue = Math.max(0, (order.roundedTotal || order.grandTotal) - (order.advanceAmount || 0))
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/70 flex justify-center p-4 print:p-0 print:static print:bg-white">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/70 backdrop-blur-xs flex justify-center p-4 print:p-0 print:static print:bg-white">
       {/* Container / Modal Wrapper */}
-      <div className="bg-background text-foreground max-w-4xl w-full my-6 p-8 rounded-xl shadow-2xl border border-border print:border-none print:shadow-none print:p-0 print:my-0 print:max-w-none print:w-full">
+      <div className="bg-white text-slate-900 max-w-4xl w-full my-6 p-8 rounded-xl shadow-2xl border border-slate-200 print:border-none print:shadow-none print:p-0 print:my-0 print:max-w-none print:w-full">
         {/* Print Header Bar (Screen Only) */}
-        <div className="flex items-center justify-between pb-6 border-b border-border print:hidden">
+        <div className="flex items-center justify-between pb-6 border-b border-slate-200 print:hidden">
           <div>
-            <h2 className="text-xl font-bold">Custom Order Docket Preview</h2>
-            <p className="text-xs text-muted-foreground mt-0.5">
+            <h2 className="text-xl font-bold text-slate-900">Custom Order Docket Preview</h2>
+            <p className="text-xs text-slate-500 mt-0.5">
               Order Docket #{order.orderNumber}
             </p>
           </div>
@@ -47,7 +47,8 @@ export const OrderPrintView: React.FC<OrderPrintViewProps> = ({ order, onClose }
             <button
               type="button"
               onClick={() => window.print()}
-              className="px-4 py-2 bg-primary text-primary-foreground font-medium rounded-lg text-sm hover:bg-primary/90 transition-colors flex items-center gap-1.5 shadow-sm"
+              className="px-4 py-2 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 !text-white font-semibold rounded-lg text-sm transition-all flex items-center gap-1.5 shadow-sm cursor-pointer"
+              style={{ color: '#ffffff' }}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
@@ -57,7 +58,7 @@ export const OrderPrintView: React.FC<OrderPrintViewProps> = ({ order, onClose }
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 bg-secondary text-secondary-foreground font-medium rounded-lg text-sm hover:bg-secondary/80 transition-colors"
+              className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg text-sm border border-slate-200 transition-colors cursor-pointer"
             >
               Close
             </button>

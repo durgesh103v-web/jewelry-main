@@ -3,11 +3,11 @@ import dayjs from 'dayjs'
 import type { CustomerOrderRecord, OrderStatus } from '../types'
 import { formatDate, formatCurrency, formatWeight } from '../../../utils/formatters'
 import { getFriendlyErrorMessage } from '../../../utils/getFriendlyErrorMessage'
-import { NewOrderModal } from '../components/NewOrderModal'
+import { CreateOrderScreen } from './CreateOrderScreen'
 import { OrderDetailModal } from '../components/OrderDetailModal'
 import { OrderPrintView } from '../components/OrderPrintView'
 import { NewAdvanceModal } from '../../advances/components/NewAdvanceModal'
-import { StatusPill } from '../../../components/ui'
+import { StatusPill, MetalRatesStrip } from '../../../components/ui'
 
 export interface CustomerOrdersScreenProps {
   onClose?: () => void
@@ -19,20 +19,24 @@ export interface CustomerOrdersScreenProps {
 }
 
 type TabFilter = 'ALL' | OrderStatus
+type ViewMode = 'list' | 'create'
 
 const STATUS_BADGE_MAP: Record<OrderStatus, { label: string; className: string }> = {
-  DRAFT: { label: 'Draft', className: 'bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200' },
-  CONFIRMED: { label: 'Confirmed', className: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 font-medium' },
-  IN_PROGRESS: { label: 'In Workshop', className: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 font-medium' },
-  READY: { label: 'Ready', className: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 font-semibold' },
-  COMPLETED: { label: 'Completed', className: 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300' },
-  CANCELLED: { label: 'Cancelled', className: 'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300' }
+  DRAFT: { label: 'Draft', className: 'bg-zinc-100 text-zinc-800' },
+  CONFIRMED: { label: 'Confirmed', className: 'bg-blue-100 text-blue-800 font-bold' },
+  IN_PROGRESS: { label: 'In Workshop', className: 'bg-amber-100 text-amber-900 font-bold' },
+  READY: { label: 'Ready', className: 'bg-emerald-100 text-emerald-800 font-bold' },
+  COMPLETED: { label: 'Completed', className: 'bg-purple-100 text-purple-800 font-bold' },
+  CANCELLED: { label: 'Cancelled', className: 'bg-rose-100 text-rose-800 font-bold' }
 }
 
 export const CustomerOrdersScreen: React.FC<CustomerOrdersScreenProps> = ({
   onClose,
   onNavigate
 }) => {
+  // Navigation / View State ('list' = Orders Register, 'create' = Full Page Create Desk)
+  const [viewMode, setViewMode] = useState<ViewMode>('list')
+
   // Orders List State
   const [orders, setOrders] = useState<CustomerOrderRecord[]>([])
   const [isLoading, setIsLoading] = useState<boolean>(true)
@@ -46,7 +50,6 @@ export const CustomerOrdersScreen: React.FC<CustomerOrdersScreenProps> = ({
   const [endDate, setEndDate] = useState<string>('')
 
   // Modals State
-  const [isNewModalOpen, setIsNewModalOpen] = useState<boolean>(false)
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null)
   const [printOrder, setPrintOrder] = useState<CustomerOrderRecord | null>(null)
   const [advanceOrderContext, setAdvanceOrderContext] = useState<{ customerId: string; orderId: string } | null>(null)
@@ -132,7 +135,7 @@ export const CustomerOrdersScreen: React.FC<CustomerOrdersScreenProps> = ({
   const renderDeliveryBadge = (deliveryDate?: string | null, status?: OrderStatus) => {
     if (!deliveryDate) return '-'
     if (status === 'COMPLETED' || status === 'CANCELLED') {
-      return <span className="font-mono text-muted-foreground">{formatDate(deliveryDate)}</span>
+      return <span className="font-mono text-slate-500 font-medium">{formatDate(deliveryDate)}</span>
     }
 
     const today = dayjs().startOf('day')
@@ -142,8 +145,8 @@ export const CustomerOrdersScreen: React.FC<CustomerOrdersScreenProps> = ({
     if (diffDays < 0) {
       return (
         <div>
-          <span className="font-mono font-medium text-rose-600 dark:text-rose-400">{formatDate(deliveryDate)}</span>
-          <div className="text-[10px] text-rose-600 dark:text-rose-400 font-semibold">
+          <span className="font-mono font-bold text-rose-600">{formatDate(deliveryDate)}</span>
+          <div className="text-[10px] text-rose-700 font-bold bg-rose-50 px-1 py-0.2 rounded mt-0.5 inline-block">
             Overdue ({Math.abs(diffDays)}d)
           </div>
         </div>
@@ -152,73 +155,97 @@ export const CustomerOrdersScreen: React.FC<CustomerOrdersScreenProps> = ({
     if (diffDays === 0) {
       return (
         <div>
-          <span className="font-mono font-semibold text-amber-600 dark:text-amber-400">{formatDate(deliveryDate)}</span>
-          <div className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold">Due Today</div>
+          <span className="font-mono font-bold text-amber-700">{formatDate(deliveryDate)}</span>
+          <div className="text-[10px] text-amber-800 font-bold bg-amber-50 px-1 py-0.2 rounded mt-0.5 inline-block">
+            Due Today
+          </div>
         </div>
       )
     }
     if (diffDays <= 3) {
       return (
         <div>
-          <span className="font-mono text-foreground">{formatDate(deliveryDate)}</span>
-          <div className="text-[10px] text-blue-600 dark:text-blue-400 font-medium">Due in {diffDays}d</div>
+          <span className="font-mono font-medium text-slate-800">{formatDate(deliveryDate)}</span>
+          <div className="text-[10px] text-blue-700 font-bold bg-blue-50 px-1 py-0.2 rounded mt-0.5 inline-block">
+            Due in {diffDays}d
+          </div>
         </div>
       )
     }
 
-    return <span className="font-mono text-foreground">{formatDate(deliveryDate)}</span>
+    return <span className="font-mono font-medium text-slate-800">{formatDate(deliveryDate)}</span>
+  }
+
+  // Render Full Page Create Order Desk
+  if (viewMode === 'create') {
+    return (
+      <CreateOrderScreen
+        onBack={() => setViewMode('list')}
+        onSuccess={(newOrder) => {
+          setToastMessage(`✓ Custom Order #${newOrder.orderNumber} created and booked successfully!`)
+          setViewMode('list')
+          void loadOrders()
+          setSelectedOrderId(newOrder.id)
+        }}
+      />
+    )
   }
 
   return (
-    <div className="flex flex-col h-full bg-background text-foreground overflow-hidden">
+    <div className="flex flex-col h-full bg-[var(--color-background-app,#f8fafc)] text-slate-900 overflow-hidden select-none font-sans">
       {/* Top Banner & Header */}
-      <div className="px-6 py-4 border-b border-border bg-card/60 flex items-center justify-between flex-wrap gap-4">
+      <div className="px-6 py-3 border-b border-slate-200 bg-white flex items-center justify-between flex-wrap gap-3 shadow-2xs shrink-0">
         <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-xl font-bold tracking-tight">Customer Custom Order Desk</h1>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
-              Phase 22 UI-2
-            </span>
+          <div className="flex items-center gap-2.5">
+            <span className="text-xl">✨</span>
+            <h1 className="text-base font-bold text-slate-900 tracking-tight flex items-center gap-2">
+              <span>Customer Custom Order Desk</span>
+              <span className="text-[10px] px-2 py-0.5 rounded bg-amber-100 text-amber-900 font-mono font-bold">
+                BESPOKE ORDERS
+              </span>
+            </h1>
           </div>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Bespoke jewellery orders, expected delivery tracking, workshop progress, and POS billing integration
+          <p className="text-xs text-slate-500 font-medium mt-0.5">
+            Bespoke jewellery orders, workshop progress tracking, advance payments, and 1-click POS delivery
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
           <button
             type="button"
             onClick={() => loadOrders()}
             disabled={isLoading}
-            className="p-2 border border-border rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+            className="h-8 px-3 border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-semibold shadow-2xs transition-colors cursor-pointer flex items-center gap-1.5"
             title="Refresh Orders"
           >
             <svg
-              className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`}
+              className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin text-slate-500' : 'text-slate-500'}`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
+            <span>Reload</span>
           </button>
 
           <button
             type="button"
-            onClick={() => setIsNewModalOpen(true)}
-            className="px-4 py-2 bg-primary text-primary-foreground font-semibold rounded-lg text-xs hover:bg-primary/90 transition-colors flex items-center gap-2 shadow-sm"
+            onClick={() => setViewMode('create')}
+            className="h-8 px-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 !text-white font-bold rounded-lg text-xs flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer"
+            style={{ color: '#ffffff' }}
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
             </svg>
-            New Custom Order
+            <span className="!text-white font-bold" style={{ color: '#ffffff' }}>New Custom Order</span>
           </button>
 
           {onClose && (
             <button
               type="button"
               onClick={onClose}
-              className="p-2 border border-border rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+              className="h-8 w-8 inline-flex items-center justify-center text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg border border-slate-200 transition-colors cursor-pointer"
               title="Close Screen"
             >
               ✕
@@ -228,12 +255,12 @@ export const CustomerOrdersScreen: React.FC<CustomerOrdersScreenProps> = ({
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-5">
+      <div className="flex-1 overflow-y-auto p-4 space-y-3.5">
         {/* Toast Notification Banner */}
         {toastMessage && (
-          <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-300 rounded-lg text-xs font-medium flex justify-between items-center animate-fade-in">
+          <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-semibold flex justify-between items-center shadow-2xs">
             <span>{toastMessage}</span>
-            <button type="button" onClick={() => setToastMessage(null)} className="text-emerald-600 hover:text-emerald-800 font-bold">
+            <button type="button" onClick={() => setToastMessage(null)} className="text-emerald-700 hover:bg-emerald-100 px-2 py-0.5 rounded font-bold cursor-pointer">
               ✕
             </button>
           </div>
@@ -241,59 +268,64 @@ export const CustomerOrdersScreen: React.FC<CustomerOrdersScreenProps> = ({
 
         {/* Error Alert */}
         {error && (
-          <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 dark:bg-rose-950/40 dark:border-rose-800 dark:text-rose-300 rounded-lg text-xs flex justify-between items-center">
-            <span>{error}</span>
-            <button type="button" onClick={() => setError(null)} className="text-rose-600 hover:text-rose-800 font-bold">
+          <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs font-semibold flex justify-between items-center shadow-2xs">
+            <span>⚠️ {error}</span>
+            <button type="button" onClick={() => setError(null)} className="text-rose-700 hover:bg-rose-100 px-2 py-0.5 rounded font-bold cursor-pointer">
               ✕
             </button>
           </div>
         )}
 
+        {/* Live Showroom Metal Rates Reference */}
+        <MetalRatesStrip />
+
         {/* Metric KPI Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="p-4 rounded-xl border border-border bg-card shadow-sm">
-            <span className="text-xs font-medium text-muted-foreground">Total Customer Orders</span>
-            <div className="mt-2 flex items-baseline justify-between">
-              <span className="text-2xl font-bold font-mono text-foreground">{metrics.total}</span>
-              <span className="text-xs text-muted-foreground">All orders</span>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="p-3.5 rounded-xl border border-slate-200 bg-white shadow-2xs">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total Customer Orders</span>
+            <div className="mt-1 flex items-baseline justify-between">
+              <span className="text-xl font-extrabold font-mono text-slate-900">{metrics.total}</span>
+              <span className="text-[11px] text-slate-500 font-medium">All orders</span>
             </div>
           </div>
 
-          <div className="p-4 rounded-xl border border-border bg-card shadow-sm">
-            <span className="text-xs font-medium text-muted-foreground">Active (In Workshop)</span>
-            <div className="mt-2 flex items-baseline justify-between">
-              <span className="text-2xl font-bold font-mono text-blue-600 dark:text-blue-400">
+          <div className="p-3.5 rounded-xl border border-slate-200 bg-white shadow-2xs">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Active (In Workshop)</span>
+            <div className="mt-1 flex items-baseline justify-between">
+              <span className="text-xl font-extrabold font-mono text-blue-700">
                 {metrics.active}
               </span>
-              <span className="text-xs text-muted-foreground">Confirmed / Progress</span>
+              <span className="text-[11px] text-slate-500 font-medium">Confirmed / Progress</span>
             </div>
           </div>
 
-          <div className="p-4 rounded-xl border border-border bg-card shadow-sm">
-            <span className="text-xs font-medium text-muted-foreground">Ready for Delivery</span>
-            <div className="mt-2 flex items-baseline justify-between">
-              <span className="text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400">
+          <div className="p-3.5 rounded-xl border border-slate-200 bg-white shadow-2xs">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Ready for Delivery</span>
+            <div className="mt-1 flex items-baseline justify-between">
+              <span className="text-xl font-extrabold font-mono text-emerald-700">
                 {metrics.ready}
               </span>
-              <span className="text-xs text-muted-foreground">POS billing ready</span>
+              <span className="text-[11px] text-slate-500 font-medium">POS billing ready</span>
             </div>
           </div>
 
-          <div className="p-4 rounded-xl border border-border bg-card shadow-sm">
-            <span className="text-xs font-medium text-muted-foreground">Overdue Orders</span>
-            <div className="mt-2 flex items-baseline justify-between">
-              <span className="text-2xl font-bold font-mono text-rose-600 dark:text-rose-400">
-                {metrics.overdue}
+          <div className="p-3.5 rounded-xl border border-amber-300 bg-amber-50/70 shadow-2xs">
+            <span className="text-[11px] font-bold text-amber-800 uppercase tracking-wider">Orders Pipeline Value</span>
+            <div className="mt-1 flex items-baseline justify-between">
+              <span className="text-xl font-black font-mono text-amber-900">
+                {formatCurrency(metrics.totalPipelineValue)}
               </span>
-              <span className="text-xs text-muted-foreground">Past due date</span>
+              <span className="text-[11px] text-amber-700 font-semibold">
+                {metrics.overdue > 0 ? `${metrics.overdue} Overdue` : 'On schedule'}
+              </span>
             </div>
           </div>
         </div>
 
         {/* Filter Controls & Tabs */}
-        <div className="space-y-3">
+        <div className="space-y-2.5">
           {/* Status Tabs */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-border text-xs">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
             {(
               [
                 'ALL',
@@ -309,10 +341,10 @@ export const CustomerOrdersScreen: React.FC<CustomerOrdersScreenProps> = ({
                 key={tab}
                 type="button"
                 onClick={() => setActiveTab(tab)}
-                className={`px-3 py-1.5 rounded-lg font-medium whitespace-nowrap transition-colors ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
                   activeTab === tab
-                    ? 'bg-primary text-primary-foreground font-semibold shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                    ? 'bg-amber-500 !text-white shadow-2xs font-bold'
+                    : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                 }`}
               >
                 {tab === 'ALL' ? 'All Orders' : STATUS_BADGE_MAP[tab]?.label || tab}
@@ -321,7 +353,7 @@ export const CustomerOrdersScreen: React.FC<CustomerOrdersScreenProps> = ({
           </div>
 
           {/* Search and Date Filter Row */}
-          <div className="flex flex-wrap items-center justify-between gap-3 bg-card p-3 rounded-xl border border-border">
+          <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-xl border border-slate-200 shadow-2xs">
             <div className="flex-1 min-w-[240px]">
               <div className="relative">
                 <input
@@ -329,33 +361,28 @@ export const CustomerOrdersScreen: React.FC<CustomerOrdersScreenProps> = ({
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search by Order #, Customer Name, Account, Quotation #..."
-                  className="w-full h-9 pl-9 pr-3 text-xs bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full h-8 pl-8 pr-3 text-xs bg-slate-50 hover:bg-white focus:bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 text-slate-800 transition-all font-medium"
                 />
-                <svg
-                  className="w-4 h-4 text-muted-foreground absolute left-3 top-2.5 pointer-events-none"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
+                <div className="absolute left-2.5 top-2 text-slate-400 text-xs">
+                  🔍
+                </div>
               </div>
             </div>
 
             <div className="flex items-center gap-2 text-xs">
-              <span className="text-muted-foreground">From:</span>
+              <span className="text-slate-500 font-semibold text-[11px]">From:</span>
               <input
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="h-9 px-2.5 bg-background border border-input rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                className="h-8 px-2.5 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-amber-500 text-slate-800"
               />
-              <span className="text-muted-foreground">To:</span>
+              <span className="text-slate-500 font-semibold text-[11px]">To:</span>
               <input
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="h-9 px-2.5 bg-background border border-input rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                className="h-8 px-2.5 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-amber-500 text-slate-800"
               />
               {(startDate || endDate || searchQuery) && (
                 <button
@@ -365,7 +392,7 @@ export const CustomerOrdersScreen: React.FC<CustomerOrdersScreenProps> = ({
                     setEndDate('')
                     setSearchQuery('')
                   }}
-                  className="h-9 px-2.5 text-xs text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg border border-border transition-colors"
+                  className="h-8 px-2.5 text-xs text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg border border-slate-200 transition-colors font-semibold cursor-pointer"
                 >
                   Reset
                 </button>
@@ -375,11 +402,11 @@ export const CustomerOrdersScreen: React.FC<CustomerOrdersScreenProps> = ({
         </div>
 
         {/* Order Register Table */}
-        <div className="rounded-xl border border-border overflow-hidden bg-card shadow-sm">
+        <div className="rounded-xl border border-slate-200 overflow-hidden bg-white shadow-2xs">
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-left text-xs">
               <thead>
-                <tr className="bg-muted/50 border-b border-border text-muted-foreground font-medium">
+                <tr className="bg-slate-100/80 border-b border-slate-200 text-slate-700 font-extrabold uppercase text-[11px] tracking-tight">
                   <th className="p-3">Order #</th>
                   <th className="p-3">Booked Date</th>
                   <th className="p-3">Customer / Party</th>
@@ -392,19 +419,19 @@ export const CustomerOrdersScreen: React.FC<CustomerOrdersScreenProps> = ({
                   <th className="p-3 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border">
+              <tbody className="divide-y divide-slate-100">
                 {isLoading ? (
                   <tr>
-                    <td colSpan={10} className="p-12 text-center text-muted-foreground animate-pulse">
+                    <td colSpan={10} className="p-12 text-center text-slate-400 animate-pulse font-semibold">
                       Loading customer order register...
                     </td>
                   </tr>
                 ) : orders.length === 0 ? (
                   <tr>
-                    <td colSpan={10} className="p-12 text-center text-muted-foreground">
+                    <td colSpan={10} className="p-12 text-center text-slate-500">
                       <div className="max-w-sm mx-auto space-y-2">
-                        <p className="text-sm font-semibold text-foreground">No customer orders found</p>
-                        <p className="text-xs">
+                        <p className="text-sm font-bold text-slate-900">No customer orders found</p>
+                        <p className="text-xs text-slate-500">
                           {searchQuery || activeTab !== 'ALL'
                             ? 'No orders match your active filter criteria.'
                             : 'Create bespoke orders manually or convert approved quotations from the Quotation Desk.'}
@@ -412,8 +439,9 @@ export const CustomerOrdersScreen: React.FC<CustomerOrdersScreenProps> = ({
                         {!searchQuery && activeTab === 'ALL' && (
                           <button
                             type="button"
-                            onClick={() => setIsNewModalOpen(true)}
-                            className="mt-2 px-4 py-2 bg-primary text-primary-foreground font-medium rounded-lg text-xs"
+                            onClick={() => setViewMode('create')}
+                            className="mt-2 px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 !text-white font-bold rounded-lg text-xs shadow-2xs cursor-pointer"
+                            style={{ color: '#ffffff' }}
                           >
                             + New Custom Order
                           </button>
@@ -423,31 +451,31 @@ export const CustomerOrdersScreen: React.FC<CustomerOrdersScreenProps> = ({
                   </tr>
                 ) : (
                   orders.map((o) => (
-                    <tr key={o.id} className="hover:bg-accent/40 transition-colors">
+                    <tr key={o.id} className="hover:bg-amber-50/30 transition-colors">
                       {/* Order Number */}
                       <td className="p-3">
                         <button
                           type="button"
                           onClick={() => setSelectedOrderId(o.id)}
-                          className="font-mono font-bold text-primary hover:underline text-left"
+                          className="font-mono font-bold text-amber-700 hover:text-amber-900 hover:underline text-left cursor-pointer"
                         >
                           {o.orderNumber}
                         </button>
-                        <div className="text-[10px] text-muted-foreground mt-0.5">{o.metalType}</div>
+                        <div className="text-[10px] text-slate-500 font-semibold mt-0.5">{o.metalType}</div>
                       </td>
 
                       {/* Booked Date */}
-                      <td className="p-3 font-mono text-foreground whitespace-nowrap">
+                      <td className="p-3 font-mono text-slate-800 whitespace-nowrap font-medium">
                         {formatDate(o.orderDate)}
                       </td>
 
                       {/* Customer */}
                       <td className="p-3">
-                        <div className="font-semibold text-foreground">
+                        <div className="font-bold text-slate-900">
                           {o.customerName || o.accountName || 'Counter Customer'}
                         </div>
                         {o.customerCode && (
-                          <div className="text-[10px] text-muted-foreground font-mono">
+                          <div className="text-[10px] text-slate-500 font-mono font-semibold">
                             {o.customerCode}
                           </div>
                         )}
@@ -461,25 +489,27 @@ export const CustomerOrdersScreen: React.FC<CustomerOrdersScreenProps> = ({
                       {/* Source Quotation */}
                       <td className="p-3 font-mono text-xs">
                         {o.quotationNumber ? (
-                          <span className="text-muted-foreground">{o.quotationNumber}</span>
+                          <span className="text-amber-800 font-semibold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                            {o.quotationNumber}
+                          </span>
                         ) : (
-                          <span className="text-muted-foreground/60 italic">Direct</span>
+                          <span className="text-slate-400 font-medium italic">Direct</span>
                         )}
                       </td>
 
                       {/* Items */}
-                      <td className="p-3 text-center font-mono">{o.totalPcs}</td>
+                      <td className="p-3 text-center font-mono font-bold text-slate-800">{o.totalPcs}</td>
 
                       {/* Gross Wt */}
-                      <td className="p-3 text-right font-mono text-foreground">
+                      <td className="p-3 text-right font-mono text-slate-900 font-bold">
                         {formatWeight(o.totalGrossWeight)}
                       </td>
 
                       {/* Estimated Total */}
-                      <td className="p-3 text-right font-mono font-bold text-foreground">
+                      <td className="p-3 text-right font-mono font-extrabold text-amber-900 text-xs">
                         {formatCurrency(o.roundedTotal || o.grandTotal)}
                         {o.advanceAmount > 0 && (
-                          <div className="text-[10px] font-normal text-emerald-600 dark:text-emerald-400">
+                          <div className="text-[10px] font-bold text-emerald-700">
                             Adv: {formatCurrency(o.advanceAmount)}
                           </div>
                         )}
@@ -497,7 +527,7 @@ export const CustomerOrdersScreen: React.FC<CustomerOrdersScreenProps> = ({
                           <button
                             type="button"
                             onClick={() => setSelectedOrderId(o.id)}
-                            className="px-2.5 py-1 text-xs border border-border rounded-md hover:bg-accent text-foreground transition-colors"
+                            className="px-2.5 py-1 text-xs border border-slate-300 rounded-md hover:bg-slate-100 text-slate-700 font-semibold transition-colors cursor-pointer"
                           >
                             View
                           </button>
@@ -506,7 +536,7 @@ export const CustomerOrdersScreen: React.FC<CustomerOrdersScreenProps> = ({
                           <button
                             type="button"
                             onClick={() => setPrintOrder(o)}
-                            className="p-1 border border-border rounded-md hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+                            className="p-1 border border-slate-300 rounded-md hover:bg-emerald-50 hover:text-emerald-700 text-slate-600 transition-colors cursor-pointer"
                             title="Print Docket"
                           >
                             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -519,7 +549,7 @@ export const CustomerOrdersScreen: React.FC<CustomerOrdersScreenProps> = ({
                             <button
                               type="button"
                               onClick={() => handleQuickTransition(o, 'IN_PROGRESS')}
-                              className="px-2 py-1 text-xs bg-amber-600/10 text-amber-700 dark:text-amber-400 border border-amber-600/20 hover:bg-amber-600/20 rounded-md transition-colors font-medium"
+                              className="px-2 py-1 text-xs bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-300 rounded-md transition-colors font-bold cursor-pointer"
                               title="Send to Workshop / In Progress"
                             >
                               Workshop
@@ -530,7 +560,7 @@ export const CustomerOrdersScreen: React.FC<CustomerOrdersScreenProps> = ({
                             <button
                               type="button"
                               onClick={() => handleQuickTransition(o, 'READY')}
-                              className="px-2 py-1 text-xs bg-emerald-600/10 text-emerald-700 dark:text-emerald-400 border border-emerald-600/20 hover:bg-emerald-600/20 rounded-md transition-colors font-medium"
+                              className="px-2 py-1 text-xs bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-300 rounded-md transition-colors font-bold cursor-pointer"
                               title="Mark Ready for Delivery"
                             >
                               Ready
@@ -547,7 +577,7 @@ export const CustomerOrdersScreen: React.FC<CustomerOrdersScreenProps> = ({
                                   handleQuickTransition(o, 'COMPLETED')
                                 }
                               }}
-                              className="px-2 py-1 text-xs bg-purple-600/10 text-purple-700 dark:text-purple-400 border border-purple-600/20 hover:bg-purple-600/20 rounded-md transition-colors font-medium"
+                              className="px-2.5 py-1 text-xs bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-300 rounded-md transition-colors font-bold cursor-pointer"
                               title="Open in POS or Complete"
                             >
                               POS Deliver
@@ -563,17 +593,6 @@ export const CustomerOrdersScreen: React.FC<CustomerOrdersScreenProps> = ({
           </div>
         </div>
       </div>
-
-      {/* New Order Modal */}
-      <NewOrderModal
-        isOpen={isNewModalOpen}
-        onClose={() => setIsNewModalOpen(false)}
-        onSuccess={(newOrder) => {
-          setToastMessage(`✓ Customer Order #${newOrder.orderNumber} booked successfully!`)
-          void loadOrders()
-          setSelectedOrderId(newOrder.id)
-        }}
-      />
 
       {/* Order Detail Modal */}
       {selectedOrderId && (
