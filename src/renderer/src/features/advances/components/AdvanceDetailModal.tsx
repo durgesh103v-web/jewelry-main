@@ -14,24 +14,24 @@ interface AdvanceDetailModalProps {
 
 const STATUS_BADGE_MAP: Record<AdvanceStatus, { label: string; className: string }> = {
   RECEIVED: {
-    label: 'Available (Unadjusted)',
-    className: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 font-semibold border-emerald-300 dark:border-emerald-700'
+    label: 'Available',
+    className: 'bg-emerald-100 text-emerald-800 border-emerald-200 font-bold'
   },
   PARTIALLY_ALLOCATED: {
     label: 'Partially Consumed',
-    className: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 font-medium border-amber-300 dark:border-amber-700'
+    className: 'bg-amber-100 text-amber-800 border-amber-200 font-bold'
   },
   FULLY_ALLOCATED: {
-    label: 'Fully Utilized',
-    className: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 font-medium border-blue-300 dark:border-blue-700'
+    label: 'Fully Consumed',
+    className: 'bg-blue-100 text-blue-800 border-blue-200 font-bold'
   },
   REFUNDED: {
     label: 'Refunded',
-    className: 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300 border-purple-300 dark:border-purple-700'
+    className: 'bg-purple-100 text-purple-800 border-purple-200 font-bold'
   },
   CANCELLED: {
-    label: 'Cancelled (Reversed)',
-    className: 'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300 border-rose-300 dark:border-rose-700'
+    label: 'Cancelled',
+    className: 'bg-rose-100 text-rose-800 border-rose-200 font-bold'
   }
 }
 
@@ -100,177 +100,185 @@ export const AdvanceDetailModal: React.FC<AdvanceDetailModalProps> = ({
   if (!isOpen) return null
 
   const statusBadge = advance
-    ? STATUS_BADGE_MAP[advance.status] || { label: advance.status, className: 'bg-zinc-100 text-zinc-800' }
+    ? STATUS_BADGE_MAP[advance.status] || { label: advance.status, className: 'bg-slate-100 text-slate-800 border-slate-200 font-bold' }
     : null
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 flex items-center justify-center p-4">
-      <div className="bg-background text-foreground max-w-3xl w-full max-h-[92vh] flex flex-col rounded-xl shadow-2xl border border-border overflow-hidden">
-        {/* Header Bar */}
-        <div className="px-6 py-4 border-b border-border flex items-center justify-between bg-muted/40">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+      <div className="bg-white text-slate-900 max-w-3xl w-full max-h-[92vh] flex flex-col rounded-xl shadow-2xl border border-slate-200 overflow-hidden font-sans select-none">
+        {/* ── Top Header Bar ── */}
+        <div className="px-6 py-3.5 border-b border-slate-200 flex items-center justify-between bg-white shrink-0">
           <div className="flex items-center gap-3">
+            <span className="text-xl">💰</span>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-xl font-bold tracking-tight">Advance Receipt Voucher</h2>
-                <span className="font-mono text-sm px-2.5 py-0.5 rounded bg-primary/10 text-primary font-bold border border-primary/20">
+                <h2 className="text-base font-bold text-slate-900 tracking-tight">
+                  Advance Receipt Voucher
+                </h2>
+                <span className="font-mono text-xs px-2.5 py-0.5 rounded bg-amber-100 text-amber-900 font-bold border border-amber-200">
                   {advance?.advanceNumber || '...'}
                 </span>
                 {statusBadge && (
-                  <span className={`text-xs px-2.5 py-0.5 rounded-full border ${statusBadge.className}`}>
+                  <span className={`text-[11px] px-2.5 py-0.5 rounded-full border ${statusBadge.className}`}>
                     {statusBadge.label}
                   </span>
                 )}
               </div>
-              <p className="text-xs text-muted-foreground mt-0.5">
+              <p className="text-xs text-slate-500 mt-0.5">
                 Receipt Date: {advance ? formatDate(advance.advanceDate) : '...'}
               </p>
             </div>
           </div>
+
           <div className="flex items-center gap-2">
             {advance && (
               <button
                 type="button"
                 onClick={() => onPrint(advance)}
-                className="px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 font-medium rounded-lg text-xs transition-colors flex items-center gap-1 border border-primary/20"
+                className="h-8 px-3 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 border border-slate-300 shadow-2xs cursor-pointer"
+                title="Print Receipt Voucher"
               >
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3.5 h-3.5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                 </svg>
-                Print Receipt
+                <span>Print</span>
               </button>
             )}
             <button
               type="button"
               onClick={onClose}
-              className="text-muted-foreground hover:text-foreground text-lg leading-none p-1.5 rounded-md hover:bg-accent"
+              className="text-slate-400 hover:text-slate-700 text-base leading-none p-1.5 rounded-md hover:bg-slate-100 transition-colors cursor-pointer"
+              title="Close modal"
             >
               ✕
             </button>
           </div>
         </div>
 
-        {/* Content Body */}
-        <div className="p-6 overflow-y-auto flex-1 space-y-5">
+        {/* ── Main Content Body ── */}
+        <div className="p-5 overflow-y-auto flex-1 space-y-4 bg-slate-50/50">
           {error && (
-            <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 dark:bg-rose-950/40 dark:border-rose-800 dark:text-rose-300 rounded-lg text-xs flex justify-between items-center">
-              <span>{error}</span>
-              <button type="button" onClick={() => setError(null)} className="text-rose-600 hover:text-rose-800 font-bold">
+            <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-lg text-xs flex justify-between items-center shadow-2xs">
+              <span>⚠️ {error}</span>
+              <button type="button" onClick={() => setError(null)} className="text-rose-600 hover:text-rose-800 font-bold cursor-pointer">
                 ✕
               </button>
             </div>
           )}
 
           {isLoading ? (
-            <div className="py-12 flex flex-col items-center justify-center text-muted-foreground">
-              <svg className="animate-spin h-6 w-6 mb-2 text-primary" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-              </svg>
-              <p className="text-xs">Loading advance details...</p>
+            <div className="py-12 flex flex-col items-center justify-center text-slate-400">
+              <span className="w-6 h-6 border-2 border-amber-500 border-t-transparent rounded-full animate-spin mb-2" />
+              <p className="text-xs font-medium">Loading advance details...</p>
             </div>
           ) : advance ? (
             <>
-              {/* Authoritative Financial Balance Summary Banner */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 rounded-xl border border-border bg-gradient-to-br from-card to-muted/20">
-                <div className="space-y-1">
-                  <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+              {/* 3 KPI Summary Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="p-3.5 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-1">
+                  <span className="text-[11px] text-slate-500 font-bold uppercase tracking-wider block">
                     Original Received
                   </span>
-                  <div className="text-xl font-bold text-foreground">
+                  <div className="text-xl font-bold font-mono text-slate-900">
                     {formatCurrency(advance.amount)}
                   </div>
-                  <span className="text-[11px] text-muted-foreground">
+                  <span className="text-[11px] text-slate-500 block">
                     Via {advance.paymentMethod}
                   </span>
                 </div>
 
-                <div className="space-y-1">
-                  <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+                <div className="p-3.5 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-1">
+                  <span className="text-[11px] text-blue-700 font-bold uppercase tracking-wider block">
                     Allocated / Utilized
                   </span>
-                  <div className="text-xl font-bold text-blue-600 dark:text-blue-400">
+                  <div className="text-xl font-bold font-mono text-blue-700">
                     {formatCurrency(advance.allocatedAmount)}
                   </div>
-                  <span className="text-[11px] text-muted-foreground">
-                    Adjusted against orders/invoices
+                  <span className="text-[11px] text-slate-500 block">
+                    Adjusted against orders
                   </span>
                 </div>
 
-                <div className="space-y-1">
-                  <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+                <div className="p-3.5 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-1">
+                  <span className="text-[11px] text-emerald-700 font-bold uppercase tracking-wider block">
                     Available Balance
                   </span>
-                  <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400">
+                  <div className="text-xl font-bold font-mono text-emerald-700">
                     {formatCurrency(advance.unallocatedAmount)}
                   </div>
-                  <span className="text-[11px] text-muted-foreground">
-                    Authoritative unadjusted liability
+                  <span className="text-[11px] text-slate-500 block">
+                    Usable for future orders/billing
                   </span>
                 </div>
               </div>
 
-              {/* Customer & Order Context */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Customer Information */}
-                <div className="p-4 rounded-xl border border-border bg-card space-y-2">
-                  <span className="text-xs font-semibold text-foreground uppercase tracking-wider block border-b border-border pb-1">
-                    Customer Details
+              {/* Customer & Order Information */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {/* Customer Card */}
+                <div className="p-4 rounded-xl border border-slate-200 bg-white shadow-2xs space-y-2">
+                  <span className="text-xs font-bold text-slate-700 uppercase tracking-wider block border-b border-slate-100 pb-1.5">
+                    👤 Customer Details
                   </span>
-                  <div className="space-y-1 text-xs">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Customer Name:</span>
-                      <span className="font-semibold text-foreground">
+                  <div className="space-y-1.5 text-xs">
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-500">Customer Name:</span>
+                      <span className="font-bold text-slate-900">
                         {advance.customerName || 'N/A'}
                       </span>
                     </div>
                     {advance.customerCode && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Customer Code:</span>
-                        <span className="font-mono text-foreground">{advance.customerCode}</span>
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-500">Customer Code:</span>
+                        <span className="font-mono font-bold text-slate-800 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                          {advance.customerCode}
+                        </span>
                       </div>
                     )}
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Financial Account:</span>
-                      <span className="text-foreground">{advance.accountName || advance.accountId}</span>
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-500">Ledger Account:</span>
+                      <span className="font-medium text-slate-800 truncate max-w-[180px]">
+                        {advance.accountName || advance.accountId}
+                      </span>
                     </div>
                   </div>
                 </div>
 
-                {/* Linked Order & Payment Info */}
-                <div className="p-4 rounded-xl border border-border bg-card space-y-2">
-                  <span className="text-xs font-semibold text-foreground uppercase tracking-wider block border-b border-border pb-1">
-                    Order Linkage & Payment
+                {/* Order Linkage & Payment Details Card */}
+                <div className="p-4 rounded-xl border border-slate-200 bg-white shadow-2xs space-y-2">
+                  <span className="text-xs font-bold text-slate-700 uppercase tracking-wider block border-b border-slate-100 pb-1.5">
+                    💳 Order Linkage &amp; Payment
                   </span>
-                  <div className="space-y-1 text-xs">
+                  <div className="space-y-1.5 text-xs">
                     <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground">Linked Order:</span>
+                      <span className="text-slate-500">Linked Order:</span>
                       {advance.orderId ? (
                         onNavigateToOrder ? (
                           <button
                             type="button"
                             onClick={() => onNavigateToOrder(advance.orderId!)}
-                            className="font-mono font-semibold text-primary hover:underline"
+                            className="font-mono font-bold text-amber-800 hover:text-amber-900 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 hover:underline cursor-pointer flex items-center gap-1"
                           >
-                            {advance.orderNumber || advance.orderId} ↗
+                            <span>{advance.orderNumber || advance.orderId}</span>
+                            <span>↗</span>
                           </button>
                         ) : (
-                          <span className="font-mono font-semibold text-foreground">
+                          <span className="font-mono font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
                             {advance.orderNumber || advance.orderId}
                           </span>
                         )
                       ) : (
-                        <span className="text-muted-foreground italic">
-                          None (General Unlinked Advance)
+                        <span className="text-slate-400 italic">
+                          None (General Advance)
                         </span>
                       )}
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Payment Method:</span>
-                      <span className="font-medium text-foreground">{advance.paymentMethod}</span>
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-500">Payment Method:</span>
+                      <span className="font-bold text-slate-900">{advance.paymentMethod}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Reference / UTR / Cheque:</span>
-                      <span className="font-mono text-foreground">
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-500">Reference / UTR:</span>
+                      <span className="font-mono font-semibold text-slate-900 truncate max-w-[180px]">
                         {advance.paymentReference || 'N/A'}
                       </span>
                     </div>
@@ -278,21 +286,23 @@ export const AdvanceDetailModal: React.FC<AdvanceDetailModalProps> = ({
                 </div>
               </div>
 
-              {/* Remarks / Notes */}
+              {/* Notes & Remarks */}
               {advance.notes && (
-                <div className="p-3 bg-muted/40 rounded-xl border border-border text-xs">
-                  <span className="font-semibold text-foreground block mb-0.5">Notes & Remarks:</span>
-                  <p className="text-muted-foreground leading-relaxed">{advance.notes}</p>
+                <div className="p-3 bg-amber-50/60 rounded-xl border border-amber-200/80 text-xs space-y-1 shadow-2xs">
+                  <span className="font-bold text-amber-900 block text-[11px] uppercase tracking-wider">
+                    📝 Notes &amp; Remarks:
+                  </span>
+                  <p className="text-slate-700 leading-relaxed font-medium">{advance.notes}</p>
                 </div>
               )}
 
-              {/* Allocation History */}
+              {/* Allocation History Table */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-foreground">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
                     Utilization / Allocation History
                   </h3>
-                  <span className="text-[11px] text-muted-foreground">
+                  <span className="text-[11px] text-slate-500">
                     {advance.allocations && advance.allocations.length > 0
                       ? `${advance.allocations.length} allocation event(s)`
                       : 'No allocations recorded'}
@@ -300,20 +310,20 @@ export const AdvanceDetailModal: React.FC<AdvanceDetailModalProps> = ({
                 </div>
 
                 {advance.allocations && advance.allocations.length > 0 ? (
-                  <div className="border border-border rounded-xl overflow-hidden">
+                  <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-2xs">
                     <table className="w-full text-xs text-left">
-                      <thead className="bg-muted/70 text-muted-foreground border-b border-border">
+                      <thead className="bg-slate-100/80 border-b border-slate-200 text-slate-700 font-extrabold uppercase text-[11px] tracking-tight">
                         <tr>
-                          <th className="py-2 px-3 font-semibold">Allocation Date</th>
-                          <th className="py-2 px-3 font-semibold">Target Order</th>
-                          <th className="py-2 px-3 font-semibold text-right">Allocated Amount</th>
-                          <th className="py-2 px-3 font-semibold">Notes</th>
+                          <th className="py-2.5 px-3">Allocation Date</th>
+                          <th className="py-2.5 px-3">Target Order</th>
+                          <th className="py-2.5 px-3 text-right">Allocated Amount</th>
+                          <th className="py-2.5 px-3">Notes</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-border">
+                      <tbody className="divide-y divide-slate-100 bg-white">
                         {advance.allocations.map((alloc) => (
-                          <tr key={alloc.id} className="hover:bg-muted/30">
-                            <td className="py-2 px-3 font-mono">
+                          <tr key={alloc.id} className="hover:bg-slate-50/80 transition-colors">
+                            <td className="py-2 px-3 font-mono text-slate-700 font-medium">
                               {formatDate(alloc.allocationDate)}
                             </td>
                             <td className="py-2 px-3">
@@ -322,25 +332,25 @@ export const AdvanceDetailModal: React.FC<AdvanceDetailModalProps> = ({
                                   <button
                                     type="button"
                                     onClick={() => onNavigateToOrder(alloc.orderId)}
-                                    className="font-mono font-medium text-primary hover:underline"
+                                    className="font-mono font-bold text-amber-800 hover:text-amber-900 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 hover:underline cursor-pointer"
                                   >
                                     {alloc.orderNumber} ↗
                                   </button>
                                 ) : (
-                                  <span className="font-mono font-medium text-foreground">
+                                  <span className="font-mono font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
                                     {alloc.orderNumber}
                                   </span>
                                 )
                               ) : (
-                                <span className="font-mono text-muted-foreground">
+                                <span className="font-mono text-slate-600">
                                   {alloc.orderId}
                                 </span>
                               )}
                             </td>
-                            <td className="py-2 px-3 text-right font-semibold text-foreground">
+                            <td className="py-2 px-3 text-right font-mono font-bold text-slate-900">
                               {formatCurrency(alloc.allocatedAmount)}
                             </td>
-                            <td className="py-2 px-3 text-muted-foreground">
+                            <td className="py-2 px-3 text-slate-600">
                               {alloc.notes || '-'}
                             </td>
                           </tr>
@@ -349,16 +359,16 @@ export const AdvanceDetailModal: React.FC<AdvanceDetailModalProps> = ({
                     </table>
                   </div>
                 ) : (
-                  <div className="p-4 border border-dashed border-border rounded-xl text-center text-xs text-muted-foreground">
+                  <div className="p-4 border border-dashed border-slate-300 rounded-xl text-center text-xs text-slate-500 bg-white">
                     No order allocations recorded for this receipt. Full balance of{' '}
-                    <strong className="text-foreground">{formatCurrency(advance.unallocatedAmount)}</strong>{' '}
+                    <strong className="text-slate-900 font-mono font-bold">{formatCurrency(advance.unallocatedAmount)}</strong>{' '}
                     is currently available for POS checkout or custom order adjustment.
                   </div>
                 )}
               </div>
 
               {/* Audit Timestamps */}
-              <div className="pt-2 border-t border-border flex flex-wrap items-center justify-between text-[11px] text-muted-foreground">
+              <div className="pt-2 border-t border-slate-200 flex flex-wrap items-center justify-between text-[11px] text-slate-400">
                 <div>
                   Created: {formatDate(advance.createdAt)}
                   {advance.createdBy ? ` by ${advance.createdBy}` : ''}
@@ -369,40 +379,40 @@ export const AdvanceDetailModal: React.FC<AdvanceDetailModalProps> = ({
           ) : null}
         </div>
 
-        {/* Footer Actions */}
-        <div className="px-6 py-4 border-t border-border flex items-center justify-between bg-muted/40">
+        {/* ── Footer Action Bar ── */}
+        <div className="px-6 py-3 border-t border-slate-200 flex items-center justify-between bg-white shrink-0">
           <div>
             {advance && advance.status !== 'CANCELLED' && (
               <>
                 {isConfirmingCancel ? (
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-rose-600 dark:text-rose-400">
-                      Confirm cancellation? Reverses accounting & allocations:
+                    <span className="text-xs font-bold text-rose-600">
+                      Confirm void advance?
                     </span>
                     <button
                       type="button"
                       onClick={() => void handleCancelAdvance()}
                       disabled={isCancelling}
-                      className="px-3 py-1 bg-rose-600 text-white rounded text-xs font-medium hover:bg-rose-700 disabled:opacity-50"
+                      className="h-8 px-3 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold disabled:opacity-50 cursor-pointer transition-colors"
                     >
-                      {isCancelling ? 'Cancelling...' : 'Yes, Cancel Advance'}
+                      {isCancelling ? 'Voiding...' : 'Yes, Void Advance'}
                     </button>
                     <button
                       type="button"
                       onClick={() => setIsConfirmingCancel(false)}
                       disabled={isCancelling}
-                      className="px-2.5 py-1 bg-secondary text-secondary-foreground rounded text-xs hover:bg-secondary/80"
+                      className="h-8 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold cursor-pointer transition-colors"
                     >
-                      Back
+                      No
                     </button>
                   </div>
                 ) : (
                   <button
                     type="button"
                     onClick={() => setIsConfirmingCancel(true)}
-                    className="px-3 py-1.5 text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg text-xs font-medium transition-colors border border-rose-200 dark:border-rose-900"
+                    className="h-8 px-3 text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-lg text-xs font-bold transition-colors border border-rose-200 cursor-pointer"
                   >
-                    Cancel / Void Advance
+                    Void / Cancel Advance
                   </button>
                 )}
               </>
@@ -414,18 +424,19 @@ export const AdvanceDetailModal: React.FC<AdvanceDetailModalProps> = ({
               <button
                 type="button"
                 onClick={() => onPrint(advance)}
-                className="px-4 py-2 text-xs font-semibold rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-sm flex items-center gap-1.5"
+                className="h-8 px-4 text-xs font-bold rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 !text-white shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer"
+                style={{ color: '#ffffff' }}
               >
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                 </svg>
-                Print Receipt
+                <span className="!text-white" style={{ color: '#ffffff' }}>Print Receipt</span>
               </button>
             )}
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-xs font-medium rounded-lg border border-input bg-background hover:bg-muted transition-colors"
+              className="h-8 px-4 text-xs font-semibold rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 transition-colors shadow-2xs cursor-pointer"
             >
               Close
             </button>

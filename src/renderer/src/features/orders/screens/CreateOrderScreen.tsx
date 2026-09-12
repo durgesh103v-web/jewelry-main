@@ -332,20 +332,6 @@ export const CreateOrderScreen: React.FC<CreateOrderScreenProps> = ({
       {/* ── Top Header Bar ── */}
       <div className="px-6 py-3 border-b border-slate-200 bg-white flex items-center justify-between flex-wrap gap-3 shadow-2xs shrink-0">
         <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={onBack}
-            className="h-8 px-3 border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-semibold shadow-2xs transition-colors cursor-pointer flex items-center gap-1.5"
-            title="Return to Orders Register"
-          >
-            <svg className="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            <span>Back to Orders</span>
-          </button>
-
-          <div className="h-5 w-px bg-slate-200" />
-
           <div className="flex items-center gap-2">
             <span className="text-xl">✨</span>
             <h1 className="text-base font-bold text-slate-900 tracking-tight">
@@ -353,6 +339,9 @@ export const CreateOrderScreen: React.FC<CreateOrderScreenProps> = ({
             </h1>
             <span className="font-mono text-xs px-2.5 py-0.5 rounded bg-amber-100 text-amber-900 font-bold border border-amber-200">
               {isLoadingNumber ? '...' : orderNumber || 'NEW'}
+            </span>
+            <span className="text-xs text-slate-500 hidden sm:inline ml-2">
+              Book custom jewellery orders, capture making specifications &amp; advance deposit
             </span>
           </div>
         </div>
@@ -383,7 +372,7 @@ export const CreateOrderScreen: React.FC<CreateOrderScreenProps> = ({
                 <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                 </svg>
-                <span className="!text-white font-bold" style={{ color: '#ffffff' }}>Save & Book Order</span>
+                <span className="!text-white font-bold" style={{ color: '#ffffff' }}>Save &amp; Book Order</span>
               </>
             )}
           </button>
@@ -688,14 +677,14 @@ export const CreateOrderScreen: React.FC<CreateOrderScreenProps> = ({
                           className="w-16 h-7 text-right px-1 text-xs font-mono font-medium bg-slate-50 border border-slate-200 rounded focus:bg-white focus:border-amber-500 text-slate-800"
                         />
                         <div className="text-[10px] text-slate-500 text-right mt-0.5 font-mono font-bold">
-                          ₹{it.makingCharges.toLocaleString()}
+                          {formatCurrency(it.makingCharges)}
                         </div>
                       </td>
                       <td className="p-3 text-right font-mono font-extrabold text-amber-900 text-xs">
                         {it.isCalculating ? (
                           <span className="text-slate-400 animate-pulse">...</span>
                         ) : (
-                          `₹${it.lineTotal.toLocaleString()}`
+                          formatCurrency(it.lineTotal)
                         )}
                       </td>
                       <td className="p-3 text-center">
@@ -720,37 +709,37 @@ export const CreateOrderScreen: React.FC<CreateOrderScreenProps> = ({
         <div className="p-4 rounded-xl border border-slate-200 bg-white grid grid-cols-1 md:grid-cols-4 gap-4 text-xs shadow-2xs">
           <div>
             <span className="text-slate-500 block text-[10px] font-bold uppercase tracking-wider">
-              Total Pieces & Weights
+              Total Pieces &amp; Weights
             </span>
             <p className="font-extrabold text-sm mt-1 text-slate-900">
-              {totals.totalPcs} pcs | {formatWeight(totals.totalGrossWeight)}g Gross
+              {totals.totalPcs} pcs | {formatWeight(totals.totalGrossWeight)} Gross
             </p>
             <p className="text-xs text-slate-500 mt-0.5 font-medium">
-              Net Wt: {formatWeight(totals.totalNetWeight)}g | Fine: {formatWeight(totals.totalFineWeight)}g
+              Net Wt: {formatWeight(totals.totalNetWeight)} | Fine: {formatWeight(totals.totalFineWeight)}
             </p>
           </div>
 
           <div>
             <span className="text-slate-500 block text-[10px] font-bold uppercase tracking-wider">
-              Metal & Labour Breakdown
+              Metal &amp; Labour Breakdown
             </span>
             <p className="font-mono text-sm mt-1 text-slate-900 font-bold">
-              Metal Value: ₹{totals.metalValue.toLocaleString()}
+              Metal Value: {formatCurrency(totals.metalValue)}
             </p>
             <p className="font-mono text-xs text-slate-500 mt-0.5 font-medium">
-              Making Charges: ₹{totals.totalMaking.toLocaleString()}
+              Making Charges: {formatCurrency(totals.totalMaking)}
             </p>
           </div>
 
           <div>
             <span className="text-slate-500 block text-[10px] font-bold uppercase tracking-wider">
-              Advance & Balance Due
+              Advance &amp; Balance Due
             </span>
             <p className="font-mono text-sm mt-1 text-emerald-700 font-bold">
-              Advance: ₹{advanceAmount.toLocaleString()}
+              Advance: {formatCurrency(advanceAmount)}
             </p>
             <p className="font-mono text-xs text-slate-600 mt-0.5 font-semibold">
-              Balance Due on Delivery: ₹{Math.round(balanceDue).toLocaleString()}
+              Balance Due on Delivery: {formatCurrency(balanceDue)}
             </p>
           </div>
 
@@ -759,7 +748,7 @@ export const CreateOrderScreen: React.FC<CreateOrderScreenProps> = ({
               ESTIMATED GRAND TOTAL
             </span>
             <p className="text-xl font-black text-amber-900 font-mono mt-0.5">
-              ₹{Math.round(totals.grandTotal).toLocaleString()}
+              {formatCurrency(totals.grandTotal)}
             </p>
           </div>
         </div>
@@ -768,18 +757,11 @@ export const CreateOrderScreen: React.FC<CreateOrderScreenProps> = ({
       {/* ── Sticky Bottom Actions Bar ── */}
       <div className="px-6 py-3 border-t border-slate-200 bg-white flex items-center justify-between shrink-0 shadow-2xs">
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={onBack}
-            className="px-4 py-2 bg-white border border-slate-300 text-slate-700 font-semibold rounded-lg text-xs hover:bg-slate-50 transition-colors cursor-pointer"
-          >
-            ← Back to Orders
-          </button>
           {items.length > 0 && (
             <button
               type="button"
               onClick={() => setItems([])}
-              className="px-3 py-2 text-rose-600 hover:bg-rose-50 rounded-lg text-xs font-semibold transition-colors cursor-pointer"
+              className="px-3 py-1.5 text-rose-600 hover:bg-rose-50 rounded-lg text-xs font-semibold transition-colors cursor-pointer border border-rose-200"
             >
               Clear All Items
             </button>
@@ -789,9 +771,17 @@ export const CreateOrderScreen: React.FC<CreateOrderScreenProps> = ({
         <div className="flex items-center gap-2.5">
           <button
             type="button"
+            onClick={onBack}
+            className="h-8 px-4 bg-white hover:bg-slate-50 text-slate-700 font-semibold rounded-lg text-xs transition-colors border border-slate-300 shadow-2xs cursor-pointer"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="button"
             disabled={isSubmitting || items.length === 0 || !selectedCustomer}
             onClick={handleSubmit}
-            className="px-6 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 !text-white font-bold rounded-lg text-xs transition-all flex items-center gap-2 shadow-2xs disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            className="h-8 px-6 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 !text-white font-bold rounded-lg text-xs transition-all flex items-center gap-2 shadow-2xs disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             style={{ color: '#ffffff' }}
           >
             {isSubmitting ? (
@@ -804,7 +794,7 @@ export const CreateOrderScreen: React.FC<CreateOrderScreenProps> = ({
                 <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                 </svg>
-                <span className="!text-white font-bold" style={{ color: '#ffffff' }}>Save & Book Order</span>
+                <span className="!text-white font-bold" style={{ color: '#ffffff' }}>Save &amp; Book Order</span>
               </>
             )}
           </button>
