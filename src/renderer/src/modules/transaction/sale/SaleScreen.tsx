@@ -721,11 +721,28 @@ function SaleScreen({ onClose }: { onClose: () => void }): React.JSX.Element {
   return (
     <div className="sale-screen">
       <div className="sale-window">
-        <div className="form-title-bar">
-          <span>Sale</span>
+        <div className="h-12 px-4 border-b border-slate-200 bg-white flex items-center justify-between shadow-xs shrink-0">
+          <div className="flex items-center gap-2.5">
+            <span className="text-xl">💰</span>
+            <div>
+              <h1 className="font-bold text-sm text-slate-900 tracking-tight flex items-center gap-2">
+                <span>Traditional Sale Transaction</span>
+                {header.saleNo && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 font-mono font-bold">
+                    {header.saleNo}
+                  </span>
+                )}
+              </h1>
+            </div>
+          </div>
 
-          <button className="module-close-btn" onClick={onClose}>
-            &times;
+          <button
+            type="button"
+            className="text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg p-1.5 transition-colors cursor-pointer text-sm"
+            onClick={onClose}
+            title="Close Sale"
+          >
+            ✕
           </button>
         </div>
 
@@ -820,6 +837,20 @@ function SaleScreen({ onClose }: { onClose: () => void }): React.JSX.Element {
                         setHeader((current) => ({
                           ...current,
                           dpNo: event.target.value
+                        }))
+                      }
+                    />
+                  </div>
+
+                  <div className="form-field">
+                    <label>Reminder Date</label>
+                    <input
+                      type="date"
+                      value={header.reminderDate}
+                      onChange={(event) =>
+                        setHeader((current) => ({
+                          ...current,
+                          reminderDate: event.target.value
                         }))
                       }
                     />
@@ -1006,12 +1037,22 @@ function SaleScreen({ onClose }: { onClose: () => void }): React.JSX.Element {
                   </div>
                 </div>
 
-                <div className="button-row sale-item-button-row">
-                  <button className="btn-save" onClick={handleAddItemLine}>
-                    Add Item
+                <div className="sale-item-button-row">
+                  <button
+                    type="button"
+                    className="h-8 px-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 !text-white font-bold rounded-lg shadow-xs flex items-center justify-center gap-1.5 text-xs cursor-pointer transition-all active:scale-[0.98]"
+                    style={{ color: '#ffffff' }}
+                    onClick={handleAddItemLine}
+                  >
+                    <span>+</span>
+                    <span>Add Item</span>
                   </button>
 
-                  <button className="btn-new" onClick={clearItemForm}>
+                  <button
+                    type="button"
+                    className="h-8 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg text-xs cursor-pointer transition-colors border border-slate-200"
+                    onClick={clearItemForm}
+                  >
                     Clear Item
                   </button>
                 </div>
@@ -1075,7 +1116,7 @@ function SaleScreen({ onClose }: { onClose: () => void }): React.JSX.Element {
                           <td>{formatNumber(line.majuri)}</td>
                           <td>
                             <button
-                              className="btn-delete-small"
+                              className="btn-delete-small cursor-pointer"
                               type="button"
                               onClick={() => setItemDeleteTarget(line)}
                             >
@@ -1091,27 +1132,27 @@ function SaleScreen({ onClose }: { onClose: () => void }): React.JSX.Element {
 
               <div className="sale-item-summary-row">
                 <div>
-                  <span>Pcs</span>
+                  <span>Pcs:</span>
                   <strong>{formatNumber(itemSummaryTotals.pcs)}</strong>
                 </div>
 
                 <div>
-                  <span>Gr. Wt.</span>
+                  <span>Gr. Wt:</span>
                   <strong>{formatNumber(itemSummaryTotals.grossWeight)}</strong>
                 </div>
 
                 <div>
-                  <span>Net Wt.</span>
+                  <span>Net Wt:</span>
                   <strong>{formatNumber(itemSummaryTotals.netWeight)}</strong>
                 </div>
 
                 <div>
-                  <span>Fine</span>
+                  <span>Fine:</span>
                   <strong>{formatNumber(itemFineTotal)}</strong>
                 </div>
 
                 <div>
-                  <span>Majuri</span>
+                  <span>Majuri:</span>
                   <strong>{formatNumber(itemMajuriTotal)}</strong>
                 </div>
               </div>
@@ -1230,11 +1271,21 @@ function SaleScreen({ onClose }: { onClose: () => void }): React.JSX.Element {
                   </div>
 
                   <div className="sale-payment-buttons">
-                    <button className="btn-save" onClick={handleAddPaymentLine}>
-                      Add
+                    <button
+                      type="button"
+                      className="h-7 px-3 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 !text-white font-bold rounded-md shadow-xs flex items-center justify-center gap-1 text-xs cursor-pointer transition-all active:scale-[0.98]"
+                      style={{ color: '#ffffff' }}
+                      onClick={handleAddPaymentLine}
+                    >
+                      <span>+</span>
+                      <span>Add</span>
                     </button>
 
-                    <button className="btn-new" onClick={clearPaymentForm}>
+                    <button
+                      type="button"
+                      className="h-7 px-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md text-xs cursor-pointer border border-slate-200 transition-colors"
+                      onClick={clearPaymentForm}
+                    >
                       Clear
                     </button>
                   </div>
@@ -1282,7 +1333,7 @@ function SaleScreen({ onClose }: { onClose: () => void }): React.JSX.Element {
                             <td>{line.details || '-'}</td>
                             <td>
                               <button
-                                className="table-delete"
+                                className="table-delete cursor-pointer"
                                 onClick={() => setPaymentDeleteTarget(line)}
                               >
                                 Delete
@@ -1298,15 +1349,32 @@ function SaleScreen({ onClose }: { onClose: () => void }): React.JSX.Element {
 
               <div className="sale-footer-actions">
                 <button
-                  className="btn-save"
+                  type="button"
+                  className="h-9 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-xs cursor-pointer border border-slate-200 transition-colors"
+                  onClick={() => void resetSale()}
+                  disabled={saving}
+                >
+                  ✨ New Sale
+                </button>
+
+                <button
+                  type="button"
+                  className="h-9 px-5 bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 hover:from-amber-600 hover:to-amber-800 !text-white font-bold rounded-lg shadow-sm flex items-center justify-center gap-2 text-xs cursor-pointer transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{ color: '#ffffff' }}
                   onClick={() => void handleSaveSale()}
                   disabled={saving}
                 >
-                  {saving ? 'Saving...' : 'Save Sale'}
-                </button>
-
-                <button className="btn-new" onClick={() => void resetSale()} disabled={saving}>
-                  New
+                  {saving ? (
+                    <>
+                      <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Saving Sale...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>💾</span>
+                      <span>Save Sale Transaction</span>
+                    </>
+                  )}
                 </button>
               </div>
             </div>

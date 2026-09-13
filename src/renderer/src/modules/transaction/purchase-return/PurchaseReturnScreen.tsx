@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import AppAlert from '../../../components/ui/AppAlert'
 import AppConfirmDialog from '../../../components/ui/AppConfirmDialog'
 import { getFriendlyErrorMessage } from '../../../utils/getFriendlyErrorMessage'
@@ -95,10 +95,8 @@ function formatNumber(value: number): string {
 
 function formatDate(value: string): string {
   if (!value) return ''
-
   const [year, month, day] = value.split('-')
   if (!year || !month || !day) return value
-
   return `${day}/${month}/${year}`
 }
 
@@ -123,9 +121,8 @@ function PurchaseReturnScreen({ onClose }: { onClose: () => void }): React.JSX.E
 
   const [editingId, setEditingId] = useState<string | null>(null)
   const [itemDeleteIndex, setItemDeleteIndex] = useState<number | null>(null)
-  const [returnDeleteTarget, setReturnDeleteTarget] = useState<PurchaseReturnRegisterRecord | null>(
-    null
-  )
+  const [returnDeleteTarget, setReturnDeleteTarget] =
+    useState<PurchaseReturnRegisterRecord | null>(null)
   const [detailRecord, setDetailRecord] = useState<SavedPurchaseReturnRecord | null>(null)
 
   const [searchText, setSearchText] = useState('')
@@ -158,7 +155,10 @@ function PurchaseReturnScreen({ onClose }: { onClose: () => void }): React.JSX.E
     [designs, header.metalType]
   )
   const purchasesForAccount = useMemo(
-    () => purchases.filter((purchase) => !header.accountId || purchase.accountId === header.accountId),
+    () =>
+      purchases.filter(
+        (purchase) => !header.accountId || purchase.accountId === header.accountId
+      ),
     [purchases, header.accountId]
   )
 
@@ -178,17 +178,22 @@ function PurchaseReturnScreen({ onClose }: { onClose: () => void }): React.JSX.E
   const totals = useMemo(() => {
     const itemFineTotal = itemLines.reduce((sum, line) => sum + Number(line.fine || 0), 0)
     const itemMajuriTotal = itemLines.reduce((sum, line) => sum + Number(line.majuri || 0), 0)
+    const totalPcs = itemLines.reduce((sum, line) => sum + Number(line.pcs || 0), 0)
+    const totalGross = itemLines.reduce((sum, line) => sum + Number(line.grossWeight || 0), 0)
+    const totalNet = itemLines.reduce((sum, line) => sum + Number(line.netWeight || 0), 0)
 
-    // Purchase Return reverses a Purchase's Jama (credit): it posts the
-    // same totals as a Nave (debit), so they ADD BACK to the balance
-    // instead of subtracting from it.
+    // Purchase Return reverses a Purchase's Jama (credit): it posts the same totals
+    // as a Nave (debit), so they SUBTRACT from the balance we owe the supplier.
     const closingGoldFine =
-      header.metalType === 'Gold' ? oldBalance.goldFine + itemFineTotal : oldBalance.goldFine
+      header.metalType === 'Gold' ? oldBalance.goldFine - itemFineTotal : oldBalance.goldFine
     const closingSilverFine =
-      header.metalType === 'Silver' ? oldBalance.silverFine + itemFineTotal : oldBalance.silverFine
-    const closingCash = oldBalance.cash + itemMajuriTotal
+      header.metalType === 'Silver' ? oldBalance.silverFine - itemFineTotal : oldBalance.silverFine
+    const closingCash = oldBalance.cash - itemMajuriTotal
 
     return {
+      totalPcs,
+      totalGross,
+      totalNet,
       itemFineTotal,
       itemMajuriTotal,
       closingGoldFine,
@@ -319,6 +324,24 @@ function PurchaseReturnScreen({ onClose }: { onClose: () => void }): React.JSX.E
     }))
   }
 
+  const handleBarcodeKeyDown = (e: KeyboardEvent<HTMLInputElement>): void => {
+    if (e.key === 'Enter' && itemForm.barcode.trim()) {
+      e.preventDefault()
+      const query = itemForm.barcode.trim().toLowerCase()
+      const matched = filteredItems.find(
+        (item) =>
+          item.barcodeValue?.toLowerCase() === query ||
+          item.itemName.toLowerCase() === query
+      )
+      if (matched) {
+        handleItemChange(matched.id)
+        showAlert('success', `Item selected: ${matched.itemName}`)
+      } else {
+        showAlert('warning', `No item matching barcode "${itemForm.barcode}"`)
+      }
+    }
+  }
+
   const addItemLine = (): void => {
     if (!itemForm.itemId) {
       showAlert('warning', 'Please select item.')
@@ -423,7 +446,7 @@ function PurchaseReturnScreen({ onClose }: { onClose: () => void }): React.JSX.E
     }
 
     if (!header.accountId) {
-      showAlert('warning', 'Please select account.')
+      showAlert('warning', 'Please select supplier account.')
       return
     }
 
@@ -445,7 +468,9 @@ function PurchaseReturnScreen({ onClose }: { onClose: () => void }): React.JSX.E
 
       showAlert(
         'success',
-        editingId ? 'Purchase return updated successfully.' : 'Purchase return saved successfully.'
+        editingId
+          ? 'Purchase return updated successfully.'
+          : 'Purchase return saved successfully.'
       )
       await resetForm()
       await loadReturns()
@@ -553,262 +578,520 @@ function PurchaseReturnScreen({ onClose }: { onClose: () => void }): React.JSX.E
   }, [loadInitialData])
 
   return (
-    <div className="purchase-screen">
-      <div className="purchase-window">
-        <div className="form-title-bar">
-          <span>{editingId ? `Edit Purchase Return ${header.returnNo}` : 'Purchase Return'}</span>
-          <button className="module-close-btn" type="button" onClick={onClose}>
-            &times;
-          </button>
+    <div className="h-full flex flex-col bg-[var(--color-background-app,#f8fafc)] text-slate-900 overflow-hidden font-sans select-none">
+      {/* ── TOP HEADER BAR ── */}
+      <header className="h-13 px-4 border-b border-slate-200/90 bg-white flex items-center justify-between shadow-xs shrink-0 z-10">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-700 text-base shadow-2xs font-bold">
+            🔄
+          </div>
+          <div>
+            <h1 className="font-bold text-sm text-slate-900 tracking-tight flex items-center gap-2">
+              <span>{editingId ? `Edit Purchase Return ${header.returnNo}` : 'Purchase Return Transaction'}</span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full border border-amber-200 bg-amber-50 text-amber-800 font-mono font-bold">
+                {header.returnNo || 'NEW'}
+              </span>
+              {editingId && (
+                <span className="text-[10px] px-2 py-0.5 rounded-full border border-rose-200 bg-rose-50 text-rose-700 font-bold uppercase">
+                  Editing Mode
+                </span>
+              )}
+            </h1>
+            <p className="text-[11px] text-slate-500 font-medium leading-none mt-0.5">
+              Process supplier returns &amp; post Nave debit effect to ledger
+            </p>
+          </div>
         </div>
 
-        <div className="purchase-body">
-          <AppAlert type={alertType} message={alertMessage} onClose={() => setAlertMessage('')} />
+        <div className="flex items-center gap-2">
+          {itemLines.length > 0 && (
+            <button
+              type="button"
+              onClick={() => void resetForm()}
+              className="h-8 px-3 text-xs font-semibold bg-white border border-slate-200 text-slate-600 hover:bg-rose-50 hover:border-rose-200 hover:text-rose-700 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              ✕ Clear Form
+            </button>
+          )}
 
-          <div className="purchase-main-layout">
-            <div className="purchase-left">
-              <div className="purchase-panel">
-                <div className="section-title">Purchase Return Header</div>
-                <div className="purchase-header-grid">
-                  <Field label="Return No">
-                    <input value={header.returnNo} disabled />
-                  </Field>
-                  <Field label="Date">
-                    <input
-                      type="date"
-                      value={header.returnDate}
-                      onChange={(event) =>
-                        setHeader((current) => ({ ...current, returnDate: event.target.value }))
-                      }
-                    />
-                  </Field>
-                  <Field label="Account">
-                    <select
-                      value={header.accountId}
-                      onChange={(event) => handleAccountChange(event.target.value)}
-                    >
-                      <option value="">Select Account</option>
-                      {activeAccounts.map((account) => (
-                        <option key={account.id} value={account.id}>
-                          {account.accountName}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-                  <Field label="Phone">
-                    <input
-                      value={header.phone}
-                      onChange={(event) =>
-                        setHeader((current) => ({ ...current, phone: event.target.value }))
-                      }
-                    />
-                  </Field>
-                  <Field label="Metal">
-                    <select
-                      value={header.metalType}
-                      onChange={(event) => handleMetalChange(event.target.value as MetalType)}
-                    >
-                      <option>Gold</option>
-                      <option>Silver</option>
-                    </select>
-                  </Field>
-                  <Field label="Against Purchase (optional)">
-                    <select
-                      value={header.againstPurchaseId}
-                      onChange={(event) =>
-                        setHeader((current) => ({
-                          ...current,
-                          againstPurchaseId: event.target.value
-                        }))
-                      }
-                    >
-                      <option value="">Standalone Return</option>
-                      {purchasesForAccount.map((purchase) => (
-                        <option key={purchase.id} value={purchase.id}>
-                          {purchase.purchaseNo} - {formatDate(purchase.purchaseDate)}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-                  <Field label="Narration">
-                    <input
-                      value={header.narration}
-                      onChange={(event) =>
-                        setHeader((current) => ({ ...current, narration: event.target.value }))
-                      }
-                      placeholder="Optional"
-                    />
-                  </Field>
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="h-8 w-8 flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer text-sm font-bold"
+              title="Close Tab"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+      </header>
+
+      {/* Global Alert Notification */}
+      <AppAlert type={alertType} message={alertMessage} onClose={() => setAlertMessage('')} />
+
+      {/* ── MAIN SCROLLABLE CONTENT WORKSPACE ── */}
+      <div className="flex-1 p-4 overflow-y-auto space-y-4">
+        {/* Top Section: Two-Column Form & Summary */}
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 items-start">
+          {/* Left Column (8 cols): Header & Item Entry & Table */}
+          <div className="xl:col-span-8 flex flex-col gap-4">
+            {/* Purchase Return Header Card */}
+            <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-4">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-4 bg-amber-500 rounded-full inline-block" />
+                  <h2 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                    Purchase Return Header
+                  </h2>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] text-slate-500 font-medium">Metal:</span>
+                  <div className="inline-flex rounded-lg border border-slate-200 p-0.5 bg-slate-50">
+                    {(['Gold', 'Silver', 'Diamond', 'Other'] as MetalType[]).map((m) => (
+                      <button
+                        key={m}
+                        type="button"
+                        onClick={() => handleMetalChange(m)}
+                        className={`px-2 py-0.5 text-[11px] font-semibold rounded-md transition-all cursor-pointer ${
+                          header.metalType === m
+                            ? 'bg-white text-amber-800 shadow-2xs border border-slate-200/80'
+                            : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        {m}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
-              <div className="purchase-panel">
-                <div className="section-title">Item Entry</div>
-                <div className="purchase-item-grid">
-                  <Field label="Item">
-                    <select
-                      value={itemForm.itemId}
-                      onChange={(event) => handleItemChange(event.target.value)}
-                    >
-                      <option value="">Select Item</option>
-                      {filteredItems.map((item) => (
-                        <option key={item.id} value={item.id}>
-                          {item.itemName}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-                  <Field label="Stamp">
-                    <select
-                      value={itemForm.stampId}
-                      onChange={(event) =>
-                        setItemForm((current) => ({ ...current, stampId: event.target.value }))
-                      }
-                    >
-                      <option value="">None</option>
-                      {filteredStamps.map((stamp) => (
-                        <option key={stamp.id} value={stamp.id}>
-                          {stamp.stampName}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-                  <Field label="Design">
-                    <select
-                      value={itemForm.designId}
-                      onChange={(event) =>
-                        setItemForm((current) => ({ ...current, designId: event.target.value }))
-                      }
-                    >
-                      <option value="">None</option>
-                      {filteredDesigns.map((design) => (
-                        <option key={design.id} value={design.id}>
-                          {design.designName}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                <div>
+                  <label className="text-[11px] font-semibold text-slate-600 block mb-1 uppercase tracking-wide">
+                    Return No
+                  </label>
+                  <input
+                    value={header.returnNo}
+                    disabled
+                    className="w-full h-8.5 px-2.5 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-mono font-bold"
+                  />
+                </div>
 
-                  <NumberField
-                    label="Pcs"
+                <div>
+                  <label className="text-[11px] font-semibold text-slate-600 block mb-1 uppercase tracking-wide">
+                    Date
+                  </label>
+                  <input
+                    type="date"
+                    value={header.returnDate}
+                    onChange={(e) => setHeader((c) => ({ ...c, returnDate: e.target.value }))}
+                    className="w-full h-8.5 px-2.5 text-xs bg-white border border-slate-200 rounded-lg text-slate-800 focus:ring-1 focus:ring-amber-500 focus:border-amber-500 transition-colors shadow-2xs font-medium"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-semibold text-slate-600 block mb-1 uppercase tracking-wide">
+                    Supplier Account
+                  </label>
+                  <select
+                    value={header.accountId}
+                    onChange={(e) => handleAccountChange(e.target.value)}
+                    className="w-full h-8.5 px-2.5 text-xs bg-white border border-slate-200 rounded-lg text-slate-800 focus:ring-1 focus:ring-amber-500 focus:border-amber-500 transition-colors shadow-2xs font-medium"
+                  >
+                    <option value="">Select Supplier</option>
+                    {activeAccounts.map((acc) => (
+                      <option key={acc.id} value={acc.id}>
+                        {acc.accountName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-semibold text-slate-600 block mb-1 uppercase tracking-wide">
+                    Phone No
+                  </label>
+                  <input
+                    value={header.phone}
+                    onChange={(e) => setHeader((c) => ({ ...c, phone: e.target.value }))}
+                    placeholder="Mobile number"
+                    className="w-full h-8.5 px-2.5 text-xs bg-white border border-slate-200 rounded-lg text-slate-800 focus:ring-1 focus:ring-amber-500 focus:border-amber-500 transition-colors shadow-2xs"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="text-[11px] font-semibold text-slate-600 block mb-1 uppercase tracking-wide">
+                    Against Purchase (Optional)
+                  </label>
+                  <select
+                    value={header.againstPurchaseId}
+                    onChange={(e) => setHeader((c) => ({ ...c, againstPurchaseId: e.target.value }))}
+                    className="w-full h-8.5 px-2.5 text-xs bg-white border border-slate-200 rounded-lg text-slate-800 focus:ring-1 focus:ring-amber-500 focus:border-amber-500 transition-colors shadow-2xs"
+                  >
+                    <option value="">Standalone Return (No previous purchase bill)</option>
+                    {purchasesForAccount.map((purchase) => (
+                      <option key={purchase.id} value={purchase.id}>
+                        {purchase.purchaseNo} - {formatDate(purchase.purchaseDate)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="text-[11px] font-semibold text-slate-600 block mb-1 uppercase tracking-wide">
+                    Narration / Notes
+                  </label>
+                  <input
+                    value={header.narration}
+                    onChange={(e) => setHeader((c) => ({ ...c, narration: e.target.value }))}
+                    placeholder="Optional notes or return remarks"
+                    className="w-full h-8.5 px-2.5 text-xs bg-white border border-slate-200 rounded-lg text-slate-800 focus:ring-1 focus:ring-amber-500 focus:border-amber-500 transition-colors shadow-2xs"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Item Entry Card */}
+            <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-4">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-4 bg-amber-500 rounded-full inline-block" />
+                  <h2 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                    Item Entry
+                  </h2>
+                </div>
+                <span className="text-[11px] text-slate-400 font-medium">
+                  Scan barcode or select an item to return to supplier
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-9 gap-2.5 items-end">
+                <div className="col-span-2 sm:col-span-2">
+                  <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase tracking-wider">
+                    Barcode
+                  </label>
+                  <input
+                    value={itemForm.barcode}
+                    onChange={(e) => setItemForm((c) => ({ ...c, barcode: e.target.value }))}
+                    onKeyDown={handleBarcodeKeyDown}
+                    placeholder="Scan / Enter"
+                    className="w-full h-8 px-2 text-xs bg-white border border-slate-200 rounded-lg focus:ring-1 focus:ring-amber-500 focus:border-amber-500 font-mono text-slate-800 shadow-2xs"
+                  />
+                </div>
+
+                <div className="col-span-2 sm:col-span-2">
+                  <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase tracking-wider">
+                    Item Name *
+                  </label>
+                  <select
+                    value={itemForm.itemId}
+                    onChange={(e) => handleItemChange(e.target.value)}
+                    className="w-full h-8 px-2 text-xs bg-white border border-slate-200 rounded-lg focus:ring-1 focus:ring-amber-500 focus:border-amber-500 font-medium text-slate-800 shadow-2xs"
+                  >
+                    <option value="">Select Item</option>
+                    {filteredItems.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.itemName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase tracking-wider">
+                    Stamp
+                  </label>
+                  <select
+                    value={itemForm.stampId}
+                    onChange={(e) => setItemForm((c) => ({ ...c, stampId: e.target.value }))}
+                    className="w-full h-8 px-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs"
+                  >
+                    <option value="">None</option>
+                    {filteredStamps.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.stampName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase tracking-wider">
+                    Design
+                  </label>
+                  <select
+                    value={itemForm.designId}
+                    onChange={(e) => setItemForm((c) => ({ ...c, designId: e.target.value }))}
+                    className="w-full h-8 px-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs"
+                  >
+                    <option value="">None</option>
+                    {filteredDesigns.map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.designName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase tracking-wider">
+                    Pcs *
+                  </label>
+                  <input
                     value={itemForm.pcs}
-                    onChange={(value) => setItemForm((current) => ({ ...current, pcs: value }))}
-                    onNumberChange={handleNumberChange}
+                    onChange={(e) => handleNumberChange(e.target.value, (v) => setItemForm((c) => ({ ...c, pcs: v })))}
+                    placeholder="1"
+                    className="w-full h-8 px-2 text-xs bg-white border border-slate-200 rounded-lg focus:ring-1 focus:ring-amber-500 focus:border-amber-500 text-right font-mono text-slate-800 shadow-2xs"
                   />
-                  <NumberField
-                    label="Gross Wt."
-                    value={itemForm.grossWeight}
-                    onChange={(value) =>
-                      setItemForm((current) => ({ ...current, grossWeight: value }))
-                    }
-                    onNumberChange={handleNumberChange}
-                  />
-                  <NumberField
-                    label="Pack Wt."
-                    value={itemForm.packWeight}
-                    onChange={(value) =>
-                      setItemForm((current) => ({ ...current, packWeight: value }))
-                    }
-                    onNumberChange={handleNumberChange}
-                  />
-                  <ReadOnlyField label="Less Wt." value={formatNumber(itemPreview.lessWeight)} />
-                  <NumberField
-                    label="Add Wt."
-                    value={itemForm.addWeight}
-                    onChange={(value) =>
-                      setItemForm((current) => ({ ...current, addWeight: value }))
-                    }
-                    onNumberChange={handleNumberChange}
-                  />
-                  <ReadOnlyField label="Net Wt." value={formatNumber(itemPreview.netWeight)} />
-                  <NumberField
-                    label="Tunch"
-                    value={itemForm.tunch}
-                    onChange={(value) => setItemForm((current) => ({ ...current, tunch: value }))}
-                    onNumberChange={handleNumberChange}
-                  />
-                  <NumberField
-                    label="Wstg"
-                    value={itemForm.wastage}
-                    onChange={(value) => setItemForm((current) => ({ ...current, wastage: value }))}
-                    onNumberChange={handleNumberChange}
-                  />
-                  <ReadOnlyField label="Hishob" value={formatNumber(itemPreview.hishob)} />
-                  <ReadOnlyField label="Fine" value={formatNumber(itemPreview.fine)} />
-                  <NumberField
-                    label="Lab Rate"
-                    value={itemForm.labourRate}
-                    onChange={(value) =>
-                      setItemForm((current) => ({ ...current, labourRate: value }))
-                    }
-                    onNumberChange={handleNumberChange}
-                  />
-                  <Field label="Lab Type">
-                    <select
-                      value={itemForm.labourRateType}
-                      onChange={(event) =>
-                        setItemForm((current) => ({
-                          ...current,
-                          labourRateType: getLabourRateType(event.target.value)
-                        }))
-                      }
-                    >
-                      <option>Kg</option>
-                      <option>Gm</option>
-                      <option>Pcs</option>
-                    </select>
-                  </Field>
-                  <ReadOnlyField label="Majuri" value={formatNumber(itemPreview.majuri)} />
                 </div>
-                <div className="button-row purchase-button-row">
-                  <button className="btn-save" type="button" onClick={addItemLine}>
-                    Add Item
-                  </button>
+
+                <div>
+                  <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase tracking-wider">
+                    Gross Wt *
+                  </label>
+                  <input
+                    value={itemForm.grossWeight}
+                    onChange={(e) => handleNumberChange(e.target.value, (v) => setItemForm((c) => ({ ...c, grossWeight: v })))}
+                    placeholder="0.000"
+                    className="w-full h-8 px-2 text-xs bg-white border border-slate-200 rounded-lg focus:ring-1 focus:ring-amber-500 focus:border-amber-500 text-right font-mono text-slate-800 shadow-2xs font-semibold"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase tracking-wider">
+                    Pack Wt
+                  </label>
+                  <input
+                    value={itemForm.packWeight}
+                    onChange={(e) => handleNumberChange(e.target.value, (v) => setItemForm((c) => ({ ...c, packWeight: v })))}
+                    placeholder="0.000"
+                    className="w-full h-8 px-2 text-xs bg-white border border-slate-200 rounded-lg focus:ring-1 focus:ring-amber-500 focus:border-amber-500 text-right font-mono text-slate-800 shadow-2xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-slate-500 block mb-1 uppercase tracking-wider">
+                    Less Wt
+                  </label>
+                  <input
+                    value={formatNumber(itemPreview.lessWeight)}
+                    readOnly
+                    className="w-full h-8 px-2 text-xs bg-slate-50 border border-slate-200 rounded-lg text-right font-mono text-slate-700"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase tracking-wider">
+                    Add Wt
+                  </label>
+                  <input
+                    value={itemForm.addWeight}
+                    onChange={(e) => handleNumberChange(e.target.value, (v) => setItemForm((c) => ({ ...c, addWeight: v })))}
+                    placeholder="0.000"
+                    className="w-full h-8 px-2 text-xs bg-white border border-slate-200 rounded-lg focus:ring-1 focus:ring-amber-500 focus:border-amber-500 text-right font-mono text-slate-800 shadow-2xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-slate-700 block mb-1 uppercase tracking-wider">
+                    Net Wt
+                  </label>
+                  <input
+                    value={formatNumber(itemPreview.netWeight)}
+                    readOnly
+                    className="w-full h-8 px-2 text-xs bg-amber-50/50 border border-amber-200 rounded-lg text-right font-mono text-amber-900 font-bold"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase tracking-wider">
+                    Tunch
+                  </label>
+                  <input
+                    value={itemForm.tunch}
+                    onChange={(e) => handleNumberChange(e.target.value, (v) => setItemForm((c) => ({ ...c, tunch: v })))}
+                    placeholder="100"
+                    className="w-full h-8 px-2 text-xs bg-white border border-slate-200 rounded-lg focus:ring-1 focus:ring-amber-500 focus:border-amber-500 text-right font-mono text-slate-800 shadow-2xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase tracking-wider">
+                    Wstg
+                  </label>
+                  <input
+                    value={itemForm.wastage}
+                    onChange={(e) => handleNumberChange(e.target.value, (v) => setItemForm((c) => ({ ...c, wastage: v })))}
+                    placeholder="0"
+                    className="w-full h-8 px-2 text-xs bg-white border border-slate-200 rounded-lg focus:ring-1 focus:ring-amber-500 focus:border-amber-500 text-right font-mono text-slate-800 shadow-2xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-slate-500 block mb-1 uppercase tracking-wider">
+                    Hishob
+                  </label>
+                  <input
+                    value={formatNumber(itemPreview.hishob)}
+                    readOnly
+                    className="w-full h-8 px-2 text-xs bg-slate-50 border border-slate-200 rounded-lg text-right font-mono text-slate-700"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-amber-800 block mb-1 uppercase tracking-wider">
+                    Fine
+                  </label>
+                  <input
+                    value={formatNumber(itemPreview.fine)}
+                    readOnly
+                    className="w-full h-8 px-2 text-xs bg-amber-50 border border-amber-200 rounded-lg text-right font-mono text-amber-900 font-bold"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase tracking-wider">
+                    Lab Rate
+                  </label>
+                  <input
+                    value={itemForm.labourRate}
+                    onChange={(e) => handleNumberChange(e.target.value, (v) => setItemForm((c) => ({ ...c, labourRate: v })))}
+                    placeholder="0"
+                    className="w-full h-8 px-2 text-xs bg-white border border-slate-200 rounded-lg focus:ring-1 focus:ring-amber-500 focus:border-amber-500 text-right font-mono text-slate-800 shadow-2xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase tracking-wider">
+                    Lab Type
+                  </label>
+                  <select
+                    value={itemForm.labourRateType}
+                    onChange={(e) => setItemForm((c) => ({ ...c, labourRateType: getLabourRateType(e.target.value) }))}
+                    className="w-full h-8 px-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs"
+                  >
+                    <option>Kg</option>
+                    <option>Gm</option>
+                    <option>Pcs</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-slate-700 block mb-1 uppercase tracking-wider">
+                    Majuri
+                  </label>
+                  <input
+                    value={formatNumber(itemPreview.majuri)}
+                    readOnly
+                    className="w-full h-8 px-2 text-xs bg-slate-50 border border-slate-200 rounded-lg text-right font-mono text-slate-800 font-bold"
+                  />
+                </div>
+
+                <div className="col-span-2 sm:col-span-2">
+                  <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase tracking-wider">
+                    Remark
+                  </label>
+                  <input
+                    value={itemForm.remark}
+                    onChange={(e) => setItemForm((c) => ({ ...c, remark: e.target.value }))}
+                    placeholder="Note / remark"
+                    className="w-full h-8 px-2 text-xs bg-white border border-slate-200 rounded-lg focus:ring-1 focus:ring-amber-500 focus:border-amber-500 text-slate-800 shadow-2xs"
+                  />
                 </div>
               </div>
 
-              <div className="table-panel purchase-table-panel">
-                <table>
-                  <thead>
+              <div className="flex items-center gap-2.5 mt-4 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={addItemLine}
+                  className="h-9 px-5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 active:scale-[0.98] text-white font-bold text-xs shadow-md shadow-amber-500/20 flex items-center justify-center gap-2 cursor-pointer transition-all"
+                  style={{ color: '#ffffff' }}
+                >
+                  <span>➕</span>
+                  <span>Add Item to Return</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setItemForm(initialItemForm)}
+                  className="h-9 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors cursor-pointer"
+                >
+                  Clear Fields
+                </button>
+              </div>
+            </div>
+
+            {/* Added Return Items Table Card */}
+            <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
+              <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-4 bg-amber-500 rounded-full inline-block" />
+                  <h2 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                    Return Items ({itemLines.length})
+                  </h2>
+                </div>
+                {itemLines.length > 0 && (
+                  <span className="text-xs font-semibold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                    Fine Total: {formatNumber(totals.itemFineTotal)}
+                  </span>
+                )}
+              </div>
+
+              <div className="overflow-x-auto max-h-[280px]">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead className="bg-slate-50 text-slate-600 uppercase text-[10px] font-bold tracking-wider sticky top-0 border-b border-slate-200">
                     <tr>
-                      <th>Sr</th>
-                      <th>Item</th>
-                      <th>Pcs</th>
-                      <th>Gross</th>
-                      <th>Less</th>
-                      <th>Net</th>
-                      <th>Tunch</th>
-                      <th>Wstg</th>
-                      <th>Fine</th>
-                      <th>Majuri</th>
-                      <th>Action</th>
+                      <th className="py-2.5 px-3">#</th>
+                      <th className="py-2.5 px-3">Barcode</th>
+                      <th className="py-2.5 px-3">Item</th>
+                      <th className="py-2.5 px-3 text-right">Pcs</th>
+                      <th className="py-2.5 px-3 text-right">Gross</th>
+                      <th className="py-2.5 px-3 text-right">Less</th>
+                      <th className="py-2.5 px-3 text-right">Net</th>
+                      <th className="py-2.5 px-3 text-right">Tunch</th>
+                      <th className="py-2.5 px-3 text-right">Wstg</th>
+                      <th className="py-2.5 px-3 text-right text-amber-800 font-bold">Fine</th>
+                      <th className="py-2.5 px-3 text-right">Majuri</th>
+                      <th className="py-2.5 px-3">Remark</th>
+                      <th className="py-2.5 px-3 text-center">Action</th>
                     </tr>
                   </thead>
-                  <tbody>
+
+                  <tbody className="divide-y divide-slate-100 font-medium text-slate-800">
                     {itemLines.length === 0 ? (
                       <tr>
-                        <td colSpan={11} className="empty-row">
-                          No item added.
+                        <td colSpan={13} className="py-8 text-center text-slate-400">
+                          <div className="flex flex-col items-center justify-center gap-1">
+                            <span className="text-2xl">📦</span>
+                            <span className="font-semibold text-xs text-slate-500">
+                              No items added to return yet
+                            </span>
+                            <span className="text-[11px] text-slate-400">
+                              Use the item entry form above to add items
+                            </span>
+                          </div>
                         </td>
                       </tr>
                     ) : (
                       itemLines.map((line, index) => (
-                        <tr key={line.lineNo}>
-                          <td>{line.lineNo}</td>
-                          <td>{line.itemName}</td>
-                          <td>{formatNumber(line.pcs)}</td>
-                          <td>{formatNumber(line.grossWeight)}</td>
-                          <td>{formatNumber(line.lessWeight)}</td>
-                          <td>{formatNumber(line.netWeight)}</td>
-                          <td>{formatNumber(line.tunch)}</td>
-                          <td>{formatNumber(line.wastage)}</td>
-                          <td>{formatNumber(line.fine)}</td>
-                          <td>{formatNumber(line.majuri)}</td>
-                          <td>
+                        <tr key={line.lineNo} className="hover:bg-slate-50/70 transition-colors">
+                          <td className="py-2 px-3 text-slate-400 font-mono text-[11px]">{line.lineNo}</td>
+                          <td className="py-2 px-3 font-mono text-[11px] text-slate-600">{line.barcode || '-'}</td>
+                          <td className="py-2 px-3 font-bold text-slate-900">{line.itemName}</td>
+                          <td className="py-2 px-3 text-right font-mono">{formatNumber(line.pcs)}</td>
+                          <td className="py-2 px-3 text-right font-mono">{formatNumber(line.grossWeight)}</td>
+                          <td className="py-2 px-3 text-right font-mono text-slate-500">{formatNumber(line.lessWeight)}</td>
+                          <td className="py-2 px-3 text-right font-mono font-bold text-slate-900">{formatNumber(line.netWeight)}</td>
+                          <td className="py-2 px-3 text-right font-mono">{formatNumber(line.tunch)}</td>
+                          <td className="py-2 px-3 text-right font-mono">{formatNumber(line.wastage)}</td>
+                          <td className="py-2 px-3 text-right font-mono font-bold text-amber-800">{formatNumber(line.fine)}</td>
+                          <td className="py-2 px-3 text-right font-mono font-semibold text-slate-800">{formatNumber(line.majuri)}</td>
+                          <td className="py-2 px-3 text-slate-500 text-[11px] max-w-[120px] truncate">{line.remark || '-'}</td>
+                          <td className="py-2 px-3 text-center">
                             <button
-                              className="btn-delete-small"
                               type="button"
                               onClick={() => setItemDeleteIndex(index)}
+                              className="px-2 py-1 text-[11px] font-bold rounded-md bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 transition-colors cursor-pointer"
                             >
                               Remove
                             </button>
@@ -817,180 +1100,284 @@ function PurchaseReturnScreen({ onClose }: { onClose: () => void }): React.JSX.E
                       ))
                     )}
                   </tbody>
+
+                  {itemLines.length > 0 && (
+                    <tfoot className="bg-slate-50/80 font-bold border-t border-slate-200 text-slate-900 sticky bottom-0">
+                      <tr>
+                        <td colSpan={3} className="py-2.5 px-3 text-right font-semibold text-slate-600">
+                          Total ({itemLines.length} items):
+                        </td>
+                        <td className="py-2.5 px-3 text-right font-mono">{formatNumber(totals.totalPcs)}</td>
+                        <td className="py-2.5 px-3 text-right font-mono">{formatNumber(totals.totalGross)}</td>
+                        <td className="py-2.5 px-3 text-right font-mono">-</td>
+                        <td className="py-2.5 px-3 text-right font-mono font-bold">{formatNumber(totals.totalNet)}</td>
+                        <td colSpan={2} className="py-2.5 px-3 text-right">-</td>
+                        <td className="py-2.5 px-3 text-right font-mono font-bold text-amber-800">{formatNumber(totals.itemFineTotal)}</td>
+                        <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-900">{formatNumber(totals.itemMajuriTotal)}</td>
+                        <td colSpan={2}></td>
+                      </tr>
+                    </tfoot>
+                  )}
                 </table>
-              </div>
-            </div>
-
-            <div className="purchase-right">
-              <div className="purchase-balance-card">
-                <div className="purchase-balance-title">Supplier Balance</div>
-                <div className="purchase-account-name">
-                  {selectedAccount?.accountName || 'No account selected'}
-                </div>
-
-                <BalanceLine label="Old Gold Fine" value={oldBalance.goldFine} />
-                <BalanceLine label="Old Silver Fine" value={oldBalance.silverFine} />
-                <BalanceLine label="Old Cash" value={oldBalance.cash} />
-                <BalanceLine label="Old Bank" value={oldBalance.bank} />
-                <BalanceLine label="Old Anamat" value={oldBalance.anamat} />
-
-                <div className="purchase-balance-divider" />
-
-                <BalanceLine label="Return Fine Nave" value={totals.itemFineTotal} />
-                <BalanceLine label="Return Majuri Nave" value={totals.itemMajuriTotal} />
-
-                <div className="purchase-balance-divider" />
-
-                <BalanceLine label="Closing Gold Fine" value={totals.closingGoldFine} strong />
-                <BalanceLine label="Closing Silver Fine" value={totals.closingSilverFine} strong />
-                <BalanceLine label="Closing Cash" value={totals.closingCash} strong />
-                <BalanceLine label="Closing Bank" value={totals.closingBank} strong />
-                <BalanceLine label="Closing Anamat" value={totals.closingAnamat} strong />
-              </div>
-
-              <div className="purchase-action-card">
-                <button
-                  className="btn-save purchase-save-btn"
-                  type="button"
-                  onClick={() => void handleSave()}
-                  disabled={saving || loading}
-                >
-                  {saving ? 'Saving...' : editingId ? 'Update Return' : 'Save Return'}
-                </button>
-                <button
-                  className="btn-new purchase-reset-btn"
-                  type="button"
-                  onClick={() => void resetForm()}
-                  disabled={saving}
-                >
-                  New Return
-                </button>
-                <div className="screen-help-text">
-                  Purchase Return removes stock. Return item posts Nave to supplier account,
-                  reversing the Jama that the original Purchase created.
-                </div>
               </div>
             </div>
           </div>
 
-          <div className="approval-list-panel">
-            <div className="section-title">Saved Purchase Returns</div>
+          {/* Right Column (4 cols): Supplier Balance & Action Card */}
+          <div className="xl:col-span-4 flex flex-col gap-4">
+            {/* Supplier Balance Breakdown Card */}
+            <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-4">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-4 bg-amber-500 rounded-full inline-block" />
+                  <h2 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                    Supplier Balance
+                  </h2>
+                </div>
+                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-50 text-blue-800 border border-blue-200">
+                  Nave (Debit) Effect
+                </span>
+              </div>
 
-            <div className="approval-toolbar">
-              <div className="list-search">
-                <label htmlFor="purchase-return-search">Search</label>
+              <div className="mt-3 p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center gap-2">
+                <span className="text-base">🏢</span>
+                <div className="truncate">
+                  <span className="text-[10px] text-slate-500 uppercase font-bold block">Selected Supplier</span>
+                  <span className="font-bold text-xs text-slate-900 truncate block">
+                    {selectedAccount?.accountName || 'No supplier selected'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Balances List */}
+              <div className="mt-3 space-y-1.5 text-xs">
+                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider pt-1">
+                  Previous Ledger Balances
+                </div>
+                <div className="flex items-center justify-between text-slate-600">
+                  <span>Old Gold Fine</span>
+                  <span className="font-mono font-medium">{formatNumber(oldBalance.goldFine)}</span>
+                </div>
+                <div className="flex items-center justify-between text-slate-600">
+                  <span>Old Silver Fine</span>
+                  <span className="font-mono font-medium">{formatNumber(oldBalance.silverFine)}</span>
+                </div>
+                <div className="flex items-center justify-between text-slate-600">
+                  <span>Old Cash</span>
+                  <span className="font-mono font-medium">{formatNumber(oldBalance.cash)}</span>
+                </div>
+                <div className="flex items-center justify-between text-slate-600">
+                  <span>Old Bank</span>
+                  <span className="font-mono font-medium">{formatNumber(oldBalance.bank)}</span>
+                </div>
+                <div className="flex items-center justify-between text-slate-600">
+                  <span>Old Anamat</span>
+                  <span className="font-mono font-medium">{formatNumber(oldBalance.anamat)}</span>
+                </div>
+
+                <div className="my-2 border-t border-dashed border-slate-200" />
+
+                <div className="text-[10px] font-bold text-blue-700 uppercase tracking-wider pt-0.5">
+                  This Return Transaction (Nave)
+                </div>
+                <div className="flex items-center justify-between text-blue-800 font-semibold bg-blue-50/60 px-2 py-1 rounded-lg">
+                  <span>Return Fine Nave</span>
+                  <span className="font-mono">{formatNumber(totals.itemFineTotal)}</span>
+                </div>
+                <div className="flex items-center justify-between text-slate-800 font-semibold bg-slate-50 px-2 py-1 rounded-lg">
+                  <span>Return Majuri Nave</span>
+                  <span className="font-mono">{formatNumber(totals.itemMajuriTotal)}</span>
+                </div>
+
+                <div className="my-2 border-t border-slate-200" />
+
+                <div className="text-[10px] font-bold text-slate-800 uppercase tracking-wider pt-0.5">
+                  Net Closing Balance
+                </div>
+                <div className="flex items-center justify-between font-bold text-slate-900 bg-slate-100/80 px-2 py-1 rounded-lg">
+                  <span>Closing Gold Fine</span>
+                  <span className="font-mono text-amber-800">{formatNumber(totals.closingGoldFine)}</span>
+                </div>
+                <div className="flex items-center justify-between font-bold text-slate-900 bg-slate-100/80 px-2 py-1 rounded-lg">
+                  <span>Closing Silver Fine</span>
+                  <span className="font-mono text-slate-900">{formatNumber(totals.closingSilverFine)}</span>
+                </div>
+                <div className="flex items-center justify-between font-bold text-slate-900 px-2 py-0.5">
+                  <span>Closing Cash</span>
+                  <span className="font-mono">{formatNumber(totals.closingCash)}</span>
+                </div>
+                <div className="flex items-center justify-between font-semibold text-slate-700 px-2 py-0.5">
+                  <span>Closing Bank</span>
+                  <span className="font-mono">{formatNumber(totals.closingBank)}</span>
+                </div>
+                <div className="flex items-center justify-between font-semibold text-slate-700 px-2 py-0.5">
+                  <span>Closing Anamat</span>
+                  <span className="font-mono">{formatNumber(totals.closingAnamat)}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Post / Save Action Card */}
+            <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-4">
+              <button
+                type="button"
+                onClick={() => void handleSave()}
+                disabled={saving || loading}
+                className="w-full h-11 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 active:scale-[0.98] disabled:opacity-50 text-white font-bold text-xs shadow-md shadow-amber-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer mb-2.5"
+                style={{ color: '#ffffff' }}
+              >
+                <span>💾</span>
+                <span>{saving ? 'Saving Return...' : editingId ? 'Update Purchase Return' : 'Post & Save Purchase Return'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => void resetForm()}
+                disabled={saving}
+                className="w-full h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <span>✨</span>
+                <span>New Blank Return</span>
+              </button>
+
+              <div className="text-[11px] text-slate-500 leading-relaxed mt-3.5 p-3 rounded-xl bg-slate-50 border border-slate-200/60">
+                💡 <strong>Ledger Effect:</strong> Items are removed from inventory stock. The supplier account receives a <em>Nave (Debit)</em>, reversing the <em>Jama (Credit)</em> generated by the original purchase.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Section: Saved Purchase Returns Register */}
+        <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-4">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100 flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-4 bg-amber-500 rounded-full inline-block" />
+              <h2 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                Saved Purchase Returns Register
+              </h2>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className="relative w-64">
                 <input
                   id="purchase-return-search"
                   value={searchText}
-                  onChange={(event) => setSearchText(event.target.value)}
-                  placeholder="Search return no, account, mobile, purchase no, date"
+                  onChange={(e) => setSearchText(e.target.value)}
+                  placeholder="Search returns, supplier, mobile..."
+                  className="w-full h-8 px-2.5 pr-7 text-xs bg-white border border-slate-200 rounded-lg text-slate-800 focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs"
                 />
                 {searchText && (
                   <button
-                    className="search-clear-btn"
                     type="button"
                     onClick={() => setSearchText('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs font-bold cursor-pointer"
                   >
-                    &times;
+                    ✕
                   </button>
                 )}
               </div>
 
               <button
-                className="btn-new"
                 type="button"
                 onClick={() => void loadReturns()}
                 disabled={loading}
+                className="h-8 px-3 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors flex items-center gap-1.5 cursor-pointer"
               >
-                Refresh
+                <span>🔄</span>
+                <span>Refresh</span>
               </button>
 
-              <div className="record-summary">
-                Total: <strong>{returns.length}</strong> | Showing:{' '}
-                <strong>{filteredReturns.length}</strong>
+              <div className="text-xs text-slate-500 font-medium">
+                Total: <strong className="text-slate-800">{returns.length}</strong> | Showing:{' '}
+                <strong className="text-amber-800">{filteredReturns.length}</strong>
               </div>
             </div>
+          </div>
 
-            <div className="table-panel approval-table-panel">
-              <table>
-                <thead>
+          <div className="mt-3 overflow-x-auto rounded-xl border border-slate-200">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead className="bg-slate-50 text-slate-600 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200">
+                <tr>
+                  <th className="py-2.5 px-3">#</th>
+                  <th className="py-2.5 px-3">Return No</th>
+                  <th className="py-2.5 px-3">Date</th>
+                  <th className="py-2.5 px-3">Supplier Account</th>
+                  <th className="py-2.5 px-3">Mobile</th>
+                  <th className="py-2.5 px-3">Metal</th>
+                  <th className="py-2.5 px-3">Against Purchase</th>
+                  <th className="py-2.5 px-3 text-right">Fine Total</th>
+                  <th className="py-2.5 px-3 text-right">Majuri Total</th>
+                  <th className="py-2.5 px-3 text-center">Actions</th>
+                </tr>
+              </thead>
+
+              <tbody className="divide-y divide-slate-100 font-medium text-slate-800">
+                {loading ? (
                   <tr>
-                    <th>Sr</th>
-                    <th>Return No</th>
-                    <th>Date</th>
-                    <th>Account</th>
-                    <th>Mobile</th>
-                    <th>Metal</th>
-                    <th>Against Purchase</th>
-                    <th>Fine</th>
-                    <th>Majuri</th>
-                    <th>Action</th>
+                    <td colSpan={10} className="py-6 text-center text-slate-400">
+                      Loading purchase returns...
+                    </td>
                   </tr>
-                </thead>
-
-                <tbody>
-                  {loading ? (
-                    <tr>
-                      <td colSpan={10} className="empty-row">
-                        Loading purchase returns...
+                ) : filteredReturns.length === 0 ? (
+                  <tr>
+                    <td colSpan={10} className="py-6 text-center text-slate-400">
+                      {searchText ? 'No matching returns found.' : 'No purchase returns saved yet.'}
+                    </td>
+                  </tr>
+                ) : (
+                  filteredReturns.map((record, index) => (
+                    <tr key={record.id} className="hover:bg-slate-50/70 transition-colors">
+                      <td className="py-2 px-3 text-slate-400 font-mono text-[11px]">{index + 1}</td>
+                      <td className="py-2 px-3 font-mono font-bold text-amber-800">{record.returnNo}</td>
+                      <td className="py-2 px-3 font-mono">{formatDate(record.returnDate)}</td>
+                      <td className="py-2 px-3 font-bold text-slate-900">{record.accountName}</td>
+                      <td className="py-2 px-3 text-slate-500 font-mono text-[11px]">{record.mobileNumber || '-'}</td>
+                      <td className="py-2 px-3">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700">
+                          {record.metalType}
+                        </span>
+                      </td>
+                      <td className="py-2 px-3 font-mono text-[11px] text-slate-600">{record.againstPurchaseNo || 'Standalone'}</td>
+                      <td className="py-2 px-3 text-right font-mono font-bold text-amber-800">{formatNumber(record.itemFineTotal)}</td>
+                      <td className="py-2 px-3 text-right font-mono font-semibold text-slate-800">{formatNumber(record.itemMajuriTotal)}</td>
+                      <td className="py-2 px-3 text-center">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => void handleOpenDetail(record)}
+                            disabled={opening}
+                            className="px-2.5 py-1 text-[11px] font-semibold rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer"
+                          >
+                            View
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void handleEditReturn(record)}
+                            disabled={opening || saving}
+                            className="px-2.5 py-1 text-[11px] font-semibold rounded-md bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 transition-colors cursor-pointer"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setReturnDeleteTarget(record)}
+                            disabled={deleting}
+                            className="px-2.5 py-1 text-[11px] font-semibold rounded-md bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition-colors cursor-pointer"
+                          >
+                            Void
+                          </button>
+                        </div>
                       </td>
                     </tr>
-                  ) : filteredReturns.length === 0 ? (
-                    <tr>
-                      <td colSpan={10} className="empty-row">
-                        {searchText ? 'No matching purchase return found.' : 'No purchase return saved yet.'}
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredReturns.map((record, index) => (
-                      <tr key={record.id}>
-                        <td>{index + 1}</td>
-                        <td>{record.returnNo}</td>
-                        <td>{formatDate(record.returnDate)}</td>
-                        <td>{record.accountName}</td>
-                        <td>{record.mobileNumber || '-'}</td>
-                        <td>{record.metalType}</td>
-                        <td>{record.againstPurchaseNo || 'Standalone'}</td>
-                        <td>{formatNumber(record.itemFineTotal)}</td>
-                        <td>{formatNumber(record.itemMajuriTotal)}</td>
-                        <td>
-                          <div className="sale-register-actions approval-actions">
-                            <button
-                              className="table-edit"
-                              type="button"
-                              onClick={() => void handleOpenDetail(record)}
-                              disabled={opening}
-                            >
-                              View
-                            </button>
-                            <button
-                              className="table-edit"
-                              type="button"
-                              onClick={() => void handleEditReturn(record)}
-                              disabled={opening || saving}
-                            >
-                              Edit
-                            </button>
-                            <button
-                              className="table-delete"
-                              type="button"
-                              onClick={() => setReturnDeleteTarget(record)}
-                              disabled={deleting}
-                            >
-                              Void
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
 
+      {/* Confirmation Dialogs */}
       <AppConfirmDialog
         open={itemDeleteIndex !== null}
         title="Remove Item Line?"
@@ -1024,135 +1411,92 @@ function PurchaseReturnScreen({ onClose }: { onClose: () => void }): React.JSX.E
         }}
       />
 
+      {/* Detail Record Modal */}
       {detailRecord && (
-        <div className="print-preview-overlay">
-          <div className="approval-detail-dialog">
-            <div className="form-title-bar">
-              <span>Purchase Return {detailRecord.header.return_no}</span>
-
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
+          <div className="w-full max-w-3xl bg-white rounded-2xl border border-slate-200 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div className="h-13 px-4 border-b border-slate-200 bg-white flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-base">🔄</span>
+                <span className="font-bold text-sm text-slate-900">
+                  Purchase Return Details: {detailRecord.header.return_no}
+                </span>
+              </div>
               <button
-                className="module-close-btn"
                 type="button"
                 onClick={() => setDetailRecord(null)}
+                className="h-8 w-8 flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer text-sm font-bold"
               >
-                &times;
+                ✕
               </button>
             </div>
 
-            <div className="approval-detail-body">
-              <div className="approval-detail-meta">
+            <div className="p-4 space-y-4 max-h-[80vh] overflow-y-auto">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200/80 text-xs">
                 <div>
-                  <span>Account</span>
-                  <strong>{detailRecord.header.account_name}</strong>
+                  <span className="text-slate-400 text-[10px] uppercase font-bold block">Supplier</span>
+                  <span className="font-bold text-slate-900 block">{detailRecord.header.account_name}</span>
                 </div>
                 <div>
-                  <span>Date</span>
-                  <strong>{formatDate(detailRecord.header.return_date)}</strong>
+                  <span className="text-slate-400 text-[10px] uppercase font-bold block">Date</span>
+                  <span className="font-bold text-slate-900 block">{formatDate(detailRecord.header.return_date)}</span>
                 </div>
                 <div>
-                  <span>Metal</span>
-                  <strong>{detailRecord.header.metal_type}</strong>
+                  <span className="text-slate-400 text-[10px] uppercase font-bold block">Metal</span>
+                  <span className="font-bold text-slate-900 block">{detailRecord.header.metal_type}</span>
                 </div>
                 <div>
-                  <span>Against Purchase</span>
-                  <strong>{detailRecord.header.against_purchase_no || 'Standalone'}</strong>
-                </div>
-                <div>
-                  <span>Total Fine</span>
-                  <strong>{formatNumber(detailRecord.header.item_fine_total)}</strong>
+                  <span className="text-slate-400 text-[10px] uppercase font-bold block">Against Purchase</span>
+                  <span className="font-bold text-slate-900 block">{detailRecord.header.against_purchase_no || 'Standalone'}</span>
                 </div>
               </div>
 
-              <div className="table-panel approval-detail-table-panel">
-                <table>
-                  <thead>
+              <div className="rounded-xl border border-slate-200 overflow-hidden">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead className="bg-slate-50 text-slate-600 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200">
                     <tr>
-                      <th>Sr</th>
-                      <th>Item</th>
-                      <th>Pcs</th>
-                      <th>Net Wt.</th>
-                      <th>Fine</th>
-                      <th>Majuri</th>
+                      <th className="py-2.5 px-3">#</th>
+                      <th className="py-2.5 px-3">Barcode</th>
+                      <th className="py-2.5 px-3">Item</th>
+                      <th className="py-2.5 px-3 text-right">Pcs</th>
+                      <th className="py-2.5 px-3 text-right">Net Wt</th>
+                      <th className="py-2.5 px-3 text-right">Fine</th>
+                      <th className="py-2.5 px-3 text-right">Majuri</th>
+                      <th className="py-2.5 px-3">Remark</th>
                     </tr>
                   </thead>
-
-                  <tbody>
+                  <tbody className="divide-y divide-slate-100 font-medium text-slate-800">
                     {detailRecord.itemLines.map((line, index) => (
-                      <tr key={line.id}>
-                        <td>{index + 1}</td>
-                        <td>{line.item_name_snapshot}</td>
-                        <td>{formatNumber(line.pcs)}</td>
-                        <td>{formatNumber(line.net_weight)}</td>
-                        <td>{formatNumber(line.fine)}</td>
-                        <td>{formatNumber(line.majuri)}</td>
+                      <tr key={line.id} className="hover:bg-slate-50/70">
+                        <td className="py-2 px-3 text-slate-400 font-mono text-[11px]">{index + 1}</td>
+                        <td className="py-2 px-3 font-mono text-[11px] text-slate-500">{line.barcode || '-'}</td>
+                        <td className="py-2 px-3 font-bold text-slate-900">{line.item_name_snapshot}</td>
+                        <td className="py-2 px-3 text-right font-mono">{formatNumber(line.pcs)}</td>
+                        <td className="py-2 px-3 text-right font-mono font-bold text-slate-900">{formatNumber(line.net_weight)}</td>
+                        <td className="py-2 px-3 text-right font-mono font-bold text-amber-800">{formatNumber(line.fine)}</td>
+                        <td className="py-2 px-3 text-right font-mono font-semibold text-slate-800">{formatNumber(line.majuri)}</td>
+                        <td className="py-2 px-3 text-slate-500 text-[11px]">{line.remark || '-'}</td>
                       </tr>
                     ))}
                   </tbody>
+                  <tfoot className="bg-slate-50 font-bold border-t border-slate-200">
+                    <tr>
+                      <td colSpan={5} className="py-2.5 px-3 text-right font-semibold text-slate-600">Total:</td>
+                      <td className="py-2.5 px-3 text-right font-mono font-bold text-amber-800">
+                        {formatNumber(detailRecord.header.item_fine_total)}
+                      </td>
+                      <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-900">
+                        {formatNumber(detailRecord.header.item_majuri_total)}
+                      </td>
+                      <td></td>
+                    </tr>
+                  </tfoot>
                 </table>
               </div>
             </div>
           </div>
         </div>
       )}
-    </div>
-  )
-}
-
-function Field({
-  label,
-  children
-}: {
-  label: string
-  children: React.ReactNode
-}): React.JSX.Element {
-  return (
-    <div className="form-field">
-      <label>{label}</label>
-      {children}
-    </div>
-  )
-}
-
-function NumberField({
-  label,
-  value,
-  onChange,
-  onNumberChange
-}: {
-  label: string
-  value: string
-  onChange: (value: string) => void
-  onNumberChange: (value: string, setter: (value: string) => void) => void
-}): React.JSX.Element {
-  return (
-    <Field label={label}>
-      <input value={value} onChange={(event) => onNumberChange(event.target.value, onChange)} />
-    </Field>
-  )
-}
-
-function ReadOnlyField({ label, value }: { label: string; value: string }): React.JSX.Element {
-  return (
-    <div className="form-field readonly-field">
-      <label>{label}</label>
-      <input value={value} readOnly />
-    </div>
-  )
-}
-
-function BalanceLine({
-  label,
-  value,
-  strong = false
-}: {
-  label: string
-  value: number
-  strong?: boolean
-}): React.JSX.Element {
-  return (
-    <div className={strong ? 'purchase-balance-line strong' : 'purchase-balance-line'}>
-      <span>{label}</span>
-      <strong>{formatNumber(value)}</strong>
     </div>
   )
 }
