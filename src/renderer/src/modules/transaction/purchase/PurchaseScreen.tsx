@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import AppAlert from '../../../components/ui/AppAlert'
+import AppConfirmDialog from '../../../components/ui/AppConfirmDialog'
 import PurchasePrintPreview from './PurchasePrintPreview'
 import { getFriendlyErrorMessage } from '../../../utils/getFriendlyErrorMessage'
 import {
@@ -24,7 +25,9 @@ type PurchaseItemLine = {
   lineNo: number
   itemId: string
   stampId: string
+  stampName?: string
   designId: string
+  designName?: string
   itemName: string
   barcode: string
   remark: string
@@ -107,13 +110,20 @@ function toNumber(value: string | number): number {
 }
 
 function isValidAmountInput(value: string): boolean {
-  return /^\d*\.?\d*$/.test(value)
+  return /^-?\d*\.?\d*$/.test(value)
 }
 
 function formatNumber(value: number): string {
   return Number(value || 0)
     .toFixed(3)
     .replace(/\.?0+$/, '')
+}
+
+function formatDate(value: string): string {
+  if (!value) return ''
+  const [year, month, day] = value.split('-')
+  if (!year || !month || !day) return value
+  return `${day}/${month}/${year}`
 }
 
 function getLabourRateType(value: string): LabourRateType {
@@ -127,6 +137,7 @@ function PurchaseScreen({ onClose }: { onClose: () => void }): React.JSX.Element
   const [accountId, setAccountId] = useState('')
   const [phone, setPhone] = useState('')
   const [metalType, setMetalType] = useState<MetalType>('Silver')
+  const [reminderDate, setReminderDate] = useState('')
   const [haste, setHaste] = useState('')
   const [dpNo, setDpNo] = useState('')
   const [narration, setNarration] = useState('')
@@ -135,6 +146,7 @@ function PurchaseScreen({ onClose }: { onClose: () => void }): React.JSX.Element
   const [items, setItems] = useState<ItemRecord[]>([])
   const [stamps, setStamps] = useState<ItemStampRecord[]>([])
   const [designs, setDesigns] = useState<ItemDesignRecord[]>([])
+  const [recentPurchases, setRecentPurchases] = useState<any[]>([])
 
   const [itemForm, setItemForm] = useState(initialItemForm)
   const [paymentForm, setPaymentForm] = useState(initialPaymentForm)
@@ -145,10 +157,17 @@ function PurchaseScreen({ onClose }: { onClose: () => void }): React.JSX.Element
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(false)
   const [savedPurchase, setSavedPurchase] = useState<SavedPurchaseRecord | null>(null)
+  const [itemDeleteIndex, setItemDeleteIndex] = useState<number | null>(null)
+  const [paymentDeleteIndex, setPaymentDeleteIndex] = useState<number | null>(null)
+
+  const [searchPurchaseText, setSearchPurchaseText] = useState('')
   const [alertMessage, setAlertMessage] = useState('')
   const [alertType, setAlertType] = useState<AlertType>('success')
 
   const alertTimerRef = useRef<number | null>(null)
+  const accountSelectRef = useRef<HTMLSelectElement | null>(null)
+  const itemSelectRef = useRef<HTMLSelectElement | null>(null)
+  const pcsInputRef = useRef<HTMLInputElement | null>(null)
 
   const selectedAccount = useMemo(
     () => accounts.find((account) => account.id === accountId),
@@ -180,6 +199,7 @@ function PurchaseScreen({ onClose }: { onClose: () => void }): React.JSX.Element
       labourRateType: itemForm.labourRateType
     })
   }, [itemForm])
+
   const paymentPreview = useMemo(() => {
     const hishob = calculateHishob(toNumber(paymentForm.tanch), toNumber(paymentForm.wastage))
     const fine = calculateFine(
@@ -191,8 +211,12 @@ function PurchaseScreen({ onClose }: { onClose: () => void }): React.JSX.Element
   }, [paymentForm])
 
   const totals = useMemo(() => {
+    const itemPcsTotal = itemLines.reduce((sum, line) => sum + Number(line.pcs || 0), 0)
+    const itemGrossTotal = itemLines.reduce((sum, line) => sum + Number(line.grossWeight || 0), 0)
+    const itemNetTotal = itemLines.reduce((sum, line) => sum + Number(line.netWeight || 0), 0)
     const itemFineTotal = itemLines.reduce((sum, line) => sum + Number(line.fine || 0), 0)
     const itemMajuriTotal = itemLines.reduce((sum, line) => sum + Number(line.majuri || 0), 0)
+
     const paymentFineNaveTotal = paymentLines.reduce((sum, line) => sum + Number(line.fine || 0), 0)
     const paymentCashNaveTotal = paymentLines.reduce((sum, line) => sum + Number(line.cash || 0), 0)
     const paymentBankNaveTotal = paymentLines.reduce((sum, line) => sum + Number(line.bank || 0), 0)
@@ -214,6 +238,9 @@ function PurchaseScreen({ onClose }: { onClose: () => void }): React.JSX.Element
     const closingAnamat = oldBalance.anamat + paymentAnamatNaveTotal
 
     return {
+      itemPcsTotal,
+      itemGrossTotal,
+      itemNetTotal,
       itemFineTotal,
       itemMajuriTotal,
       paymentFineNaveTotal,
@@ -227,6 +254,21 @@ function PurchaseScreen({ onClose }: { onClose: () => void }): React.JSX.Element
       closingAnamat
     }
   }, [itemLines, paymentLines, oldBalance, metalType])
+
+  const filteredPurchases = useMemo(() => {
+    const q = searchPurchaseText.trim().toLowerCase()
+    if (!q) return recentPurchases
+
+    return recentPurchases.filter((p: any) => {
+      return (
+        (p.purchase_no || '').toLowerCase().includes(q) ||
+        (p.account_name || '').toLowerCase().includes(q) ||
+        (p.mobile_number || '').toLowerCase().includes(q) ||
+        (p.metal_type || '').toLowerCase().includes(q) ||
+        (p.purchase_date || '').toLowerCase().includes(q)
+      )
+    })
+  }, [recentPurchases, searchPurchaseText])
 
   const showAlert = useCallback((type: AlertType, message: string): void => {
     setAlertType(type)
@@ -258,6 +300,17 @@ function PurchaseScreen({ onClose }: { onClose: () => void }): React.JSX.Element
     [showAlert]
   )
 
+  const loadRecentPurchases = useCallback(async (): Promise<void> => {
+    try {
+      if (window.api.purchases.list) {
+        const list = await window.api.purchases.list()
+        setRecentPurchases(list || [])
+      }
+    } catch {
+      // ignore
+    }
+  }, [])
+
   const loadInitialData = useCallback(async (): Promise<void> => {
     try {
       setLoading(true)
@@ -274,12 +327,13 @@ function PurchaseScreen({ onClose }: { onClose: () => void }): React.JSX.Element
       setItems(itemData)
       setStamps(stampData)
       setDesigns(designData)
+      await loadRecentPurchases()
     } catch (error) {
       showAlert('error', getFriendlyErrorMessage(error))
     } finally {
       setLoading(false)
     }
-  }, [showAlert])
+  }, [showAlert, loadRecentPurchases])
 
   const handleAccountChange = (selectedAccountId: string): void => {
     setAccountId(selectedAccountId)
@@ -289,10 +343,12 @@ function PurchaseScreen({ onClose }: { onClose: () => void }): React.JSX.Element
   }
 
   const handleMetalChange = (value: MetalType): void => {
+    if (metalType === value) return
     setMetalType(value)
     setItemForm(initialItemForm)
-    setItemLines([])
-    setPaymentLines([])
+    if (itemLines.length === 0) {
+      setPaymentLines([])
+    }
   }
 
   const handleNumberChange = (value: string, setter: (value: string) => void): void => {
@@ -308,6 +364,7 @@ function PurchaseScreen({ onClose }: { onClose: () => void }): React.JSX.Element
       itemId: selectedItemId,
       stampId: selectedItem?.defaultStampId || '',
       designId: selectedItem?.defaultDesignId || '',
+      barcode: current.barcode || (selectedItem as any)?.barcodeValue || (selectedItem as any)?.barcode || '',
       packWeight: String(selectedItem?.fixedWeightPerPcs || ''),
       tunch: String(selectedItem?.defaultTanch || ''),
       wastage: String(selectedItem?.defaultWastage || ''),
@@ -316,14 +373,36 @@ function PurchaseScreen({ onClose }: { onClose: () => void }): React.JSX.Element
     }))
   }
 
+  const handleBarcodeKeyDown = (e: KeyboardEvent<HTMLInputElement>): void => {
+    if (e.key === 'Enter' && itemForm.barcode.trim()) {
+      e.preventDefault()
+      const query = itemForm.barcode.trim().toLowerCase()
+      const matched = filteredItems.find(
+        (item) =>
+          item.itemName.toLowerCase() === query ||
+          (item as any).barcodeValue?.toLowerCase() === query ||
+          (item as any).barcode?.toLowerCase() === query
+      )
+      if (matched) {
+        handleItemChange(matched.id)
+        showAlert('success', `Item selected: ${matched.itemName}`)
+        pcsInputRef.current?.focus()
+      } else {
+        showAlert('warning', `No item matching barcode "${itemForm.barcode}"`)
+      }
+    }
+  }
+
   const addItemLine = (): void => {
     if (!itemForm.itemId) {
       showAlert('warning', 'Please select item.')
+      itemSelectRef.current?.focus()
       return
     }
 
     if (toNumber(itemForm.pcs) <= 0) {
       showAlert('warning', 'Please enter pcs.')
+      pcsInputRef.current?.focus()
       return
     }
 
@@ -333,6 +412,8 @@ function PurchaseScreen({ onClose }: { onClose: () => void }): React.JSX.Element
     }
 
     const selectedItem = items.find((item) => item.id === itemForm.itemId)
+    const selectedStamp = stamps.find((s) => s.id === itemForm.stampId)
+    const selectedDesign = designs.find((d) => d.id === itemForm.designId)
 
     if (!selectedItem) {
       showAlert('warning', 'Selected item not found.')
@@ -345,7 +426,9 @@ function PurchaseScreen({ onClose }: { onClose: () => void }): React.JSX.Element
         lineNo: current.length + 1,
         itemId: itemForm.itemId,
         stampId: itemForm.stampId,
+        stampName: selectedStamp?.stampName || '',
         designId: itemForm.designId,
+        designName: selectedDesign?.designName || '',
         itemName: selectedItem.itemName,
         barcode: itemForm.barcode,
         remark: itemForm.remark,
@@ -365,6 +448,7 @@ function PurchaseScreen({ onClose }: { onClose: () => void }): React.JSX.Element
       }
     ])
     setItemForm(initialItemForm)
+    itemSelectRef.current?.focus()
   }
 
   const removeItemLine = (lineNo: number): void => {
@@ -373,6 +457,7 @@ function PurchaseScreen({ onClose }: { onClose: () => void }): React.JSX.Element
         .filter((line) => line.lineNo !== lineNo)
         .map((line, index) => ({ ...line, lineNo: index + 1 }))
     )
+    setItemDeleteIndex(null)
   }
 
   const addPaymentLine = (): void => {
@@ -415,6 +500,7 @@ function PurchaseScreen({ onClose }: { onClose: () => void }): React.JSX.Element
         .filter((line) => line.lineNo !== lineNo)
         .map((line, index) => ({ ...line, lineNo: index + 1 }))
     )
+    setPaymentDeleteIndex(null)
   }
 
   const resetPurchase = useCallback(async (): Promise<void> => {
@@ -422,6 +508,7 @@ function PurchaseScreen({ onClose }: { onClose: () => void }): React.JSX.Element
     setAccountId('')
     setPhone('')
     setMetalType('Silver')
+    setReminderDate('')
     setHaste('')
     setDpNo('')
     setNarration('')
@@ -433,6 +520,7 @@ function PurchaseScreen({ onClose }: { onClose: () => void }): React.JSX.Element
 
     const nextNo = await window.api.purchases.getNextNumber()
     setPurchaseNo(nextNo)
+    accountSelectRef.current?.focus()
   }, [])
 
   const handleSave = async (): Promise<void> => {
@@ -442,12 +530,14 @@ function PurchaseScreen({ onClose }: { onClose: () => void }): React.JSX.Element
     }
 
     if (!accountId) {
-      showAlert('warning', 'Please select account.')
+      showAlert('warning', 'Please select supplier account.')
+      accountSelectRef.current?.focus()
       return
     }
 
     if (itemLines.length === 0) {
-      showAlert('warning', 'Please add at least one item.')
+      showAlert('warning', 'Please add at least one purchase item line.')
+      itemSelectRef.current?.focus()
       return
     }
 
@@ -463,7 +553,7 @@ function PurchaseScreen({ onClose }: { onClose: () => void }): React.JSX.Element
         haste,
         dpNo,
         narration,
-        reminderDate: '',
+        reminderDate,
         itemLines: itemLines.map((line) => ({
           itemId: line.itemId,
           stampId: line.stampId,
@@ -495,12 +585,22 @@ function PurchaseScreen({ onClose }: { onClose: () => void }): React.JSX.Element
       })
 
       setSavedPurchase(saved)
-      showAlert('success', 'Purchase saved successfully.')
+      showAlert('success', `Purchase bill ${purchaseNo} saved successfully.`)
       await resetPurchase()
+      await loadRecentPurchases()
     } catch (error) {
       showAlert('error', getFriendlyErrorMessage(error))
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleViewPurchase = async (recordId: string): Promise<void> => {
+    try {
+      const record = await window.api.purchases.getById(recordId)
+      setSavedPurchase(record)
+    } catch (error) {
+      showAlert('error', getFriendlyErrorMessage(error))
     }
   }
 
@@ -518,243 +618,553 @@ function PurchaseScreen({ onClose }: { onClose: () => void }): React.JSX.Element
   }, [loadInitialData])
 
   return (
-    <div className="purchase-screen">
-      <div className="purchase-window">
-        <div className="form-title-bar">
-          <span>Purchase</span>
-          <button className="module-close-btn" type="button" onClick={onClose}>
-            &times;
-          </button>
+    <div className="h-full flex flex-col bg-[var(--color-background-app,#f8fafc)] text-slate-900 overflow-hidden font-sans select-none">
+      {/* ── TOP HEADER BAR ── */}
+      <header className="h-13 px-4 border-b border-slate-200/90 bg-white flex items-center justify-between shadow-xs shrink-0 z-10">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-700 text-base shadow-2xs font-bold">
+            📥
+          </div>
+          <div>
+            <h1 className="font-bold text-sm text-slate-900 tracking-tight flex items-center gap-2">
+              <span>Purchase Transaction</span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full border border-amber-200 bg-amber-50 text-amber-800 font-mono font-bold">
+                {purchaseNo || 'NEW'}
+              </span>
+            </h1>
+            <p className="text-[11px] text-slate-500 font-medium leading-none mt-0.5">
+              Wholesale bullion &amp; ornament purchase inward with supplier Jama / Nave ledger integration
+            </p>
+          </div>
         </div>
 
-        <div className="purchase-body">
-          <AppAlert type={alertType} message={alertMessage} onClose={() => setAlertMessage('')} />
+        <div className="flex items-center gap-2">
+          {itemLines.length > 0 && (
+            <button
+              type="button"
+              onClick={() => void resetPurchase()}
+              className="h-8 px-3 text-xs font-semibold bg-white border border-slate-200 text-slate-600 hover:bg-rose-50 hover:border-rose-200 hover:text-rose-700 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              ✕ Clear Form
+            </button>
+          )}
 
-          <div className="purchase-main-layout">
-            <div className="purchase-left">
-              <div className="purchase-panel">
-                <div className="section-title">Purchase Header</div>
-                <div className="purchase-header-grid">
-                  <Field label="Purchase No">
-                    <input
-                      value={purchaseNo}
-                      onChange={(event) => setPurchaseNo(event.target.value)}
-                    />
-                  </Field>
-                  <Field label="Date">
-                    <input
-                      type="date"
-                      value={purchaseDate}
-                      onChange={(event) => setPurchaseDate(event.target.value)}
-                    />
-                  </Field>
-                  <Field label="Account">
-                    <select
-                      value={accountId}
-                      onChange={(event) => handleAccountChange(event.target.value)}
-                    >
-                      <option value="">Select Account</option>
-                      {activeAccounts.map((account) => (
-                        <option key={account.id} value={account.id}>
-                          {account.accountName}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-                  <Field label="Phone">
-                    <input value={phone} onChange={(event) => setPhone(event.target.value)} />
-                  </Field>
-                  <Field label="Metal">
-                    <select
-                      value={metalType}
-                      onChange={(event) => handleMetalChange(event.target.value as MetalType)}
-                    >
-                      <option>Gold</option>
-                      <option>Silver</option>
-                    </select>
-                  </Field>
-                  <Field label="Haste">
-                    <input value={haste} onChange={(event) => setHaste(event.target.value)} />
-                  </Field>
-                  <Field label="DP No">
-                    <input value={dpNo} onChange={(event) => setDpNo(event.target.value)} />
-                  </Field>
-                  <Field label="Narration">
-                    <input
-                      value={narration}
-                      onChange={(event) => setNarration(event.target.value)}
-                    />
-                  </Field>
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="h-8 w-8 flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer text-sm font-bold"
+              title="Close Tab"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+      </header>
+
+      {/* Global Alert Notification */}
+      <AppAlert type={alertType} message={alertMessage} onClose={() => setAlertMessage('')} />
+
+      {/* ── MAIN SCROLLABLE CONTENT WORKSPACE ── */}
+      <div className="flex-1 p-4 overflow-y-auto space-y-4">
+        {/* Top Section: Two-Column Form & Summary */}
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 items-start">
+          {/* Left Column (8 cols): Header & Item Entry & Tables */}
+          <div className="xl:col-span-8 flex flex-col gap-4">
+            {/* Purchase Header Card */}
+            <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-4">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-4 bg-amber-500 rounded-full inline-block" />
+                  <h2 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                    Purchase Header
+                  </h2>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] text-slate-500 font-medium">Metal:</span>
+                  <div className="inline-flex items-center rounded-lg border border-slate-200 p-0.5 bg-slate-50">
+                    {(['Gold', 'Silver', 'Diamond', 'Other'] as MetalType[]).map((m) => {
+                      const isSelected = metalType === m
+                      return (
+                        <button
+                          key={m}
+                          type="button"
+                          onClick={() => handleMetalChange(m)}
+                          className={`h-6 px-2.5 text-[11px] font-semibold rounded-md transition-colors duration-100 cursor-pointer flex items-center border ${
+                            isSelected
+                              ? 'bg-white text-amber-800 shadow-2xs border-slate-200/90 font-bold'
+                              : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-100/60'
+                          }`}
+                        >
+                          {m}
+                        </button>
+                      )
+                    })}
+                  </div>
                 </div>
               </div>
 
-              <div className="purchase-panel">
-                <div className="section-title">Item Entry</div>
-                <div className="purchase-item-grid">
-                  <Field label="Item">
-                    <select
-                      value={itemForm.itemId}
-                      onChange={(event) => handleItemChange(event.target.value)}
-                    >
-                      <option value="">Select Item</option>
-                      {filteredItems.map((item) => (
-                        <option key={item.id} value={item.id}>
-                          {item.itemName}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-                  <Field label="Stamp">
-                    <select
-                      value={itemForm.stampId}
-                      onChange={(event) =>
-                        setItemForm((current) => ({ ...current, stampId: event.target.value }))
-                      }
-                    >
-                      <option value="">None</option>
-                      {filteredStamps.map((stamp) => (
-                        <option key={stamp.id} value={stamp.id}>
-                          {stamp.stampName}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-                  <Field label="Design">
-                    <select
-                      value={itemForm.designId}
-                      onChange={(event) =>
-                        setItemForm((current) => ({ ...current, designId: event.target.value }))
-                      }
-                    >
-                      <option value="">None</option>
-                      {filteredDesigns.map((design) => (
-                        <option key={design.id} value={design.id}>
-                          {design.designName}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                <div>
+                  <label className="text-[11px] font-semibold text-slate-600 block mb-1 uppercase tracking-wide">
+                    Purchase No
+                  </label>
+                  <input
+                    value={purchaseNo}
+                    onChange={(e) => setPurchaseNo(e.target.value)}
+                    className="w-full h-8.5 px-2.5 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-mono font-bold"
+                  />
+                </div>
 
-                  <NumberField
-                    label="Pcs"
+                <div>
+                  <label className="text-[11px] font-semibold text-slate-600 block mb-1 uppercase tracking-wide">
+                    Date
+                  </label>
+                  <input
+                    type="date"
+                    value={purchaseDate}
+                    onChange={(e) => setPurchaseDate(e.target.value)}
+                    className="w-full h-8.5 px-2.5 text-xs bg-white border border-slate-200 rounded-lg text-slate-800 focus:ring-1 focus:ring-amber-500 focus:border-amber-500 transition-colors shadow-2xs font-medium"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-semibold text-slate-600 block mb-1 uppercase tracking-wide">
+                    Supplier Account *
+                  </label>
+                  <select
+                    ref={accountSelectRef}
+                    value={accountId}
+                    onChange={(e) => handleAccountChange(e.target.value)}
+                    className="w-full h-8.5 px-2.5 text-xs bg-white border border-slate-200 rounded-lg text-slate-800 focus:ring-1 focus:ring-amber-500 focus:border-amber-500 transition-colors shadow-2xs font-medium"
+                  >
+                    <option value="">Select Supplier</option>
+                    {activeAccounts.map((account) => (
+                      <option key={account.id} value={account.id}>
+                        {account.accountName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-semibold text-slate-600 block mb-1 uppercase tracking-wide">
+                    Phone No
+                  </label>
+                  <input
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="Supplier contact"
+                    className="w-full h-8.5 px-2.5 text-xs bg-white border border-slate-200 rounded-lg text-slate-800 focus:ring-1 focus:ring-amber-500 focus:border-amber-500 transition-colors shadow-2xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-semibold text-slate-600 block mb-1 uppercase tracking-wide">
+                    Reminder Date
+                  </label>
+                  <input
+                    type="date"
+                    value={reminderDate}
+                    onChange={(e) => setReminderDate(e.target.value)}
+                    className="w-full h-8.5 px-2.5 text-xs bg-white border border-slate-200 rounded-lg text-slate-800 focus:ring-1 focus:ring-amber-500 focus:border-amber-500 transition-colors shadow-2xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-semibold text-slate-600 block mb-1 uppercase tracking-wide">
+                    Haste (Agent / Bearer)
+                  </label>
+                  <input
+                    value={haste}
+                    onChange={(e) => setHaste(e.target.value)}
+                    placeholder="Courier / person name"
+                    className="w-full h-8.5 px-2.5 text-xs bg-white border border-slate-200 rounded-lg text-slate-800 focus:ring-1 focus:ring-amber-500 focus:border-amber-500 transition-colors shadow-2xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-semibold text-slate-600 block mb-1 uppercase tracking-wide">
+                    DP / Invoice No
+                  </label>
+                  <input
+                    value={dpNo}
+                    onChange={(e) => setDpNo(e.target.value)}
+                    placeholder="Supplier bill reference"
+                    className="w-full h-8.5 px-2.5 text-xs bg-white border border-slate-200 rounded-lg text-slate-800 focus:ring-1 focus:ring-amber-500 focus:border-amber-500 transition-colors shadow-2xs font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-semibold text-slate-600 block mb-1 uppercase tracking-wide">
+                    Narration
+                  </label>
+                  <input
+                    value={narration}
+                    onChange={(e) => setNarration(e.target.value)}
+                    placeholder="Remarks / lot notes"
+                    className="w-full h-8.5 px-2.5 text-xs bg-white border border-slate-200 rounded-lg text-slate-800 focus:ring-1 focus:ring-amber-500 focus:border-amber-500 transition-colors shadow-2xs"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Item Entry Card */}
+            <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-4">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-4 bg-amber-500 rounded-full inline-block" />
+                  <h2 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                    Purchase Item Entry
+                  </h2>
+                </div>
+                <span className="text-[11px] text-slate-400 font-medium">
+                  Scan barcode or select ornament from inventory master
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-9 gap-2.5 items-end">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase tracking-wider">
+                    Barcode
+                  </label>
+                  <input
+                    value={itemForm.barcode}
+                    onChange={(e) => setItemForm((c) => ({ ...c, barcode: e.target.value }))}
+                    onKeyDown={handleBarcodeKeyDown}
+                    placeholder="Scan & ↵"
+                    className="w-full h-8 px-2 text-xs bg-white border border-slate-200 rounded-lg font-mono focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs"
+                  />
+                </div>
+
+                <div className="col-span-2">
+                  <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase tracking-wider">
+                    Item *
+                  </label>
+                  <select
+                    ref={itemSelectRef}
+                    value={itemForm.itemId}
+                    onChange={(e) => handleItemChange(e.target.value)}
+                    className="w-full h-8 px-2 text-xs bg-white border border-slate-200 rounded-lg font-medium focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs"
+                  >
+                    <option value="">Select Item</option>
+                    {filteredItems.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.itemName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase tracking-wider">
+                    Stamp
+                  </label>
+                  <select
+                    value={itemForm.stampId}
+                    onChange={(e) => setItemForm((c) => ({ ...c, stampId: e.target.value }))}
+                    className="w-full h-8 px-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs"
+                  >
+                    <option value="">None</option>
+                    {filteredStamps.map((stamp) => (
+                      <option key={stamp.id} value={stamp.id}>
+                        {stamp.stampName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase tracking-wider">
+                    Design
+                  </label>
+                  <select
+                    value={itemForm.designId}
+                    onChange={(e) => setItemForm((c) => ({ ...c, designId: e.target.value }))}
+                    className="w-full h-8 px-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs"
+                  >
+                    <option value="">None</option>
+                    {filteredDesigns.map((design) => (
+                      <option key={design.id} value={design.id}>
+                        {design.designName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase tracking-wider">
+                    Pcs *
+                  </label>
+                  <input
+                    ref={pcsInputRef}
                     value={itemForm.pcs}
-                    onChange={(value) => setItemForm((current) => ({ ...current, pcs: value }))}
-                    onNumberChange={handleNumberChange}
+                    onChange={(e) => handleNumberChange(e.target.value, (v) => setItemForm((c) => ({ ...c, pcs: v })))}
+                    placeholder="0"
+                    className="w-full h-8 px-2 text-xs bg-white border border-slate-200 rounded-lg text-right font-mono focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs"
                   />
-                  <NumberField
-                    label="Gross Wt."
-                    value={itemForm.grossWeight}
-                    onChange={(value) =>
-                      setItemForm((current) => ({ ...current, grossWeight: value }))
-                    }
-                    onNumberChange={handleNumberChange}
-                  />
-                  <NumberField
-                    label="Pack Wt."
-                    value={itemForm.packWeight}
-                    onChange={(value) =>
-                      setItemForm((current) => ({ ...current, packWeight: value }))
-                    }
-                    onNumberChange={handleNumberChange}
-                  />
-                  <ReadOnlyField label="Less Wt." value={formatNumber(itemPreview.lessWeight)} />
-                  <NumberField
-                    label="Add Wt."
-                    value={itemForm.addWeight}
-                    onChange={(value) =>
-                      setItemForm((current) => ({ ...current, addWeight: value }))
-                    }
-                    onNumberChange={handleNumberChange}
-                  />
-                  <ReadOnlyField label="Net Wt." value={formatNumber(itemPreview.netWeight)} />
-                  <NumberField
-                    label="Tunch"
-                    value={itemForm.tunch}
-                    onChange={(value) => setItemForm((current) => ({ ...current, tunch: value }))}
-                    onNumberChange={handleNumberChange}
-                  />
-                  <NumberField
-                    label="Wstg"
-                    value={itemForm.wastage}
-                    onChange={(value) => setItemForm((current) => ({ ...current, wastage: value }))}
-                    onNumberChange={handleNumberChange}
-                  />
-                  <ReadOnlyField label="Hishob" value={formatNumber(itemPreview.hishob)} />
-                  <ReadOnlyField label="Fine" value={formatNumber(itemPreview.fine)} />
-                  <NumberField
-                    label="Lab Rate"
-                    value={itemForm.labourRate}
-                    onChange={(value) =>
-                      setItemForm((current) => ({ ...current, labourRate: value }))
-                    }
-                    onNumberChange={handleNumberChange}
-                  />
-                  <Field label="Lab Type">
-                    <select
-                      value={itemForm.labourRateType}
-                      onChange={(event) =>
-                        setItemForm((current) => ({
-                          ...current,
-                          labourRateType: getLabourRateType(event.target.value)
-                        }))
-                      }
-                    >
-                      <option>Kg</option>
-                      <option>Gm</option>
-                      <option>Pcs</option>
-                    </select>
-                  </Field>
-                  <ReadOnlyField label="Majuri" value={formatNumber(itemPreview.majuri)} />
                 </div>
-                <div className="button-row purchase-button-row">
-                  <button className="btn-save" type="button" onClick={addItemLine}>
-                    Add Item
-                  </button>
+
+                <div>
+                  <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase tracking-wider">
+                    Gr. Wt *
+                  </label>
+                  <input
+                    value={itemForm.grossWeight}
+                    onChange={(e) => handleNumberChange(e.target.value, (v) => setItemForm((c) => ({ ...c, grossWeight: v })))}
+                    placeholder="0.000"
+                    className="w-full h-8 px-2 text-xs bg-white border border-slate-200 rounded-lg text-right font-mono focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase tracking-wider">
+                    Pack Wt
+                  </label>
+                  <input
+                    value={itemForm.packWeight}
+                    onChange={(e) => handleNumberChange(e.target.value, (v) => setItemForm((c) => ({ ...c, packWeight: v })))}
+                    placeholder="0.000"
+                    className="w-full h-8 px-2 text-xs bg-white border border-slate-200 rounded-lg text-right font-mono focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase tracking-wider">
+                    Less Wt
+                  </label>
+                  <input
+                    value={formatNumber(itemPreview.lessWeight)}
+                    disabled
+                    className="w-full h-8 px-2 text-xs bg-slate-50 border border-slate-200 rounded-lg text-right font-mono text-slate-600 font-semibold"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase tracking-wider">
+                    Add Wt
+                  </label>
+                  <input
+                    value={itemForm.addWeight}
+                    onChange={(e) => handleNumberChange(e.target.value, (v) => setItemForm((c) => ({ ...c, addWeight: v })))}
+                    placeholder="0.000"
+                    className="w-full h-8 px-2 text-xs bg-white border border-slate-200 rounded-lg text-right font-mono focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-slate-700 block mb-1 uppercase tracking-wider">
+                    Net Wt
+                  </label>
+                  <input
+                    value={formatNumber(itemPreview.netWeight)}
+                    disabled
+                    className="w-full h-8 px-2 text-xs bg-slate-50 border border-slate-200 rounded-lg text-right font-mono text-slate-800 font-bold"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase tracking-wider">
+                    Tunch %
+                  </label>
+                  <input
+                    value={itemForm.tunch}
+                    onChange={(e) => handleNumberChange(e.target.value, (v) => setItemForm((c) => ({ ...c, tunch: v })))}
+                    placeholder="91.6"
+                    className="w-full h-8 px-2 text-xs bg-white border border-slate-200 rounded-lg text-right font-mono focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase tracking-wider">
+                    Wstg %
+                  </label>
+                  <input
+                    value={itemForm.wastage}
+                    onChange={(e) => handleNumberChange(e.target.value, (v) => setItemForm((c) => ({ ...c, wastage: v })))}
+                    placeholder="0.00"
+                    className="w-full h-8 px-2 text-xs bg-white border border-slate-200 rounded-lg text-right font-mono focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase tracking-wider">
+                    Hishob
+                  </label>
+                  <input
+                    value={formatNumber(itemPreview.hishob)}
+                    disabled
+                    className="w-full h-8 px-2 text-xs bg-slate-50 border border-slate-200 rounded-lg text-right font-mono text-slate-600 font-semibold"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-amber-800 block mb-1 uppercase tracking-wider">
+                    Fine (Jama)
+                  </label>
+                  <input
+                    value={formatNumber(itemPreview.fine)}
+                    disabled
+                    className="w-full h-8 px-2 text-xs bg-amber-50 border border-amber-200 rounded-lg text-right font-mono text-amber-900 font-bold"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase tracking-wider">
+                    Lab Rate
+                  </label>
+                  <input
+                    value={itemForm.labourRate}
+                    onChange={(e) => handleNumberChange(e.target.value, (v) => setItemForm((c) => ({ ...c, labourRate: v })))}
+                    placeholder="0.00"
+                    className="w-full h-8 px-2 text-xs bg-white border border-slate-200 rounded-lg text-right font-mono focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase tracking-wider">
+                    Lab Type
+                  </label>
+                  <select
+                    value={itemForm.labourRateType}
+                    onChange={(e) =>
+                      setItemForm((c) => ({
+                        ...c,
+                        labourRateType: getLabourRateType(e.target.value)
+                      }))
+                    }
+                    className="w-full h-8 px-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs"
+                  >
+                    <option value="Kg">Kg</option>
+                    <option value="Gm">Gm</option>
+                    <option value="Pcs">Pcs</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-slate-700 block mb-1 uppercase tracking-wider">
+                    Majuri
+                  </label>
+                  <input
+                    value={formatNumber(itemPreview.majuri)}
+                    disabled
+                    className="w-full h-8 px-2 text-xs bg-slate-50 border border-slate-200 rounded-lg text-right font-mono text-slate-800 font-bold"
+                  />
+                </div>
+
+                <div className="col-span-2">
+                  <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase tracking-wider">
+                    Remark
+                  </label>
+                  <input
+                    value={itemForm.remark}
+                    onChange={(e) => setItemForm((c) => ({ ...c, remark: e.target.value }))}
+                    placeholder="Supplier lot / purity note"
+                    className="w-full h-8 px-2 text-xs bg-white border border-slate-200 rounded-lg text-slate-800 focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs"
+                  />
                 </div>
               </div>
 
-              <div className="table-panel purchase-table-panel">
-                <table>
-                  <thead>
+              <div className="flex items-center gap-2.5 mt-4 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={addItemLine}
+                  className="h-9 px-5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 active:scale-[0.98] text-white font-bold text-xs shadow-md shadow-amber-500/20 flex items-center justify-center gap-2 cursor-pointer transition-all"
+                  style={{ color: '#ffffff' }}
+                >
+                  <span>➕</span>
+                  <span>Add Item to Purchase</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setItemForm(initialItemForm)}
+                  className="h-9 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors cursor-pointer"
+                >
+                  Clear Fields
+                </button>
+              </div>
+            </div>
+
+            {/* Added Purchase Items Table Card */}
+            <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
+              <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-4 bg-amber-500 rounded-full inline-block" />
+                  <h2 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                    Purchased Items ({itemLines.length})
+                  </h2>
+                </div>
+                {itemLines.length > 0 && (
+                  <div className="flex items-center gap-3 text-xs">
+                    <span className="font-semibold text-slate-700">
+                      Net Wt: <strong className="font-mono text-slate-900">{formatNumber(totals.itemNetTotal)}</strong>
+                    </span>
+                    <span className="font-semibold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                      Fine: {formatNumber(totals.itemFineTotal)}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <div className="overflow-x-auto max-h-[280px]">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead className="bg-slate-50 text-slate-600 uppercase text-[10px] font-bold tracking-wider sticky top-0 border-b border-slate-200">
                     <tr>
-                      <th>Sr</th>
-                      <th>Item</th>
-                      <th>Pcs</th>
-                      <th>Gross</th>
-                      <th>Less</th>
-                      <th>Net</th>
-                      <th>Tunch</th>
-                      <th>Wstg</th>
-                      <th>Fine</th>
-                      <th>Majuri</th>
-                      <th>Action</th>
+                      <th className="py-2.5 px-3">#</th>
+                      <th className="py-2.5 px-3">Barcode</th>
+                      <th className="py-2.5 px-3">Stamp</th>
+                      <th className="py-2.5 px-3">Item</th>
+                      <th className="py-2.5 px-3">Design</th>
+                      <th className="py-2.5 px-3 text-right">Pcs</th>
+                      <th className="py-2.5 px-3 text-right">Gr. Wt</th>
+                      <th className="py-2.5 px-3 text-right">Net Wt</th>
+                      <th className="py-2.5 px-3 text-right">Tunch</th>
+                      <th className="py-2.5 px-3 text-right">Wstg</th>
+                      <th className="py-2.5 px-3 text-right text-amber-800 font-bold">Fine</th>
+                      <th className="py-2.5 px-3 text-right">M. Rate</th>
+                      <th className="py-2.5 px-3 text-right">Majuri</th>
+                      <th className="py-2.5 px-3">Remark</th>
+                      <th className="py-2.5 px-3 text-center">Action</th>
                     </tr>
                   </thead>
-                  <tbody>
+
+                  <tbody className="divide-y divide-slate-100 font-medium text-slate-800">
                     {itemLines.length === 0 ? (
                       <tr>
-                        <td colSpan={11} className="empty-row">
-                          No item added.
+                        <td colSpan={15} className="py-8 text-center text-slate-400">
+                          <div className="flex flex-col items-center justify-center gap-1">
+                            <span className="text-2xl">📦</span>
+                            <span className="font-semibold text-xs text-slate-500">
+                              No purchase items added yet
+                            </span>
+                            <span className="text-[11px] text-slate-400">
+                              Use the item entry form above to add bullion or ornaments
+                            </span>
+                          </div>
                         </td>
                       </tr>
                     ) : (
                       itemLines.map((line) => (
-                        <tr key={line.lineNo}>
-                          <td>{line.lineNo}</td>
-                          <td>{line.itemName}</td>
-                          <td>{formatNumber(line.pcs)}</td>
-                          <td>{formatNumber(line.grossWeight)}</td>
-                          <td>{formatNumber(line.lessWeight)}</td>
-                          <td>{formatNumber(line.netWeight)}</td>
-                          <td>{formatNumber(line.tunch)}</td>
-                          <td>{formatNumber(line.wastage)}</td>
-                          <td>{formatNumber(line.fine)}</td>
-                          <td>{formatNumber(line.majuri)}</td>
-                          <td>
+                        <tr key={line.lineNo} className="hover:bg-slate-50/70 transition-colors">
+                          <td className="py-2 px-3 text-slate-400 font-mono text-[11px]">{line.lineNo}</td>
+                          <td className="py-2 px-3 font-mono text-[11px] text-slate-600">{line.barcode || '-'}</td>
+                          <td className="py-2 px-3 text-slate-600">{line.stampName || '-'}</td>
+                          <td className="py-2 px-3 font-bold text-slate-900">{line.itemName}</td>
+                          <td className="py-2 px-3 text-slate-600">{line.designName || '-'}</td>
+                          <td className="py-2 px-3 text-right font-mono">{formatNumber(line.pcs)}</td>
+                          <td className="py-2 px-3 text-right font-mono">{formatNumber(line.grossWeight)}</td>
+                          <td className="py-2 px-3 text-right font-mono font-bold text-slate-900">{formatNumber(line.netWeight)}</td>
+                          <td className="py-2 px-3 text-right font-mono">{formatNumber(line.tunch)}</td>
+                          <td className="py-2 px-3 text-right font-mono">{formatNumber(line.wastage)}</td>
+                          <td className="py-2 px-3 text-right font-mono font-bold text-amber-800">{formatNumber(line.fine)}</td>
+                          <td className="py-2 px-3 text-right font-mono">{formatNumber(line.labourRate)}</td>
+                          <td className="py-2 px-3 text-right font-mono font-semibold text-slate-800">{formatNumber(line.majuri)}</td>
+                          <td className="py-2 px-3 text-slate-500 text-[11px] max-w-[120px] truncate">{line.remark || '-'}</td>
+                          <td className="py-2 px-3 text-center">
                             <button
-                              className="btn-delete-small"
                               type="button"
-                              onClick={() => removeItemLine(line.lineNo)}
+                              onClick={() => setItemDeleteIndex(line.lineNo)}
+                              className="px-2 py-1 text-[11px] font-bold rounded-md bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 transition-colors cursor-pointer"
                             >
                               Remove
                             </button>
@@ -763,122 +1173,214 @@ function PurchaseScreen({ onClose }: { onClose: () => void }): React.JSX.Element
                       ))
                     )}
                   </tbody>
+
+                  {itemLines.length > 0 && (
+                    <tfoot className="bg-slate-50 font-semibold text-slate-800 border-t-2 border-slate-200 sticky bottom-0">
+                      <tr>
+                        <td colSpan={5} className="py-2.5 px-3 text-right font-bold uppercase text-[11px] text-slate-600">
+                          Total Summary:
+                        </td>
+                        <td className="py-2.5 px-3 text-right font-mono font-bold">{formatNumber(totals.itemPcsTotal)}</td>
+                        <td className="py-2.5 px-3 text-right font-mono font-bold">{formatNumber(totals.itemGrossTotal)}</td>
+                        <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-900">{formatNumber(totals.itemNetTotal)}</td>
+                        <td colSpan={2}></td>
+                        <td className="py-2.5 px-3 text-right font-mono font-bold text-amber-800">{formatNumber(totals.itemFineTotal)}</td>
+                        <td></td>
+                        <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-900">{formatNumber(totals.itemMajuriTotal)}</td>
+                        <td colSpan={2}></td>
+                      </tr>
+                    </tfoot>
+                  )}
                 </table>
               </div>
+            </div>
 
-              <div className="purchase-panel">
-                <div className="section-title">Payment Nave</div>
-                <div className="purchase-payment-grid">
-                  <Field label="Type">
-                    <select
-                      value={paymentForm.type}
-                      onChange={(event) =>
-                        setPaymentForm((current) => ({ ...current, type: event.target.value }))
-                      }
-                    >
-                      <option>CASH NAVE</option>
-                      <option>BANK NAVE</option>
-                      <option>FINE NAVE</option>
-                      <option>ANAMAT NAVE</option>
-                    </select>
-                  </Field>
-                  <NumberField
-                    label="Weight"
-                    value={paymentForm.weight}
-                    onChange={(value) =>
-                      setPaymentForm((current) => ({ ...current, weight: value }))
-                    }
-                    onNumberChange={handleNumberChange}
-                  />
-                  <NumberField
-                    label="Tanch"
-                    value={paymentForm.tanch}
-                    onChange={(value) =>
-                      setPaymentForm((current) => ({ ...current, tanch: value }))
-                    }
-                    onNumberChange={handleNumberChange}
-                  />
-                  <NumberField
-                    label="Wstg"
-                    value={paymentForm.wastage}
-                    onChange={(value) =>
-                      setPaymentForm((current) => ({ ...current, wastage: value }))
-                    }
-                    onNumberChange={handleNumberChange}
-                  />
-                  <ReadOnlyField label="Fine" value={formatNumber(paymentPreview.fine)} />
-                  <NumberField
-                    label="Cash"
-                    value={paymentForm.cash}
-                    onChange={(value) => setPaymentForm((current) => ({ ...current, cash: value }))}
-                    onNumberChange={handleNumberChange}
-                  />
-                  <NumberField
-                    label="Bank"
-                    value={paymentForm.bank}
-                    onChange={(value) => setPaymentForm((current) => ({ ...current, bank: value }))}
-                    onNumberChange={handleNumberChange}
-                  />
-                  <NumberField
-                    label="Anamat"
-                    value={paymentForm.anamat}
-                    onChange={(value) =>
-                      setPaymentForm((current) => ({ ...current, anamat: value }))
-                    }
-                    onNumberChange={handleNumberChange}
-                  />
-                  <Field label="Details">
-                    <input
-                      value={paymentForm.details}
-                      onChange={(event) =>
-                        setPaymentForm((current) => ({ ...current, details: event.target.value }))
-                      }
-                    />
-                  </Field>
+            {/* Payment Nave Section Card */}
+            <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-4">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-4 bg-emerald-500 rounded-full inline-block" />
+                  <h2 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                    Payment Nave (Outward Settlement)
+                  </h2>
                 </div>
-                <div className="button-row purchase-button-row">
-                  <button className="btn-save" type="button" onClick={addPaymentLine}>
-                    Add Payment
-                  </button>
+                <span className="text-[11px] text-slate-400 font-medium">
+                  Record fine gold/silver or cash/bank payments to supplier against this purchase
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-9 gap-2.5 items-end">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase tracking-wider">
+                    Type *
+                  </label>
+                  <select
+                    value={paymentForm.type}
+                    onChange={(e) => setPaymentForm((c) => ({ ...c, type: e.target.value }))}
+                    className="w-full h-8 px-1.5 text-xs bg-white border border-slate-200 rounded-lg font-medium focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 shadow-2xs"
+                  >
+                    <option value="CASH NAVE">CASH NAVE</option>
+                    <option value="BANK NAVE">BANK NAVE</option>
+                    <option value="FINE NAVE">FINE NAVE</option>
+                    <option value="ANAMAT NAVE">ANAMAT NAVE</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase tracking-wider">
+                    Weight
+                  </label>
+                  <input
+                    value={paymentForm.weight}
+                    onChange={(e) => handleNumberChange(e.target.value, (v) => setPaymentForm((c) => ({ ...c, weight: v })))}
+                    placeholder="0.000"
+                    className="w-full h-8 px-2 text-xs bg-white border border-slate-200 rounded-lg text-right font-mono focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 shadow-2xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase tracking-wider">
+                    Tanch %
+                  </label>
+                  <input
+                    value={paymentForm.tanch}
+                    onChange={(e) => handleNumberChange(e.target.value, (v) => setPaymentForm((c) => ({ ...c, tanch: v })))}
+                    placeholder="0.00"
+                    className="w-full h-8 px-2 text-xs bg-white border border-slate-200 rounded-lg text-right font-mono focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 shadow-2xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase tracking-wider">
+                    Wstg %
+                  </label>
+                  <input
+                    value={paymentForm.wastage}
+                    onChange={(e) => handleNumberChange(e.target.value, (v) => setPaymentForm((c) => ({ ...c, wastage: v })))}
+                    placeholder="0.00"
+                    className="w-full h-8 px-2 text-xs bg-white border border-slate-200 rounded-lg text-right font-mono focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 shadow-2xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-emerald-800 block mb-1 uppercase tracking-wider">
+                    Fine (Nave)
+                  </label>
+                  <input
+                    value={formatNumber(paymentPreview.fine)}
+                    disabled
+                    className="w-full h-8 px-2 text-xs bg-emerald-50 border border-emerald-200 rounded-lg text-right font-mono text-emerald-900 font-bold"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase tracking-wider">
+                    Cash Amount
+                  </label>
+                  <input
+                    value={paymentForm.cash}
+                    onChange={(e) => handleNumberChange(e.target.value, (v) => setPaymentForm((c) => ({ ...c, cash: v })))}
+                    placeholder="0.00"
+                    className="w-full h-8 px-2 text-xs bg-white border border-slate-200 rounded-lg text-right font-mono focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 shadow-2xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase tracking-wider">
+                    Bank Amount
+                  </label>
+                  <input
+                    value={paymentForm.bank}
+                    onChange={(e) => handleNumberChange(e.target.value, (v) => setPaymentForm((c) => ({ ...c, bank: v })))}
+                    placeholder="0.00"
+                    className="w-full h-8 px-2 text-xs bg-white border border-slate-200 rounded-lg text-right font-mono focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 shadow-2xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase tracking-wider">
+                    Anamat
+                  </label>
+                  <input
+                    value={paymentForm.anamat}
+                    onChange={(e) => handleNumberChange(e.target.value, (v) => setPaymentForm((c) => ({ ...c, anamat: v })))}
+                    placeholder="0.00"
+                    className="w-full h-8 px-2 text-xs bg-white border border-slate-200 rounded-lg text-right font-mono focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 shadow-2xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase tracking-wider">
+                    Details / Ref
+                  </label>
+                  <input
+                    value={paymentForm.details}
+                    onChange={(e) => setPaymentForm((c) => ({ ...c, details: e.target.value }))}
+                    placeholder="Cheque / RTGS / Note"
+                    className="w-full h-8 px-2 text-xs bg-white border border-slate-200 rounded-lg text-slate-800 focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 shadow-2xs"
+                  />
                 </div>
               </div>
 
-              <div className="table-panel purchase-payment-table-panel">
-                <table>
-                  <thead>
+              <div className="flex items-center gap-2.5 mt-4 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={addPaymentLine}
+                  className="h-9 px-5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white font-bold text-xs shadow-md shadow-emerald-600/20 flex items-center justify-center gap-2 cursor-pointer transition-all"
+                  style={{ color: '#ffffff' }}
+                >
+                  <span>➕</span>
+                  <span>Add Payment Entry</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPaymentForm(initialPaymentForm)}
+                  className="h-9 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors cursor-pointer"
+                >
+                  Clear Fields
+                </button>
+              </div>
+
+              {/* Payment Lines Table */}
+              <div className="mt-3 overflow-x-auto rounded-xl border border-slate-200 max-h-[220px]">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead className="bg-slate-50 text-slate-600 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200">
                     <tr>
-                      <th>Sr</th>
-                      <th>Type</th>
-                      <th>Weight</th>
-                      <th>Fine</th>
-                      <th>Cash</th>
-                      <th>Bank</th>
-                      <th>Anamat</th>
-                      <th>Action</th>
+                      <th className="py-2 px-3">#</th>
+                      <th className="py-2 px-3">Type</th>
+                      <th className="py-2 px-3 text-right">Weight</th>
+                      <th className="py-2 px-3 text-right text-emerald-800 font-bold">Fine (Nave)</th>
+                      <th className="py-2 px-3 text-right">Cash</th>
+                      <th className="py-2 px-3 text-right">Bank</th>
+                      <th className="py-2 px-3 text-right">Anamat</th>
+                      <th className="py-2 px-3">Details</th>
+                      <th className="py-2 px-3 text-center">Action</th>
                     </tr>
                   </thead>
-                  <tbody>
+
+                  <tbody className="divide-y divide-slate-100 font-medium text-slate-800">
                     {paymentLines.length === 0 ? (
                       <tr>
-                        <td colSpan={8} className="empty-row">
-                          No payment added.
+                        <td colSpan={9} className="py-4 text-center text-slate-400">
+                          No payment entries added yet.
                         </td>
                       </tr>
                     ) : (
                       paymentLines.map((line) => (
-                        <tr key={line.lineNo}>
-                          <td>{line.lineNo}</td>
-                          <td>{line.type}</td>
-                          <td>{formatNumber(line.weight)}</td>
-                          <td>{formatNumber(line.fine)}</td>
-                          <td>{formatNumber(line.cash)}</td>
-                          <td>{formatNumber(line.bank)}</td>
-                          <td>{formatNumber(line.anamat)}</td>
-                          <td>
+                        <tr key={line.lineNo} className="hover:bg-slate-50/70">
+                          <td className="py-1.5 px-3 text-slate-400 font-mono text-[11px]">{line.lineNo}</td>
+                          <td className="py-1.5 px-3 font-semibold text-slate-800">{line.type}</td>
+                          <td className="py-1.5 px-3 text-right font-mono">{formatNumber(line.weight)}</td>
+                          <td className="py-1.5 px-3 text-right font-mono font-bold text-emerald-800">{formatNumber(line.fine)}</td>
+                          <td className="py-1.5 px-3 text-right font-mono">{formatNumber(line.cash)}</td>
+                          <td className="py-1.5 px-3 text-right font-mono">{formatNumber(line.bank)}</td>
+                          <td className="py-1.5 px-3 text-right font-mono">{formatNumber(line.anamat)}</td>
+                          <td className="py-1.5 px-3 text-slate-500 text-[11px] max-w-[120px] truncate">{line.details || '-'}</td>
+                          <td className="py-1.5 px-3 text-center">
                             <button
-                              className="btn-delete-small"
                               type="button"
-                              onClick={() => removePaymentLine(line.lineNo)}
+                              onClick={() => setPaymentDeleteIndex(line.lineNo)}
+                              className="px-2 py-0.5 text-[11px] font-bold rounded-md bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 transition-colors cursor-pointer"
                             >
                               Remove
                             </button>
@@ -890,131 +1392,300 @@ function PurchaseScreen({ onClose }: { onClose: () => void }): React.JSX.Element
                 </table>
               </div>
             </div>
+          </div>
 
-            <div className="purchase-right">
-              <div className="purchase-balance-card">
-                <div className="purchase-balance-title">Supplier Balance</div>
-                <div className="purchase-account-name">
-                  {selectedAccount?.accountName || 'No account selected'}
+          {/* Right Column (4 cols): Supplier Balance & Actions Sidebar */}
+          <div className="xl:col-span-4 flex flex-col gap-4">
+            {/* Supplier Balance Card */}
+            <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-4">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-4 bg-amber-500 rounded-full inline-block" />
+                  <h2 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                    Supplier Balance
+                  </h2>
                 </div>
-
-                <BalanceLine label="Old Gold Fine" value={oldBalance.goldFine} />
-                <BalanceLine label="Old Silver Fine" value={oldBalance.silverFine} />
-                <BalanceLine label="Old Cash" value={oldBalance.cash} />
-                <BalanceLine label="Old Bank" value={oldBalance.bank} />
-                <BalanceLine label="Old Anamat" value={oldBalance.anamat} />
-
-                <div className="purchase-balance-divider" />
-
-                <BalanceLine label="Purchase Fine Jama" value={totals.itemFineTotal} />
-                <BalanceLine label="Purchase Majuri Jama" value={totals.itemMajuriTotal} />
-                <BalanceLine label="Payment Fine Nave" value={totals.paymentFineNaveTotal} />
-                <BalanceLine label="Payment Cash Nave" value={totals.paymentCashNaveTotal} />
-                <BalanceLine label="Payment Bank Nave" value={totals.paymentBankNaveTotal} />
-                <BalanceLine label="Payment Anamat Nave" value={totals.paymentAnamatNaveTotal} />
-
-                <div className="purchase-balance-divider" />
-
-                <BalanceLine label="Closing Gold Fine" value={totals.closingGoldFine} strong />
-                <BalanceLine label="Closing Silver Fine" value={totals.closingSilverFine} strong />
-                <BalanceLine label="Closing Cash" value={totals.closingCash} strong />
-                <BalanceLine label="Closing Bank" value={totals.closingBank} strong />
-                <BalanceLine label="Closing Anamat" value={totals.closingAnamat} strong />
+                <span className="text-[11px] font-bold text-slate-900 truncate max-w-[150px]">
+                  {selectedAccount?.accountName || 'No account selected'}
+                </span>
               </div>
 
-              <div className="purchase-action-card">
+              {/* Balance Breakdown Section */}
+              <div className="space-y-2 text-xs">
+                {/* 1. Old Balances */}
+                <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider pt-1">
+                  Previous Balance (Jama / Nave)
+                </div>
+                <div className="space-y-1 bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                  <div className="flex justify-between text-slate-600">
+                    <span>Old Gold Fine:</span>
+                    <strong className="font-mono text-slate-900">{formatNumber(oldBalance.goldFine)}</strong>
+                  </div>
+                  <div className="flex justify-between text-slate-600">
+                    <span>Old Silver Fine:</span>
+                    <strong className="font-mono text-slate-900">{formatNumber(oldBalance.silverFine)}</strong>
+                  </div>
+                  <div className="flex justify-between text-slate-600">
+                    <span>Old Cash:</span>
+                    <strong className="font-mono text-slate-900">{formatNumber(oldBalance.cash)}</strong>
+                  </div>
+                  <div className="flex justify-between text-slate-600">
+                    <span>Old Bank:</span>
+                    <strong className="font-mono text-slate-900">{formatNumber(oldBalance.bank)}</strong>
+                  </div>
+                  <div className="flex justify-between text-slate-600">
+                    <span>Old Anamat:</span>
+                    <strong className="font-mono text-slate-900">{formatNumber(oldBalance.anamat)}</strong>
+                  </div>
+                </div>
+
+                {/* 2. Current Inward Transaction Totals */}
+                <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider pt-2">
+                  Current Inward &amp; Payments
+                </div>
+                <div className="space-y-1 bg-amber-50/50 p-2.5 rounded-xl border border-amber-100/80">
+                  <div className="flex justify-between text-amber-900">
+                    <span>Purchase Fine (Jama):</span>
+                    <strong className="font-mono text-amber-950 font-bold">{formatNumber(totals.itemFineTotal)}</strong>
+                  </div>
+                  <div className="flex justify-between text-slate-700">
+                    <span>Purchase Majuri (Jama):</span>
+                    <strong className="font-mono text-slate-900">{formatNumber(totals.itemMajuriTotal)}</strong>
+                  </div>
+                  <div className="flex justify-between text-emerald-800">
+                    <span>Payment Fine (Nave):</span>
+                    <strong className="font-mono text-emerald-950 font-bold">{formatNumber(totals.paymentFineNaveTotal)}</strong>
+                  </div>
+                  <div className="flex justify-between text-emerald-800">
+                    <span>Payment Cash (Nave):</span>
+                    <strong className="font-mono text-emerald-950 font-bold">{formatNumber(totals.paymentCashNaveTotal)}</strong>
+                  </div>
+                  <div className="flex justify-between text-emerald-800">
+                    <span>Payment Bank (Nave):</span>
+                    <strong className="font-mono text-emerald-950 font-bold">{formatNumber(totals.paymentBankNaveTotal)}</strong>
+                  </div>
+                  <div className="flex justify-between text-emerald-800">
+                    <span>Payment Anamat (Nave):</span>
+                    <strong className="font-mono text-emerald-950 font-bold">{formatNumber(totals.paymentAnamatNaveTotal)}</strong>
+                  </div>
+                </div>
+
+                {/* 3. Final Closing Balances */}
+                <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider pt-2">
+                  Net Closing Balance
+                </div>
+                <div className="space-y-1.5 bg-slate-900 text-white p-3 rounded-xl shadow-xs">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-slate-300">Closing Gold Fine:</span>
+                    <strong className="font-mono text-amber-300 text-sm font-bold">
+                      {formatNumber(totals.closingGoldFine)}
+                    </strong>
+                  </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-slate-300">Closing Silver Fine:</span>
+                    <strong className="font-mono text-slate-200 text-sm font-bold">
+                      {formatNumber(totals.closingSilverFine)}
+                    </strong>
+                  </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-slate-300">Closing Cash:</span>
+                    <strong className="font-mono text-emerald-400 text-sm font-bold">
+                      {formatNumber(totals.closingCash)}
+                    </strong>
+                  </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-slate-300">Closing Bank:</span>
+                    <strong className="font-mono text-sky-400 text-sm font-bold">
+                      {formatNumber(totals.closingBank)}
+                    </strong>
+                  </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-slate-300">Closing Anamat:</span>
+                    <strong className="font-mono text-slate-300 text-sm font-bold">
+                      {formatNumber(totals.closingAnamat)}
+                    </strong>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="mt-4 pt-3 border-t border-slate-100 flex flex-col gap-2">
                 <button
-                  className="btn-save purchase-save-btn"
                   type="button"
                   onClick={() => void handleSave()}
                   disabled={saving || loading}
+                  className="w-full h-10 px-5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 active:scale-[0.98] text-white font-bold text-xs shadow-md shadow-amber-500/20 flex items-center justify-center gap-2 cursor-pointer transition-all disabled:opacity-50"
+                  style={{ color: '#ffffff' }}
                 >
-                  {saving ? 'Saving...' : 'Save Purchase'}
+                  <span>💾</span>
+                  <span>{saving ? 'Saving Purchase...' : 'Save & Post Purchase'}</span>
                 </button>
+
                 <button
-                  className="btn-new purchase-reset-btn"
                   type="button"
                   onClick={() => void resetPurchase()}
                   disabled={saving}
+                  className="w-full h-9 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
                 >
-                  New Purchase
+                  <span>✨</span>
+                  <span>New Blank Purchase</span>
                 </button>
-                <div className="screen-help-text">
-                  Purchase adds stock. Purchase item posts Jama to supplier account. Payment posts
-                  Nave.
-                </div>
+              </div>
+
+              <div className="text-[11px] text-slate-500 font-medium leading-tight mt-3 bg-amber-50/70 p-2.5 rounded-lg border border-amber-200/60">
+                💡 <strong>Ledger Rule:</strong> Purchase inward posts stock increase &amp; supplier Jama credit. Outward payment posts Nave debit to settle account.
               </div>
             </div>
           </div>
         </div>
+
+        {/* Bottom Section: Saved Purchases Register */}
+        <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-4">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100 flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-4 bg-amber-500 rounded-full inline-block" />
+              <h2 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                Recent Purchases Register
+              </h2>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className="relative w-64">
+                <input
+                  id="purchase-search"
+                  value={searchPurchaseText}
+                  onChange={(e) => setSearchPurchaseText(e.target.value)}
+                  placeholder="Search bill no, supplier, phone..."
+                  className="w-full h-8 px-2.5 pr-7 text-xs bg-white border border-slate-200 rounded-lg text-slate-800 focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs"
+                />
+                {searchPurchaseText && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchPurchaseText('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs font-bold cursor-pointer"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => void loadRecentPurchases()}
+                disabled={loading}
+                className="h-8 px-3 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+              >
+                <span>🔄</span>
+                <span>Refresh</span>
+              </button>
+
+              <div className="text-xs text-slate-500 font-medium">
+                Showing: <strong className="text-amber-800">{filteredPurchases.length}</strong>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-3 overflow-x-auto rounded-xl border border-slate-200">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead className="bg-slate-50 text-slate-600 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200">
+                <tr>
+                  <th className="py-2.5 px-3">#</th>
+                  <th className="py-2.5 px-3">Purchase No</th>
+                  <th className="py-2.5 px-3">Date</th>
+                  <th className="py-2.5 px-3">Supplier Account</th>
+                  <th className="py-2.5 px-3">Mobile</th>
+                  <th className="py-2.5 px-3">Metal</th>
+                  <th className="py-2.5 px-3 text-right">Fine Total</th>
+                  <th className="py-2.5 px-3 text-right">Majuri Total</th>
+                  <th className="py-2.5 px-3 text-center">Actions</th>
+                </tr>
+              </thead>
+
+              <tbody className="divide-y divide-slate-100 font-medium text-slate-800">
+                {loading && recentPurchases.length === 0 ? (
+                  <tr>
+                    <td colSpan={9} className="py-6 text-center text-slate-400">
+                      Loading purchases...
+                    </td>
+                  </tr>
+                ) : filteredPurchases.length === 0 ? (
+                  <tr>
+                    <td colSpan={9} className="py-6 text-center text-slate-400">
+                      {searchPurchaseText ? 'No matching purchase found.' : 'No purchase records saved yet.'}
+                    </td>
+                  </tr>
+                ) : (
+                  filteredPurchases.map((purchase, index) => (
+                    <tr key={purchase.id} className="hover:bg-slate-50/70 transition-colors">
+                      <td className="py-2 px-3 text-slate-400 font-mono text-[11px]">{index + 1}</td>
+                      <td className="py-2 px-3 font-mono font-bold text-amber-800">{purchase.purchase_no}</td>
+                      <td className="py-2 px-3 font-mono">{formatDate(purchase.purchase_date)}</td>
+                      <td className="py-2 px-3 font-bold text-slate-900">{purchase.account_name}</td>
+                      <td className="py-2 px-3 text-slate-500 font-mono text-[11px]">{purchase.mobile_number || '-'}</td>
+                      <td className="py-2 px-3">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700">
+                          {purchase.metal_type}
+                        </span>
+                      </td>
+                      <td className="py-2 px-3 text-right font-mono font-bold text-amber-800">
+                        {formatNumber(purchase.item_fine_total || purchase.fine_total || 0)}
+                      </td>
+                      <td className="py-2 px-3 text-right font-mono font-semibold text-slate-800">
+                        {formatNumber(purchase.item_majuri_total || purchase.majuri_total || 0)}
+                      </td>
+                      <td className="py-2 px-3 text-center">
+                        <button
+                          type="button"
+                          onClick={() => void handleViewPurchase(purchase.id)}
+                          className="px-2.5 py-1 text-[11px] font-semibold rounded-md bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 transition-colors cursor-pointer"
+                        >
+                          Print / View
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
+      {/* Confirmation Dialogs */}
+      <AppConfirmDialog
+        open={itemDeleteIndex !== null}
+        title="Remove Purchase Item Line?"
+        message={`Are you sure you want to remove item line #${itemDeleteIndex} from this purchase?`}
+        confirmText="Remove"
+        cancelText="Cancel"
+        type="danger"
+        onConfirm={() => {
+          if (itemDeleteIndex !== null) removeItemLine(itemDeleteIndex)
+        }}
+        onCancel={() => setItemDeleteIndex(null)}
+      />
+
+      <AppConfirmDialog
+        open={paymentDeleteIndex !== null}
+        title="Remove Payment Entry?"
+        message={`Are you sure you want to remove payment entry #${paymentDeleteIndex}?`}
+        confirmText="Remove"
+        cancelText="Cancel"
+        type="danger"
+        onConfirm={() => {
+          if (paymentDeleteIndex !== null) removePaymentLine(paymentDeleteIndex)
+        }}
+        onCancel={() => setPaymentDeleteIndex(null)}
+      />
+
+      {/* Print Preview Modal */}
       {savedPurchase && (
         <PurchasePrintPreview
           purchase={savedPurchase}
-          autoPrintOnOpen
+          autoPrintOnOpen={false}
           onClose={() => setSavedPurchase(null)}
         />
       )}
-    </div>
-  )
-}
-
-function Field({
-  label,
-  children
-}: {
-  label: string
-  children: React.ReactNode
-}): React.JSX.Element {
-  return (
-    <div className="form-field">
-      <label>{label}</label>
-      {children}
-    </div>
-  )
-}
-
-function NumberField({
-  label,
-  value,
-  onChange,
-  onNumberChange
-}: {
-  label: string
-  value: string
-  onChange: (value: string) => void
-  onNumberChange: (value: string, setter: (value: string) => void) => void
-}): React.JSX.Element {
-  return (
-    <Field label={label}>
-      <input value={value} onChange={(event) => onNumberChange(event.target.value, onChange)} />
-    </Field>
-  )
-}
-
-function ReadOnlyField({ label, value }: { label: string; value: string }): React.JSX.Element {
-  return (
-    <div className="form-field readonly-field">
-      <label>{label}</label>
-      <input value={value} readOnly />
-    </div>
-  )
-}
-
-function BalanceLine({
-  label,
-  value,
-  strong = false
-}: {
-  label: string
-  value: number
-  strong?: boolean
-}): React.JSX.Element {
-  return (
-    <div className={strong ? 'purchase-balance-line strong' : 'purchase-balance-line'}>
-      <span>{label}</span>
-      <strong>{formatNumber(value)}</strong>
     </div>
   )
 }
