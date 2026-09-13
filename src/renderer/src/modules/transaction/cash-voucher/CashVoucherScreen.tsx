@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import AppAlert from '../../../components/ui/AppAlert'
 import AppConfirmDialog from '../../../components/ui/AppConfirmDialog'
 import CashVoucherPrintPreview from './CashVoucherPrintPreview'
@@ -16,21 +16,18 @@ type CashVoucherForm = {
 
 const today = new Date().toISOString().slice(0, 10)
 
-function formatNumber(value: number): string {
-  return Number(value || 0).toFixed(2)
+function formatCurrency(value: number): string {
+  return Number(value || 0).toLocaleString('en-IN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })
 }
 
 function formatDate(value: string): string {
-  if (!value) return ''
-
+  if (!value) return '-'
   const [year, month, day] = value.split('-')
   if (!year || !month || !day) return value
-
   return `${day}/${month}/${year}`
-}
-
-function getVoucherTypeLabel(type: CashVoucherType): string {
-  return type === 'RECEIPT' ? 'Cash Receipt' : 'Cash Payment'
 }
 
 function createInitialForm(voucherType: CashVoucherType): CashVoucherForm {
@@ -43,12 +40,22 @@ function createInitialForm(voucherType: CashVoucherType): CashVoucherForm {
   }
 }
 
+const COMMON_NARRATIONS = [
+  'Cash received towards bill',
+  'Advance received for order',
+  'Labour payment to karigar',
+  'Cash payment against invoice',
+  'Full & final settlement'
+]
+
+const QUICK_AMOUNTS = [500, 1000, 2000, 5000, 10000, 25000, 50000]
+
 function CashVoucherScreen({
   initialVoucherType,
   onClose
 }: {
   initialVoucherType: CashVoucherType
-  onClose: () => void
+  onClose?: () => void
 }): React.JSX.Element {
   const [form, setForm] = useState<CashVoucherForm>(() => createInitialForm(initialVoucherType))
   const [accounts, setAccounts] = useState<AccountRecord[]>([])
@@ -70,11 +77,15 @@ function CashVoucherScreen({
   const dateInputRef = useRef<HTMLInputElement | null>(null)
   const accountSelectRef = useRef<HTMLSelectElement | null>(null)
   const amountInputRef = useRef<HTMLInputElement | null>(null)
-  const narrationInputRef = useRef<HTMLTextAreaElement | null>(null)
+  const narrationInputRef = useRef<HTMLInputElement | null>(null)
 
   const activeAccounts = useMemo(() => {
     return accounts.filter((account) => account.active)
   }, [accounts])
+
+  const selectedAccount = useMemo(() => {
+    return accounts.find((a) => a.id === form.accountId)
+  }, [accounts, form.accountId])
 
   const filteredVouchers = useMemo(() => {
     const keyword = searchText.trim().toLowerCase()
@@ -84,29 +95,45 @@ function CashVoucherScreen({
       const keywordMatch =
         !keyword ||
         voucher.voucherNo.toLowerCase().includes(keyword) ||
-        voucher.accountName.toLowerCase().includes(keyword) ||
+        (voucher.accountName || '').toLowerCase().includes(keyword) ||
         voucher.voucherDate.toLowerCase().includes(keyword) ||
-        voucher.narration.toLowerCase().includes(keyword) ||
-        getVoucherTypeLabel(voucher.voucherType).toLowerCase().includes(keyword)
+        (voucher.narration || '').toLowerCase().includes(keyword) ||
+        (voucher.voucherType === 'RECEIPT' ? 'cash receipt jama' : 'cash payment nave').includes(
+          keyword
+        )
 
       return typeMatch && keywordMatch
     })
   }, [searchText, typeFilter, vouchers])
 
+  const statusCounts = useMemo(() => {
+    return vouchers.reduce(
+      (acc, v) => {
+        acc.total += 1
+        if (v.voucherType === 'RECEIPT') acc.receipts += 1
+        else if (v.voucherType === 'PAYMENT') acc.payments += 1
+        return acc
+      },
+      { total: 0, receipts: 0, payments: 0 }
+    )
+  }, [vouchers])
+
   const totals = useMemo(() => {
     return filteredVouchers.reduce(
-      (total, voucher) => {
+      (acc, voucher) => {
+        const val = Number(voucher.amount || 0)
         if (voucher.voucherType === 'RECEIPT') {
-          total.jama += Number(voucher.amount || 0)
+          acc.jama += val
         } else {
-          total.nave += Number(voucher.amount || 0)
+          acc.nave += val
         }
-
-        return total
+        return acc
       },
       { jama: 0, nave: 0 }
     )
   }, [filteredVouchers])
+
+  const netBalance = totals.jama - totals.nave
 
   const showAlert = useCallback((type: AlertType, message: string): void => {
     setAlertType(type)
@@ -118,7 +145,7 @@ function CashVoucherScreen({
 
     alertTimerRef.current = window.setTimeout(() => {
       setAlertMessage('')
-    }, 3000)
+    }, 3500)
   }, [])
 
   const loadNextNumber = useCallback(async (voucherType: CashVoucherType): Promise<void> => {
@@ -132,8 +159,8 @@ function CashVoucherScreen({
 
   const loadVouchers = useCallback(async (): Promise<void> => {
     try {
-      const data = await window.api.cashVoucher.list({ voucherType: 'ALL' })
-      setVouchers(data)
+      const data = await window.api.cashVoucher.list()
+      setVouchers(Array.isArray(data) ? data : [])
     } catch (error) {
       showAlert('error', getFriendlyErrorMessage(error))
     }
@@ -142,7 +169,7 @@ function CashVoucherScreen({
   const loadAccounts = useCallback(async (): Promise<void> => {
     try {
       const data = await window.api.accounts.list()
-      setAccounts(data)
+      setAccounts(Array.isArray(data) ? data : [])
     } catch (error) {
       showAlert('error', getFriendlyErrorMessage(error))
     }
@@ -170,18 +197,16 @@ function CashVoucherScreen({
   }, [initialVoucherType, loadNextNumber])
 
   const focusNextOnEnter = (
-    event: React.KeyboardEvent<HTMLInputElement | HTMLSelectElement>,
+    event: KeyboardEvent<HTMLInputElement | HTMLSelectElement>,
     nextElement?: HTMLElement | null
   ): void => {
     if (event.key !== 'Enter') return
-
     event.preventDefault()
     nextElement?.focus()
   }
 
   const handleVoucherTypeChange = (voucherType: CashVoucherType): void => {
     if (editingId) return
-
     setForm((current) => ({ ...current, voucherType }))
     void loadNextNumber(voucherType)
   }
@@ -194,13 +219,12 @@ function CashVoucherScreen({
     }
 
     if (!form.accountId) {
-      showAlert('warning', 'Please select account.')
+      showAlert('warning', 'Please select an account.')
       accountSelectRef.current?.focus()
       return false
     }
 
     const amount = Number(form.amount)
-
     if (!Number.isFinite(amount) || amount <= 0) {
       showAlert('warning', 'Amount must be greater than 0.')
       amountInputRef.current?.focus()
@@ -225,8 +249,8 @@ function CashVoucherScreen({
       }
 
       const successMessage = editingId
-        ? 'Cash voucher updated successfully.'
-        : 'Cash voucher saved successfully.'
+        ? `Cash voucher ${voucherNo} updated successfully.`
+        : `Cash voucher ${voucherNo} saved successfully.`
 
       const saved = editingId
         ? await window.api.cashVoucher.update(editingId, payload)
@@ -235,7 +259,7 @@ function CashVoucherScreen({
       await loadVouchers()
       handleNew()
       showAlert('success', successMessage)
-      setAutoPrintVoucher(true)
+      setAutoPrintVoucher(false)
       setPrintVoucher(saved)
     } catch (error) {
       showAlert('error', getFriendlyErrorMessage(error))
@@ -253,11 +277,11 @@ function CashVoucherScreen({
       voucherDate: voucher.voucherDate,
       accountId: voucher.accountId,
       amount: String(voucher.amount),
-      narration: voucher.narration
+      narration: voucher.narration || ''
     })
 
     window.setTimeout(() => {
-      dateInputRef.current?.focus()
+      amountInputRef.current?.focus()
     }, 0)
   }
 
@@ -274,7 +298,7 @@ function CashVoucherScreen({
 
       setDeleteTarget(null)
       await loadVouchers()
-      showAlert('success', 'Cash voucher deleted successfully.')
+      showAlert('success', `Cash voucher ${deleteTarget.voucherNo} deleted successfully.`)
     } catch (error) {
       showAlert('error', getFriendlyErrorMessage(error))
     } finally {
@@ -287,6 +311,27 @@ function CashVoucherScreen({
     setDeleteTarget(null)
   }
 
+  const handleAddQuickAmount = (val: number): void => {
+    const current = Number(form.amount) || 0
+    setForm((prev) => ({ ...prev, amount: String(current + val) }))
+  }
+
+  const handleSaveRef = useRef(handleSave)
+  useEffect(() => {
+    handleSaveRef.current = handleSave
+  })
+
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: globalThis.KeyboardEvent): void => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault()
+        void handleSaveRef.current()
+      }
+    }
+    window.addEventListener('keydown', handleGlobalKeyDown)
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown)
+  }, [])
+
   useEffect(() => {
     const loadTimer = window.setTimeout(() => {
       void loadScreenData()
@@ -294,326 +339,605 @@ function CashVoucherScreen({
 
     return () => {
       window.clearTimeout(loadTimer)
-
       if (alertTimerRef.current) {
         window.clearTimeout(alertTimerRef.current)
       }
     }
   }, [loadScreenData])
 
+  const isReceipt = form.voucherType === 'RECEIPT'
+
   return (
-    <div className="cash-voucher-screen">
-      <div className="cash-voucher-window">
-        <div className="form-title-bar">
-          <span>Cash Receipt / Cash Payment</span>
-          <button className="module-close-btn" type="button" onClick={onClose}>
-            &times;
-          </button>
+    <div className="flex flex-col h-full bg-slate-100 font-sans text-slate-800 select-none overflow-hidden">
+      {/* ── TOP HEADER BAR ── */}
+      <header className="h-13 px-4 border-b border-slate-200/90 bg-white flex items-center justify-between shrink-0 shadow-2xs">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl border border-amber-500/20 bg-amber-500/10 text-amber-700 flex items-center justify-center text-lg shadow-2xs font-bold transition-colors">
+            💵
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-sm font-bold text-slate-800 tracking-tight">
+                Cash Receipt / Cash Payment
+              </h1>
+              <span
+                className={`px-2 py-0.5 rounded-full text-[11px] font-mono font-bold border transition-colors ${
+                  isReceipt
+                    ? 'bg-emerald-100/80 text-emerald-900 border-emerald-300'
+                    : 'bg-amber-100/90 text-amber-900 border-amber-300'
+                }`}
+              >
+                {editingId ? `Editing ${voucherNo}` : voucherNo || (isReceipt ? 'CR-0001' : 'CP-0001')}
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-500 leading-tight">
+              Post cash receipts (Jama) and cash payments (Nave) directly to double-entry ledger
+            </p>
+          </div>
         </div>
 
-        <div className="cash-voucher-body">
-          <AppAlert type={alertType} message={alertMessage} onClose={() => setAlertMessage('')} />
+        <div className="flex items-center gap-2">
+          {editingId && (
+            <button
+              type="button"
+              onClick={handleNew}
+              className="h-8 px-3 text-xs font-semibold text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5"
+            >
+              <span>✕</span> Clear Edit
+            </button>
+          )}
 
-          <div className="cash-voucher-layout">
-            <div className="cash-voucher-form-panel">
-              <div className="section-title">{editingId ? 'Update Voucher' : 'New Voucher'}</div>
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="h-8 w-8 flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer text-sm font-bold"
+              title="Close Tab"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+      </header>
 
-              <div className="voucher-type-toggle">
-                <button
-                  className={form.voucherType === 'RECEIPT' ? 'active receipt' : ''}
-                  type="button"
-                  onClick={() => handleVoucherTypeChange('RECEIPT')}
-                  disabled={Boolean(editingId) || saving}
-                >
-                  <span>Cash Receipt</span>
-                  <strong>Jama</strong>
-                </button>
+      {/* Global Alert Notification */}
+      <AppAlert type={alertType} message={alertMessage} onClose={() => setAlertMessage('')} />
 
-                <button
-                  className={form.voucherType === 'PAYMENT' ? 'active payment' : ''}
-                  type="button"
-                  onClick={() => handleVoucherTypeChange('PAYMENT')}
-                  disabled={Boolean(editingId) || saving}
-                >
-                  <span>Cash Payment</span>
-                  <strong>Nave</strong>
-                </button>
+      {/* ── TWO-PANEL CONTENT WORKSPACE ── */}
+      <div className="flex-1 p-4 overflow-hidden flex flex-col lg:flex-row gap-4">
+        {/* ── LEFT PANEL: VOUCHER ENTRY FORM (350px) ── */}
+        <div className="w-full lg:w-[350px] xl:w-[370px] bg-white rounded-2xl border border-slate-200/90 shadow-xs p-4 flex flex-col shrink-0 overflow-y-auto">
+          {/* Card Title */}
+          <div className="flex items-center gap-2 pb-2.5 border-b border-slate-100">
+            <span
+              className={`w-1.5 h-4 rounded-full inline-block transition-colors ${
+                isReceipt ? 'bg-emerald-500' : 'bg-amber-500'
+              }`}
+            />
+            <h2 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+              {editingId ? 'Edit Cash Voucher' : 'New Voucher'}
+            </h2>
+          </div>
+
+          {/* Full-width 2-Segment Switch (Zero text wrap, ample breathing room) */}
+          <div className="grid grid-cols-2 p-1 bg-slate-100 rounded-xl gap-1 mt-3 mb-3 border border-slate-200/70 shrink-0">
+            <button
+              type="button"
+              onClick={() => handleVoucherTypeChange('RECEIPT')}
+              disabled={Boolean(editingId) || saving}
+              className={`h-8 px-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer border ${
+                isReceipt
+                  ? 'bg-emerald-600 text-white shadow-2xs border-emerald-600'
+                  : 'border-transparent text-slate-600 hover:text-emerald-700 hover:bg-white/60'
+              }`}
+            >
+              <span>＋</span> Receipt (Jama)
+            </button>
+            <button
+              type="button"
+              onClick={() => handleVoucherTypeChange('PAYMENT')}
+              disabled={Boolean(editingId) || saving}
+              className={`h-8 px-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer border ${
+                !isReceipt
+                  ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-2xs border-amber-600'
+                  : 'border-transparent text-slate-600 hover:text-amber-700 hover:bg-white/60'
+              }`}
+            >
+              <span>−</span> Payment (Nave)
+            </button>
+          </div>
+
+          {/* Form Fields */}
+          <div className="space-y-3.5 flex-1">
+            {/* Voucher No & Date Row */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-[11px] font-semibold text-slate-600 block mb-1 uppercase tracking-wide">
+                  Voucher No.
+                </label>
+                <input
+                  value={voucherNo || '-'}
+                  disabled
+                  className="w-full h-8.5 px-2.5 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-mono font-bold"
+                />
               </div>
 
-              <div className="cash-voucher-no-box">
-                <span>Voucher No</span>
-                <strong>{voucherNo || '-'}</strong>
-              </div>
-
-              <div className="cash-voucher-form-grid">
-                <div className="form-field">
-                  <label htmlFor="cash-voucher-date">Date</label>
-                  <input
-                    id="cash-voucher-date"
-                    ref={dateInputRef}
-                    type="date"
-                    value={form.voucherDate}
-                    onChange={(event) =>
-                      setForm((current) => ({ ...current, voucherDate: event.target.value }))
-                    }
-                    onKeyDown={(event) => focusNextOnEnter(event, accountSelectRef.current)}
-                    disabled={saving}
-                  />
-                </div>
-
-                <div className="form-field">
-                  <label htmlFor="cash-voucher-account">Account</label>
-                  <select
-                    id="cash-voucher-account"
-                    ref={accountSelectRef}
-                    value={form.accountId}
-                    onChange={(event) =>
-                      setForm((current) => ({ ...current, accountId: event.target.value }))
-                    }
-                    onKeyDown={(event) => focusNextOnEnter(event, amountInputRef.current)}
-                    disabled={saving}
-                  >
-                    <option value="">Select Account</option>
-                    {activeAccounts.map((account) => (
-                      <option key={account.id} value={account.id}>
-                        {account.accountName}
-                        {account.mobileNumber ? ` - ${account.mobileNumber}` : ''}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="form-field">
-                  <label htmlFor="cash-voucher-amount">Amount</label>
-                  <input
-                    id="cash-voucher-amount"
-                    ref={amountInputRef}
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={form.amount}
-                    onChange={(event) =>
-                      setForm((current) => ({ ...current, amount: event.target.value }))
-                    }
-                    onKeyDown={(event) => focusNextOnEnter(event, narrationInputRef.current)}
-                    placeholder="Enter amount"
-                    disabled={saving}
-                  />
-                </div>
-
-                <div className="form-field full-field">
-                  <label htmlFor="cash-voucher-narration">Narration</label>
-                  <textarea
-                    id="cash-voucher-narration"
-                    ref={narrationInputRef}
-                    value={form.narration}
-                    onChange={(event) =>
-                      setForm((current) => ({ ...current, narration: event.target.value }))
-                    }
-                    placeholder="Enter narration"
-                    disabled={saving}
-                  />
-                </div>
-              </div>
-
-              <div className="button-row cash-voucher-button-row">
-                <button className="btn-new" type="button" onClick={handleNew} disabled={saving}>
-                  New
-                </button>
-
-                <button
-                  className="btn-save"
-                  type="button"
-                  onClick={() => void handleSave()}
+              <div>
+                <label className="text-[11px] font-semibold text-slate-600 block mb-1 uppercase tracking-wide">
+                  Date *
+                </label>
+                <input
+                  ref={dateInputRef}
+                  type="date"
+                  value={form.voucherDate}
+                  onChange={(e) => setForm((c) => ({ ...c, voucherDate: e.target.value }))}
+                  onKeyDown={(e) => focusNextOnEnter(e, accountSelectRef.current)}
                   disabled={saving}
-                >
-                  {saving ? 'Saving...' : editingId ? 'Update' : 'Save'}
-                </button>
+                  className="w-full h-8.5 px-2.5 text-xs bg-white border border-slate-200 rounded-lg text-slate-800 focus:ring-1 focus:ring-amber-500 focus:border-amber-500 transition-colors shadow-2xs font-medium"
+                />
+              </div>
+            </div>
 
-                {editingId && (
+            {/* Account Selector */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-[11px] font-semibold text-slate-600 uppercase tracking-wide">
+                  Account / Party *
+                </label>
+                {selectedAccount?.mobileNumber && (
+                  <span className="text-[10px] text-slate-500 bg-slate-50 px-1.5 py-0.2 rounded border border-slate-200 font-mono">
+                    📱 {selectedAccount.mobileNumber}
+                  </span>
+                )}
+              </div>
+              <select
+                ref={accountSelectRef}
+                value={form.accountId}
+                onChange={(e) => setForm((c) => ({ ...c, accountId: e.target.value }))}
+                onKeyDown={(e) => focusNextOnEnter(e, amountInputRef.current)}
+                disabled={saving}
+                className="w-full h-8.5 px-2.5 text-xs bg-white border border-slate-200 rounded-lg text-slate-800 focus:ring-1 focus:ring-amber-500 focus:border-amber-500 transition-colors shadow-2xs font-medium"
+              >
+                <option value="">Select Account (Customer / Supplier / Karigar)</option>
+                {activeAccounts.map((account) => (
+                  <option key={account.id} value={account.id}>
+                    {account.accountName}
+                    {account.city ? ` • ${account.city}` : ''}
+                    {account.groupName ? ` (${account.groupName})` : ''}
+                  </option>
+                ))}
+              </select>
+
+              {/* Selected Account Info Card */}
+              {selectedAccount && (
+                <div className="mt-1.5 p-2 bg-slate-50 border border-slate-200/80 rounded-lg flex items-center justify-between text-[11px] text-slate-600">
+                  <div className="flex items-center gap-1.5 truncate">
+                    <span className="font-semibold text-slate-700 truncate">
+                      {selectedAccount.groupName || 'General Account'}
+                    </span>
+                    {selectedAccount.city && (
+                      <span className="text-slate-400 shrink-0">📍 {selectedAccount.city}</span>
+                    )}
+                  </div>
+                  {selectedAccount.mobileNumber && (
+                    <span className="font-mono text-slate-500 shrink-0">
+                      📱 {selectedAccount.mobileNumber}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Amount Field & Quick Chips */}
+            <div>
+              <label className="text-[11px] font-semibold text-slate-600 block mb-1 uppercase tracking-wide">
+                Cash Amount (₹) *
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-2 text-xs font-bold text-slate-400">₹</span>
+                <input
+                  ref={amountInputRef}
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={form.amount}
+                  onChange={(e) => setForm((c) => ({ ...c, amount: e.target.value }))}
+                  onKeyDown={(e) => focusNextOnEnter(e, narrationInputRef.current)}
+                  placeholder="0.00"
+                  disabled={saving}
+                  className={`w-full h-9 pl-7 pr-3 text-sm font-mono font-bold rounded-lg border focus:ring-1 shadow-2xs transition-colors ${
+                    isReceipt
+                      ? 'bg-emerald-50/40 border-emerald-200 text-emerald-900 focus:border-emerald-500 focus:ring-emerald-500'
+                      : 'bg-amber-50/40 border-amber-200 text-amber-900 focus:border-amber-500 focus:ring-amber-500'
+                  }`}
+                />
+              </div>
+
+              {/* Quick Amount Increment Pills */}
+              <div className="flex flex-wrap gap-1 mt-1.5">
+                {QUICK_AMOUNTS.map((val) => (
                   <button
-                    className="btn-cancel-edit"
+                    key={val}
                     type="button"
-                    onClick={handleNew}
-                    disabled={saving}
+                    onClick={() => handleAddQuickAmount(val)}
+                    className="px-1.5 py-0.5 text-[10px] font-mono font-medium rounded bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer"
                   >
-                    Cancel Edit
+                    +{val.toLocaleString('en-IN')}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Narration & Quick Suggestions */}
+            <div>
+              <label className="text-[11px] font-semibold text-slate-600 block mb-1 uppercase tracking-wide">
+                Narration / Details
+              </label>
+              <input
+                ref={narrationInputRef}
+                value={form.narration}
+                onChange={(e) => setForm((c) => ({ ...c, narration: e.target.value }))}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    void handleSave()
+                  }
+                }}
+                placeholder="e.g. Cash received towards bill, Karigar making advance... (Enter to save)"
+                disabled={saving}
+                className="w-full h-8.5 px-2.5 text-xs bg-white border border-slate-200 rounded-lg text-slate-800 focus:ring-1 focus:ring-amber-500 focus:border-amber-500 transition-colors shadow-2xs"
+              />
+
+              {/* Quick Narration Pills */}
+              <div className="flex flex-wrap gap-1 mt-1.5">
+                {COMMON_NARRATIONS.map((text) => (
+                  <button
+                    key={text}
+                    type="button"
+                    onClick={() => setForm((prev) => ({ ...prev, narration: text }))}
+                    className="px-1.5 py-0.5 text-[10px] rounded bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 transition-colors cursor-pointer truncate max-w-[170px]"
+                    title={text}
+                  >
+                    {text}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Action Button Row */}
+          <div className="flex items-center justify-end gap-2.5 mt-5 pt-3 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={handleNew}
+              disabled={saving}
+              className="h-9 px-4 text-xs font-semibold text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
+            >
+              Reset
+            </button>
+
+            <button
+              type="button"
+              onClick={() => void handleSave()}
+              disabled={saving}
+              className="h-9 px-5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 active:scale-[0.98] disabled:opacity-50 text-white font-bold text-xs shadow-md shadow-amber-500/20 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              {saving ? (
+                <>
+                  <span className="animate-spin text-sm">⏳</span> Saving...
+                </>
+              ) : editingId ? (
+                <>
+                  <span>✓</span> Update Voucher
+                </>
+              ) : (
+                <>
+                  <span>＋</span> Save {isReceipt ? 'Receipt' : 'Payment'}
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* ── RIGHT PANEL: CASH VOUCHERS REGISTER (FLEX-1) ── */}
+        <div className="flex-1 bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden flex flex-col">
+          {/* Section Toolbar */}
+          <div className="p-4 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-4 bg-amber-500 rounded-full inline-block" />
+              <h2 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                Cash Vouchers Register
+              </h2>
+              <span className="text-[11px] text-slate-500 font-medium">
+                ({filteredVouchers.length} of {vouchers.length} vouchers)
+              </span>
+            </div>
+
+            {/* Filter Pills & Search */}
+            <div className="flex flex-wrap items-center gap-2.5">
+              {/* Type Filter Pills */}
+              <div className="inline-flex items-center rounded-lg border border-slate-200 p-0.5 bg-slate-50">
+                <button
+                  type="button"
+                  onClick={() => setTypeFilter('ALL')}
+                  className={`h-6 px-2.5 text-[11px] font-semibold rounded-md transition-colors cursor-pointer border ${
+                    typeFilter === 'ALL'
+                      ? 'bg-white text-slate-800 shadow-2xs border-slate-200/90 font-bold'
+                      : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100/60'
+                  }`}
+                >
+                  All ({statusCounts.total})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTypeFilter('RECEIPT')}
+                  className={`h-6 px-2.5 text-[11px] font-semibold rounded-md transition-colors cursor-pointer border ${
+                    typeFilter === 'RECEIPT'
+                      ? 'bg-emerald-100/90 text-emerald-900 shadow-2xs border-emerald-300 font-bold'
+                      : 'border-transparent text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50'
+                  }`}
+                >
+                  Receipts ({statusCounts.receipts})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTypeFilter('PAYMENT')}
+                  className={`h-6 px-2.5 text-[11px] font-semibold rounded-md transition-colors cursor-pointer border ${
+                    typeFilter === 'PAYMENT'
+                      ? 'bg-amber-100/90 text-amber-900 shadow-2xs border-amber-300 font-bold'
+                      : 'border-transparent text-amber-800 hover:text-amber-950 hover:bg-amber-50'
+                  }`}
+                >
+                  Payments ({statusCounts.payments})
+                </button>
+              </div>
+
+              {/* Search Bar */}
+              <div className="relative">
+                <input
+                  value={searchText}
+                  onChange={(e) => setSearchText(e.target.value)}
+                  placeholder="Search voucher no, account, note..."
+                  className="w-52 h-8 pl-7 pr-7 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 focus:bg-white focus:ring-1 focus:ring-amber-500 focus:border-amber-500 transition-colors shadow-2xs"
+                />
+                <span className="absolute left-2.5 top-2 text-xs text-slate-400">🔍</span>
+                {searchText && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchText('')}
+                    className="absolute right-2 top-1.5 text-xs text-slate-400 hover:text-slate-600 cursor-pointer"
+                  >
+                    ✕
                   </button>
                 )}
               </div>
+
+              {/* Refresh Button */}
+              <button
+                type="button"
+                onClick={() => void loadScreenData()}
+                disabled={loading}
+                className="h-8 px-2.5 text-xs font-semibold text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5"
+                title="Reload Vouchers"
+              >
+                <span className={loading ? 'animate-spin' : ''}>🔄</span> Refresh
+              </button>
+            </div>
+          </div>
+
+          {/* Metric Totals Cards */}
+          <div className="grid grid-cols-3 gap-3 px-4 py-2.5 bg-slate-50/70 border-b border-slate-100 text-xs">
+            <div className="bg-white p-2.5 rounded-xl border border-emerald-100 shadow-2xs flex items-center justify-between">
+              <div>
+                <span className="text-[10px] font-bold text-emerald-700 uppercase block">
+                  Total Cash In (Jama)
+                </span>
+                <strong className="text-sm font-mono font-bold text-emerald-800">
+                  ₹{formatCurrency(totals.jama)}
+                </strong>
+              </div>
+              <span className="text-base text-emerald-600 font-bold">📥</span>
             </div>
 
-            <div className="cash-voucher-list-panel">
-              <div className="cash-voucher-toolbar">
-                <div className="form-field">
-                  <label htmlFor="cash-voucher-type-filter">Type</label>
-                  <select
-                    id="cash-voucher-type-filter"
-                    value={typeFilter}
-                    onChange={(event) =>
-                      setTypeFilter(event.target.value as 'ALL' | CashVoucherType)
-                    }
-                  >
-                    <option value="ALL">All</option>
-                    <option value="RECEIPT">Receipt</option>
-                    <option value="PAYMENT">Payment</option>
-                  </select>
-                </div>
+            <div className="bg-white p-2.5 rounded-xl border border-amber-200 shadow-2xs flex items-center justify-between">
+              <div>
+                <span className="text-[10px] font-bold text-amber-700 uppercase block">
+                  Total Cash Out (Nave)
+                </span>
+                <strong className="text-sm font-mono font-bold text-amber-900">
+                  ₹{formatCurrency(totals.nave)}
+                </strong>
+              </div>
+              <span className="text-base text-amber-600 font-bold">📤</span>
+            </div>
 
-                <div className="list-search">
-                  <label htmlFor="cash-voucher-search">Search</label>
-                  <input
-                    id="cash-voucher-search"
-                    value={searchText}
-                    onChange={(event) => setSearchText(event.target.value)}
-                    placeholder="Search no, account, narration"
-                  />
-                  {searchText && (
-                    <button
-                      className="search-clear-btn"
-                      type="button"
-                      onClick={() => setSearchText('')}
-                    >
-                      &times;
-                    </button>
-                  )}
-                </div>
-
-                <button
-                  className="btn-new"
-                  type="button"
-                  onClick={() => void loadScreenData()}
-                  disabled={loading}
+            <div className="bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs flex items-center justify-between">
+              <div>
+                <span className="text-[10px] font-bold text-slate-500 uppercase block">
+                  Net Cash (Jama − Nave)
+                </span>
+                <strong
+                  className={`text-sm font-mono font-bold ${
+                    netBalance >= 0 ? 'text-blue-800' : 'text-amber-900'
+                  }`}
                 >
-                  Refresh
-                </button>
-
-                <div className="record-summary">
-                  Records: <strong>{vouchers.length}</strong> | Showing:{' '}
-                  <strong>{filteredVouchers.length}</strong>
-                </div>
+                  ₹{formatCurrency(netBalance)}
+                </strong>
               </div>
-
-              <div className="cash-voucher-summary">
-                <div>
-                  <span>Receipt Jama</span>
-                  <strong>{formatNumber(totals.jama)}</strong>
-                </div>
-                <div>
-                  <span>Payment Nave</span>
-                  <strong>{formatNumber(totals.nave)}</strong>
-                </div>
-              </div>
-
-              <div className="table-panel cash-voucher-table-panel">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Sr</th>
-                      <th>Date</th>
-                      <th>No</th>
-                      <th>Type</th>
-                      <th>Account</th>
-                      <th>Nave</th>
-                      <th>Jama</th>
-                      <th>Narration</th>
-                      <th>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {loading ? (
-                      <tr>
-                        <td colSpan={9} className="empty-row">
-                          Loading vouchers...
-                        </td>
-                      </tr>
-                    ) : filteredVouchers.length === 0 ? (
-                      <tr>
-                        <td colSpan={9} className="empty-row">
-                          {searchText ? 'No matching voucher found.' : 'No cash voucher found yet.'}
-                        </td>
-                      </tr>
-                    ) : (
-                      filteredVouchers.map((voucher, index) => {
-                        const nave = voucher.voucherType === 'PAYMENT' ? voucher.amount : 0
-                        const jama = voucher.voucherType === 'RECEIPT' ? voucher.amount : 0
-
-                        return (
-                          <tr key={voucher.id} onDoubleClick={() => handleEdit(voucher)}>
-                            <td>{index + 1}</td>
-                            <td>{formatDate(voucher.voucherDate)}</td>
-                            <td>{voucher.voucherNo}</td>
-                            <td>
-                              <span
-                                className={`cash-voucher-badge ${voucher.voucherType.toLowerCase()}`}
-                              >
-                                {voucher.voucherType === 'RECEIPT' ? 'Receipt' : 'Payment'}
-                              </span>
-                            </td>
-                            <td>{voucher.accountName}</td>
-                            <td>{nave ? formatNumber(nave) : '-'}</td>
-                            <td>{jama ? formatNumber(jama) : '-'}</td>
-                            <td>{voucher.narration || '-'}</td>
-                            <td>
-                              <div
-                                className="sale-register-actions"
-                                onDoubleClick={(event) => event.stopPropagation()}
-                              >
-                                <button
-                                  className="table-edit"
-                                  type="button"
-                                  onClick={() => handleEdit(voucher)}
-                                  disabled={saving || deleting}
-                                >
-                                  Edit
-                                </button>
-                                <button
-                                  className="table-delete"
-                                  type="button"
-                                  onClick={() => setDeleteTarget(voucher)}
-                                  disabled={saving || deleting}
-                                >
-                                  Delete
-                                </button>
-                                <button
-                                  className="table-edit"
-                                  type="button"
-                                  onClick={() => {
-                                    setAutoPrintVoucher(false)
-                                    setPrintVoucher(voucher)
-                                  }}
-                                  disabled={saving || deleting}
-                                >
-                                  Print
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        )
-                      })
-                    )}
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="screen-help-text">
-                Cash Receipt posts Jama. Cash Payment posts Nave. Account balance updates through
-                ledger.
-              </div>
+              <span className="text-base font-bold">💰</span>
             </div>
+          </div>
+
+          {/* Table Container */}
+          <div className="flex-1 overflow-x-auto overflow-y-auto max-h-[460px]">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead className="sticky top-0 z-10 bg-slate-50/95 backdrop-blur-xs text-[11px] font-bold text-slate-600 uppercase tracking-wider border-b border-slate-200 shadow-2xs">
+                <tr>
+                  <th className="py-2.5 px-3 w-10 text-center whitespace-nowrap">Sr</th>
+                  <th className="py-2.5 px-3 whitespace-nowrap">Date</th>
+                  <th className="py-2.5 px-3 whitespace-nowrap">Voucher No</th>
+                  <th className="py-2.5 px-3 whitespace-nowrap">Type</th>
+                  <th className="py-2.5 px-3 whitespace-nowrap">Account Name</th>
+                  <th className="py-2.5 px-3 text-right whitespace-nowrap">Payment Nave (₹)</th>
+                  <th className="py-2.5 px-3 text-right whitespace-nowrap">Receipt Jama (₹)</th>
+                  <th className="py-2.5 px-3">Narration</th>
+                  <th className="py-2.5 px-3 text-center whitespace-nowrap w-36">Actions</th>
+                </tr>
+              </thead>
+
+              <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                {loading ? (
+                  <tr>
+                    <td colSpan={9} className="py-8 text-center text-slate-400">
+                      <span className="inline-block animate-spin text-base mr-2">⏳</span>
+                      Loading vouchers...
+                    </td>
+                  </tr>
+                ) : filteredVouchers.length === 0 ? (
+                  <tr>
+                    <td colSpan={9} className="py-10 text-center text-slate-400">
+                      <div className="text-2xl mb-1">💵</div>
+                      {searchText || typeFilter !== 'ALL'
+                        ? 'No matching cash voucher found.'
+                        : 'No cash voucher recorded yet.'}
+                    </td>
+                  </tr>
+                ) : (
+                  filteredVouchers.map((voucher, index) => {
+                    const isRec = voucher.voucherType === 'RECEIPT'
+                    const nave = !isRec ? voucher.amount : 0
+                    const jama = isRec ? voucher.amount : 0
+
+                    return (
+                      <tr
+                        key={voucher.id}
+                        onDoubleClick={() => handleEdit(voucher)}
+                        className="hover:bg-amber-50/30 transition-colors duration-75 cursor-pointer"
+                        title="Double-click to edit"
+                      >
+                        <td className="py-2 px-3 text-center text-slate-400 font-mono text-[11px] whitespace-nowrap">
+                          {index + 1}
+                        </td>
+                        <td className="py-2 px-3 whitespace-nowrap text-slate-600 font-medium">
+                          {formatDate(voucher.voucherDate)}
+                        </td>
+                        <td className="py-2 px-3 font-mono font-bold text-slate-800 whitespace-nowrap">
+                          {voucher.voucherNo}
+                        </td>
+                        <td className="py-2 px-3 whitespace-nowrap">
+                          <span
+                            className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                              isRec
+                                ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                : 'bg-amber-50 text-amber-800 border-amber-200'
+                            }`}
+                          >
+                            {isRec ? 'Receipt (Jama)' : 'Payment (Nave)'}
+                          </span>
+                        </td>
+                        <td className="py-2 px-3 font-semibold text-slate-800">
+                          {voucher.accountName}
+                        </td>
+                        <td className="py-2 px-3 text-right font-mono font-bold text-amber-800 whitespace-nowrap">
+                          {nave ? `₹${formatCurrency(nave)}` : '-'}
+                        </td>
+                        <td className="py-2 px-3 text-right font-mono font-bold text-emerald-700 whitespace-nowrap">
+                          {jama ? `₹${formatCurrency(jama)}` : '-'}
+                        </td>
+                        <td className="py-2 px-3 text-slate-600 max-w-[180px] truncate" title={voucher.narration}>
+                          {voucher.narration || '-'}
+                        </td>
+                        <td className="py-2 px-3 text-center whitespace-nowrap">
+                          <div
+                            className="inline-flex items-center justify-center gap-1.5"
+                            onDoubleClick={(e) => e.stopPropagation()}
+                          >
+                            <button
+                              type="button"
+                              onClick={() => handleEdit(voucher)}
+                              disabled={saving || deleting}
+                              className="h-6.5 px-2.5 text-[11px] font-semibold text-amber-800 hover:text-amber-950 bg-amber-50 hover:bg-amber-100/90 border border-amber-300/80 rounded-md transition-all cursor-pointer inline-flex items-center gap-1 whitespace-nowrap shadow-2xs active:scale-95 disabled:opacity-50"
+                              title="Edit Voucher"
+                            >
+                              <span className="text-[11px]">✏️</span>
+                              <span>Edit</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setAutoPrintVoucher(false)
+                                setPrintVoucher(voucher)
+                              }}
+                              disabled={saving || deleting}
+                              className="h-6.5 px-2.5 text-[11px] font-semibold text-slate-700 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 border border-slate-300/80 rounded-md transition-all cursor-pointer inline-flex items-center gap-1 whitespace-nowrap shadow-2xs active:scale-95 disabled:opacity-50"
+                              title="Print Slip"
+                            >
+                              <span className="text-[11px]">🖨️</span>
+                              <span>Print</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => setDeleteTarget(voucher)}
+                              disabled={saving || deleting}
+                              className="h-6.5 w-6.5 text-[11px] font-semibold text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 border border-red-200/80 rounded-md transition-all cursor-pointer inline-flex items-center justify-center whitespace-nowrap shadow-2xs active:scale-95 disabled:opacity-50"
+                              title="Delete Voucher"
+                            >
+                              🗑️
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })
+                )}
+              </tbody>
+
+              {/* Table Summary Footer */}
+              {filteredVouchers.length > 0 && (
+                <tfoot className="sticky bottom-0 z-10 bg-slate-100 border-t-2 border-slate-300 font-bold text-slate-800 text-[11px] shadow-xs">
+                  <tr>
+                    <td colSpan={5} className="py-2.5 px-3 text-right uppercase tracking-wider text-slate-600">
+                      Total ({filteredVouchers.length} vouchers):
+                    </td>
+                    <td className="py-2.5 px-3 text-right font-mono text-amber-900">
+                      ₹{formatCurrency(totals.nave)}
+                    </td>
+                    <td className="py-2.5 px-3 text-right font-mono text-emerald-800">
+                      ₹{formatCurrency(totals.jama)}
+                    </td>
+                    <td colSpan={2} className="py-2.5 px-3 text-slate-600 text-[10px]">
+                      Net: ₹{formatCurrency(netBalance)}
+                    </td>
+                  </tr>
+                </tfoot>
+              )}
+            </table>
+          </div>
+
+          {/* Informative Note */}
+          <div className="p-3 bg-amber-50/50 border-t border-amber-100/60 text-[11px] text-amber-900/80 flex items-center gap-2">
+            <span className="text-sm">ℹ️</span>
+            <span>
+              <strong>Double-Entry Posting Note:</strong> Cash Receipt posts <strong>Jama (+)</strong> to the customer/supplier ledger, reducing their outstanding dues. Cash Payment posts <strong>Nave (−)</strong>, crediting their account.
+            </span>
           </div>
         </div>
       </div>
 
+      {/* ── CONFIRM DELETE DIALOG ── */}
       <AppConfirmDialog
         open={Boolean(deleteTarget)}
         title="Delete Cash Voucher?"
         message={
           deleteTarget
-            ? `Voucher ${deleteTarget.voucherNo} will be deleted and its ledger effect will be removed.`
+            ? `Voucher ${deleteTarget.voucherNo} for ${deleteTarget.accountName} (₹${formatCurrency(
+                deleteTarget.amount
+              )}) will be deleted and its ledger effect reversed.`
             : ''
         }
-        confirmText="Delete"
+        confirmText="Delete Voucher"
         cancelText="Cancel"
         type="danger"
         loading={deleting}
@@ -621,6 +945,7 @@ function CashVoucherScreen({
         onCancel={handleCancelDelete}
       />
 
+      {/* ── PRINT PREVIEW MODAL ── */}
       {printVoucher && (
         <CashVoucherPrintPreview
           voucher={printVoucher}
