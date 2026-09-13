@@ -28,11 +28,15 @@ const RECEIVED_COVERAGE_THRESHOLD = 0.9
 const jobWorkOrderSchema = z.object({
   orderNo: z.string().trim().optional().default(''),
   orderDate: z.string().trim().optional().default(''),
+  dueDate: z.string().trim().optional().default(''),
   karigarAccountId: z.string().trim().min(1, 'Karigar account is required'),
   metalType: z.enum(['Gold', 'Silver', 'Diamond', 'Other']).default('Silver'),
   itemId: z.string().trim().min(1, 'Item is required'),
+  expectedPcs: z.coerce.number().default(1),
   grossWeightGiven: z.coerce.number().default(0),
   netWeightGiven: z.coerce.number().default(0),
+  tunchGiven: z.coerce.number().default(0),
+  fineWeightGiven: z.coerce.number().default(0),
   narration: z.string().trim().optional().default('')
 })
 
@@ -65,13 +69,34 @@ type JobWorkOrderRow = {
   id: string
   order_no: string
   order_date: string
+  due_date?: string | null
   karigar_account_id: string
   metal_type: string
   item_id: string
+  expected_pcs?: number
   gross_weight_given: number
   net_weight_given: number
+  tunch_given?: number
+  fine_weight_given?: number
   narration: string
   status: 'pending' | 'partial_received' | 'received' | 'cancelled'
+}
+
+function ensureJobWorkOrderColumns(): void {
+  const db = getDatabase()
+  const columns = [
+    { name: 'due_date', type: 'TEXT' },
+    { name: 'expected_pcs', type: 'REAL DEFAULT 1' },
+    { name: 'tunch_given', type: 'REAL DEFAULT 0' },
+    { name: 'fine_weight_given', type: 'REAL DEFAULT 0' }
+  ]
+  for (const col of columns) {
+    try {
+      db.exec(`ALTER TABLE job_work_orders ADD COLUMN ${col.name} ${col.type};`)
+    } catch {
+      // Column already exists, safe to ignore
+    }
+  }
 }
 
 function assertAccountExists(accountId: string): void {
@@ -115,6 +140,7 @@ function getItem(itemId: string): ItemRow {
 }
 
 function getOrderHeaderRow(id: string): Record<string, unknown> | undefined {
+  ensureJobWorkOrderColumns()
   const db = getDatabase()
 
   return db
@@ -124,6 +150,7 @@ function getOrderHeaderRow(id: string): Record<string, unknown> | undefined {
         jwo.*,
         a.account_name AS karigar_name,
         a.mobile_number AS karigar_mobile,
+        a.address AS karigar_address,
         i.item_name AS item_name,
         COALESCE(SUM(jwrl.net_weight_received), 0) AS total_net_weight_received,
         COALESCE(SUM(jwrl.fine_received), 0) AS total_fine_received,
@@ -141,6 +168,7 @@ function getOrderHeaderRow(id: string): Record<string, unknown> | undefined {
 }
 
 function getOrderForMutation(id: string): JobWorkOrderRow {
+  ensureJobWorkOrderColumns()
   const db = getDatabase()
 
   const order = db
@@ -167,6 +195,7 @@ export const jobWorkService = {
   },
 
   create(payload: JobWorkOrderPayload) {
+    ensureJobWorkOrderColumns()
     const data = jobWorkOrderSchema.parse(payload)
     const db = getDatabase()
 
@@ -176,6 +205,15 @@ export const jobWorkService = {
     const orderId = uuidv4()
     const orderNo = data.orderNo || jobWorkNumberService.getNextJobWorkNo()
     const orderDate = data.orderDate || dayjs().format('YYYY-MM-DD')
+    const dueDate = data.dueDate || ''
+    const expectedPcs = data.expectedPcs > 0 ? data.expectedPcs : 1
+    const tunchGiven = data.tunchGiven || 0
+    const fineWeightGiven =
+      data.fineWeightGiven > 0
+        ? data.fineWeightGiven
+        : tunchGiven > 0
+          ? roundNumber((data.netWeightGiven * tunchGiven) / 100)
+          : 0
     const now = dayjs().format('YYYY-MM-DD HH:mm:ss')
 
     // Job Work OUT is only a tracking entry - material leaving to a karigar
@@ -187,27 +225,35 @@ export const jobWorkService = {
         id,
         order_no,
         order_date,
+        due_date,
         karigar_account_id,
         metal_type,
         item_id,
+        expected_pcs,
         gross_weight_given,
         net_weight_given,
+        tunch_given,
+        fine_weight_given,
         narration,
         status,
         created_at,
         updated_at
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `
     ).run(
       orderId,
       orderNo,
       orderDate,
+      dueDate,
       data.karigarAccountId,
       data.metalType,
       data.itemId,
+      expectedPcs,
       data.grossWeightGiven,
       data.netWeightGiven,
+      tunchGiven,
+      fineWeightGiven,
       data.narration,
       'pending',
       now,
@@ -218,6 +264,7 @@ export const jobWorkService = {
   },
 
   update(id: string, payload: JobWorkOrderPayload) {
+    ensureJobWorkOrderColumns()
     const data = jobWorkOrderSchema.parse(payload)
     const db = getDatabase()
     const now = dayjs().format('YYYY-MM-DD HH:mm:ss')
@@ -232,28 +279,45 @@ export const jobWorkService = {
     getItem(data.itemId)
 
     const orderDate = data.orderDate || dayjs().format('YYYY-MM-DD')
+    const dueDate = data.dueDate || ''
+    const expectedPcs = data.expectedPcs > 0 ? data.expectedPcs : 1
+    const tunchGiven = data.tunchGiven || 0
+    const fineWeightGiven =
+      data.fineWeightGiven > 0
+        ? data.fineWeightGiven
+        : tunchGiven > 0
+          ? roundNumber((data.netWeightGiven * tunchGiven) / 100)
+          : 0
 
     db.prepare(
       `
       UPDATE job_work_orders
       SET
         order_date = ?,
+        due_date = ?,
         karigar_account_id = ?,
         metal_type = ?,
         item_id = ?,
+        expected_pcs = ?,
         gross_weight_given = ?,
         net_weight_given = ?,
+        tunch_given = ?,
+        fine_weight_given = ?,
         narration = ?,
         updated_at = ?
       WHERE id = ?
     `
     ).run(
       orderDate,
+      dueDate,
       data.karigarAccountId,
       data.metalType,
       data.itemId,
+      expectedPcs,
       data.grossWeightGiven,
       data.netWeightGiven,
+      tunchGiven,
+      fineWeightGiven,
       data.narration,
       now,
       id
@@ -290,6 +354,7 @@ export const jobWorkService = {
   },
 
   list() {
+    ensureJobWorkOrderColumns()
     const db = getDatabase()
 
     return db
@@ -299,13 +364,18 @@ export const jobWorkService = {
           jwo.id,
           jwo.order_no,
           jwo.order_date,
+          jwo.due_date,
           jwo.metal_type,
+          COALESCE(jwo.expected_pcs, 1) AS expected_pcs,
           jwo.gross_weight_given,
           jwo.net_weight_given,
+          COALESCE(jwo.tunch_given, 0) AS tunch_given,
+          COALESCE(jwo.fine_weight_given, 0) AS fine_weight_given,
           jwo.status,
           jwo.narration,
           a.account_name AS karigar_name,
           a.mobile_number AS karigar_mobile,
+          a.address AS karigar_address,
           i.item_name AS item_name,
           COALESCE(SUM(jwrl.net_weight_received), 0) AS total_net_weight_received,
           COALESCE(SUM(jwrl.fine_received), 0) AS total_fine_received,
@@ -319,7 +389,6 @@ export const jobWorkService = {
         ORDER BY jwo.order_date DESC, jwo.created_at DESC
       `
       )
-      .all()
   },
 
   getById(id: string) {

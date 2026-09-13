@@ -1813,11 +1813,15 @@ type AccountRecord = AccountPayload & {
 type JobWorkOrderPayload = {
   orderNo?: string
   orderDate: string
+  dueDate?: string
   karigarAccountId: string
   metalType: 'Gold' | 'Silver' | 'Diamond' | 'Other'
   itemId: string
+  expectedPcs?: number
   grossWeightGiven: number
   netWeightGiven: number
+  tunchGiven?: number
+  fineWeightGiven?: number
   narration?: string
 }
 
@@ -1839,14 +1843,19 @@ type SavedJobWorkHeader = {
   id: string
   order_no: string
   order_date: string
+  due_date?: string
   karigar_account_id: string
   karigar_name: string
   karigar_mobile: string
+  karigar_address?: string
   metal_type: string
   item_id: string
   item_name: string
+  expected_pcs?: number
   gross_weight_given: number
   net_weight_given: number
+  tunch_given?: number
+  fine_weight_given?: number
   narration: string
   status: JobWorkStatus
   total_net_weight_received: number
@@ -1926,13 +1935,18 @@ type JobWorkRegisterRecord = {
   id: string
   order_no: string
   order_date: string
+  due_date?: string
   metal_type: string
+  expected_pcs?: number
   gross_weight_given: number
   net_weight_given: number
+  tunch_given?: number
+  fine_weight_given?: number
   status: JobWorkStatus
   narration: string
   karigar_name: string
   karigar_mobile: string
+  karigar_address?: string
   item_name: string
   total_net_weight_received: number
   total_fine_received: number

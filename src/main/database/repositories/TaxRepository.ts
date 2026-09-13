@@ -86,28 +86,33 @@ export class TaxRepository extends BaseRepository {
     // 1. B2B Invoices (Registered Customers with valid GSTIN)
     const b2bQuery = `
       SELECT
-        c.gst_no,
-        c.name AS customer_name,
+        COALESCE(c.gstin, a.gst_no, '') AS gstin,
+        COALESCE(c.name, a.account_name, 'Registered Customer') AS customer_name,
         si.invoice_number,
         si.invoice_date,
         si.grand_total AS invoice_value,
         COALESCE(si.place_of_supply, '24') AS place_of_supply,
         si.taxable_amount,
-        COALESCE(si.tax_percent, 3.0) AS tax_rate,
+        CASE
+          WHEN si.taxable_amount > 0 AND si.tax_amount > 0
+          THEN ROUND((si.tax_amount * 100.0) / si.taxable_amount, 1)
+          ELSE 3.0
+        END AS tax_rate,
         si.igst_amount,
-        si.cgst_amount,
-        si.sgst_amount,
+        COALESCE(NULLIF(si.cgst_amount, 0), ROUND(si.tax_amount / 2.0, 2)) AS cgst_amount,
+        COALESCE(NULLIF(si.sgst_amount, 0), ROUND(si.tax_amount - ROUND(si.tax_amount / 2.0, 2), 2)) AS sgst_amount,
         si.cess_amount
       FROM sales_invoices si
-      JOIN customers c ON c.id = si.customer_id
+      LEFT JOIN customers c ON c.id = si.customer_id
+      LEFT JOIN accounts a ON a.id = si.account_id
       WHERE si.deleted_at IS NULL
-        AND c.gst_no IS NOT NULL AND c.gst_no != ''
+        AND COALESCE(c.gstin, a.gst_no, '') != ''
         AND si.invoice_date >= ? AND si.invoice_date <= ?
       ORDER BY si.invoice_date ASC
     `
     const b2bRows = this.db.prepare(b2bQuery).all(startDate, endDate) as any[]
     const b2bInvoices: Gstr1B2BInvoice[] = b2bRows.map((r) => ({
-      gstin: r.gst_no,
+      gstin: r.gstin,
       customerName: r.customer_name,
       invoiceNumber: r.invoice_number,
       invoiceDate: r.invoice_date,
@@ -126,16 +131,21 @@ export class TaxRepository extends BaseRepository {
     const b2cQuery = `
       SELECT
         COALESCE(si.place_of_supply, '24') AS place_of_supply,
-        COALESCE(si.tax_percent, 3.0) AS tax_rate,
+        CASE
+          WHEN si.taxable_amount > 0 AND si.tax_amount > 0
+          THEN ROUND((si.tax_amount * 100.0) / si.taxable_amount, 1)
+          ELSE 3.0
+        END AS tax_rate,
         SUM(si.taxable_amount) AS taxable_value,
         SUM(si.igst_amount) AS igst_amount,
-        SUM(si.cgst_amount) AS cgst_amount,
-        SUM(si.sgst_amount) AS sgst_amount,
+        SUM(COALESCE(NULLIF(si.cgst_amount, 0), ROUND(si.tax_amount / 2.0, 2))) AS cgst_amount,
+        SUM(COALESCE(NULLIF(si.sgst_amount, 0), ROUND(si.tax_amount - ROUND(si.tax_amount / 2.0, 2), 2))) AS sgst_amount,
         SUM(si.cess_amount) AS cess_amount
       FROM sales_invoices si
       LEFT JOIN customers c ON c.id = si.customer_id
+      LEFT JOIN accounts a ON a.id = si.account_id
       WHERE si.deleted_at IS NULL
-        AND (c.gst_no IS NULL OR c.gst_no = '')
+        AND COALESCE(c.gstin, a.gst_no, '') = ''
         AND si.invoice_date >= ? AND si.invoice_date <= ?
       GROUP BY place_of_supply, tax_rate
       ORDER BY place_of_supply ASC
@@ -154,30 +164,34 @@ export class TaxRepository extends BaseRepository {
     // 3. Credit / Debit Notes (CDNR)
     const cdnrQuery = `
       SELECT
-        c.gst_no,
-        COALESCE(c.name, s.name, a.account_name) AS party_name,
+        COALESCE(c.gstin, s.gstin, a.gst_no, '') AS gstin,
+        COALESCE(c.name, s.name, a.account_name, 'Party') AS party_name,
         rt.return_number,
         rt.return_date,
         rt.original_invoice_number,
         rt.note_type,
         COALESCE(rt.place_of_supply, '24') AS place_of_supply,
         rt.taxable_amount,
-        COALESCE(rt.tax_percent, 3.0) AS tax_rate,
+        CASE
+          WHEN rt.taxable_amount > 0 AND rt.tax_amount > 0
+          THEN ROUND((rt.tax_amount * 100.0) / rt.taxable_amount, 1)
+          ELSE 3.0
+        END AS tax_rate,
         rt.igst_amount,
-        rt.cgst_amount,
-        rt.sgst_amount,
+        COALESCE(NULLIF(rt.cgst_amount, 0), ROUND(rt.tax_amount / 2.0, 2)) AS cgst_amount,
+        COALESCE(NULLIF(rt.sgst_amount, 0), ROUND(rt.tax_amount - ROUND(rt.tax_amount / 2.0, 2), 2)) AS sgst_amount,
         rt.cess_amount
       FROM return_transactions rt
       LEFT JOIN customers c ON c.id = rt.customer_id
       LEFT JOIN suppliers s ON s.id = rt.supplier_id
-      JOIN accounts a ON a.id = rt.account_id
+      LEFT JOIN accounts a ON a.id = rt.account_id
       WHERE rt.deleted_at IS NULL
         AND rt.return_date >= ? AND rt.return_date <= ?
       ORDER BY rt.return_date ASC
     `
     const cdnrRows = this.db.prepare(cdnrQuery).all(startDate, endDate) as any[]
     const creditDebitNotes: Gstr1CreditNote[] = cdnrRows.map((r) => ({
-      gstin: r.gst_no,
+      gstin: r.gstin,
       partyName: r.party_name || 'Party',
       creditNoteNumber: r.return_number,
       creditNoteDate: r.return_date,
@@ -243,8 +257,8 @@ export class TaxRepository extends BaseRepository {
         SELECT
           SUM(taxable_amount) AS taxable,
           SUM(igst_amount) AS igst,
-          SUM(cgst_amount) AS cgst,
-          SUM(sgst_amount) AS sgst,
+          SUM(COALESCE(NULLIF(cgst_amount, 0), ROUND(tax_amount / 2.0, 2))) AS cgst,
+          SUM(COALESCE(NULLIF(sgst_amount, 0), ROUND(tax_amount - ROUND(tax_amount / 2.0, 2), 2))) AS sgst,
           SUM(cess_amount) AS cess
         FROM sales_invoices
         WHERE deleted_at IS NULL AND invoice_date >= ? AND invoice_date <= ?
@@ -258,8 +272,8 @@ export class TaxRepository extends BaseRepository {
         SELECT
           SUM(taxable_amount) AS taxable,
           SUM(igst_amount) AS igst,
-          SUM(cgst_amount) AS cgst,
-          SUM(sgst_amount) AS sgst,
+          SUM(COALESCE(NULLIF(cgst_amount, 0), ROUND(tax_amount / 2.0, 2))) AS cgst,
+          SUM(COALESCE(NULLIF(sgst_amount, 0), ROUND(tax_amount - ROUND(tax_amount / 2.0, 2), 2))) AS sgst,
           SUM(cess_amount) AS cess
         FROM return_transactions
         WHERE deleted_at IS NULL AND return_type = 'SALES_RETURN' AND return_date >= ? AND return_date <= ?
@@ -280,8 +294,8 @@ export class TaxRepository extends BaseRepository {
         SELECT
           SUM(taxable_amount) AS taxable,
           SUM(igst_amount) AS igst,
-          SUM(cgst_amount) AS cgst,
-          SUM(sgst_amount) AS sgst,
+          SUM(COALESCE(NULLIF(cgst_amount, 0), ROUND(tax_amount / 2.0, 2))) AS cgst,
+          SUM(COALESCE(NULLIF(sgst_amount, 0), ROUND(tax_amount - ROUND(tax_amount / 2.0, 2), 2))) AS sgst,
           SUM(cess_amount) AS cess
         FROM purchase_invoices
         WHERE deleted_at IS NULL AND is_itc_eligible = 1 AND invoice_date >= ? AND invoice_date <= ?
@@ -380,7 +394,7 @@ export class TaxRepository extends BaseRepository {
         COALESCE(sii.hsn_code, '7113') AS hsn_code,
         COALESCE(hm.description, 'Articles of jewellery and parts thereof of precious metal') AS description,
         'GMS' AS uom,
-        SUM(sii.quantity) AS total_quantity,
+        SUM(sii.pcs) AS total_quantity,
         SUM(sii.gross_weight) AS total_gross_weight,
         SUM(sii.fine_weight) AS total_fine_weight,
         SUM(sii.line_total) AS total_value,
@@ -390,7 +404,7 @@ export class TaxRepository extends BaseRepository {
         SUM(sii.sgst_amount) AS state_tax,
         SUM(sii.cess_amount) AS cess
       FROM sales_invoice_items sii
-      JOIN sales_invoices si ON si.id = sii.sales_invoice_id
+      JOIN sales_invoices si ON si.id = sii.invoice_id
       LEFT JOIN gst_hsn_master hm ON hm.hsn_code = sii.hsn_code
       WHERE si.deleted_at IS NULL AND si.invoice_date >= ? AND si.invoice_date <= ?
       GROUP BY sii.hsn_code
@@ -456,8 +470,8 @@ export class TaxRepository extends BaseRepository {
         t.id,
         t.invoice_number,
         t.invoice_date,
-        p.name AS party_name,
-        p.gst_no AS party_gstin,
+        COALESCE(p.name, a.account_name, 'Party') AS party_name,
+        COALESCE(p.gstin, a.gst_no, '') AS party_gstin,
         t.tax_mode,
         COALESCE(t.place_of_supply, '24') AS place_of_supply,
         t.taxable_amount,
@@ -469,6 +483,7 @@ export class TaxRepository extends BaseRepository {
         t.grand_total
       FROM ${table} t
       LEFT JOIN ${partyTable} p ON p.id = t.${partyJoin}
+      LEFT JOIN accounts a ON a.id = t.account_id
       WHERE t.deleted_at IS NULL AND t.invoice_date >= ? AND t.invoice_date <= ?
       ORDER BY t.invoice_date DESC, t.created_at DESC
     `
@@ -484,12 +499,19 @@ export class TaxRepository extends BaseRepository {
 
     const mappedRows: TaxRegisterRow[] = rows.map((r) => {
       const taxable = Number(r.taxable_amount || 0)
-      const cgst = Number(r.cgst_amount || 0)
-      const sgst = Number(r.sgst_amount || 0)
-      const igst = Number(r.igst_amount || 0)
+      const rawTax = Number(r.tax_amount || 0)
+      let cgst = Number(r.cgst_amount || 0)
+      let sgst = Number(r.sgst_amount || 0)
+      let igst = Number(r.igst_amount || 0)
       const cess = Number(r.cess_amount || 0)
-      const tax = Number(r.tax_amount || (cgst + sgst + igst + cess))
-      const grand = Number(r.grand_total || 0)
+
+      if (cgst === 0 && sgst === 0 && igst === 0 && rawTax > 0) {
+        cgst = Math.round((rawTax / 2.0) * 100) / 100
+        sgst = Math.round((rawTax - cgst) * 100) / 100
+      }
+
+      const tax = rawTax > 0 ? rawTax : (cgst + sgst + igst + cess)
+      const grand = Number(r.grand_total || (taxable + tax))
 
       totalTaxable += taxable
       totalCgst += cgst
@@ -541,9 +563,10 @@ export class TaxRepository extends BaseRepository {
         `
         SELECT
           SUM(taxable_amount) AS taxable,
-          SUM(cgst_amount) AS cgst,
-          SUM(sgst_amount) AS sgst,
-          SUM(igst_amount) AS igst
+          SUM(COALESCE(NULLIF(cgst_amount, 0), ROUND(tax_amount / 2.0, 2))) AS cgst,
+          SUM(COALESCE(NULLIF(sgst_amount, 0), ROUND(tax_amount - ROUND(tax_amount / 2.0, 2), 2))) AS sgst,
+          SUM(igst_amount) AS igst,
+          SUM(tax_amount) AS total_tax
         FROM sales_invoices
         WHERE deleted_at IS NULL AND invoice_date >= ? AND invoice_date <= ?
       `
@@ -556,9 +579,10 @@ export class TaxRepository extends BaseRepository {
         `
         SELECT
           SUM(taxable_amount) AS taxable,
-          SUM(cgst_amount) AS cgst,
-          SUM(sgst_amount) AS sgst,
-          SUM(igst_amount) AS igst
+          SUM(COALESCE(NULLIF(cgst_amount, 0), ROUND(tax_amount / 2.0, 2))) AS cgst,
+          SUM(COALESCE(NULLIF(sgst_amount, 0), ROUND(tax_amount - ROUND(tax_amount / 2.0, 2), 2))) AS sgst,
+          SUM(igst_amount) AS igst,
+          SUM(tax_amount) AS total_tax
         FROM purchase_invoices
         WHERE deleted_at IS NULL AND is_itc_eligible = 1 AND invoice_date >= ? AND invoice_date <= ?
       `
@@ -590,12 +614,12 @@ export class TaxRepository extends BaseRepository {
     const outCgst = Number(salesTax?.cgst || 0)
     const outSgst = Number(salesTax?.sgst || 0)
     const outIgst = Number(salesTax?.igst || 0)
-    const totalOut = outCgst + outSgst + outIgst
+    const totalOut = Number(salesTax?.total_tax || (outCgst + outSgst + outIgst))
 
     const inCgst = Number(purchTax?.cgst || 0)
     const inSgst = Number(purchTax?.sgst || 0)
     const inIgst = Number(purchTax?.igst || 0)
-    const totalIn = inCgst + inSgst + inIgst
+    const totalIn = Number(purchTax?.total_tax || (inCgst + inSgst + inIgst))
 
     return {
       periodStart: startDate,
