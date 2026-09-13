@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import {
   FiBriefcase,
   FiSave,
@@ -8,12 +8,8 @@ import {
   FiShield,
   FiCreditCard,
   FiFileText,
-  FiCheck,
   FiPhone,
-  FiMapPin,
   FiMail,
-  FiHash,
-  FiExternalLink,
   FiInfo,
   FiEye
 } from 'react-icons/fi'

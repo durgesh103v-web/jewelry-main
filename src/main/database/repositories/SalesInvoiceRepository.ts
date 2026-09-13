@@ -71,7 +71,7 @@ export interface SalesInvoiceItemRow {
   wastage: number
   fine_weight: number
   gold_rate: number
-  metalValue: number
+  metal_value: number
   labour_rate: number
   labour_rate_type: 'Kg' | 'Gm' | 'Pcs'
   making_charges: number

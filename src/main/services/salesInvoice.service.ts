@@ -461,11 +461,9 @@ export const salesInvoiceService = {
       throw new ValidationError('Invoice is already cancelled')
     }
 
-    const now = dayjs().format('YYYY-MM-DD HH:mm:ss')
-
     transactionRepository.executeAtomic(() => {
       // 1. Mark status cancelled
-      salesInvoiceRepository.updateStatus(id, 'CANCELLED', now)
+      salesInvoiceRepository.updateStatus(id, 'CANCELLED')
 
       // 2. Reverse inventory movements
       inventoryMovementService.revertMovement('SALE', id)
@@ -479,8 +477,7 @@ export const salesInvoiceService = {
 
   delete(id: string): { success: boolean } {
     this.cancelInvoice(id)
-    const now = dayjs().format('YYYY-MM-DD HH:mm:ss')
-    salesInvoiceRepository.softDelete(id, now)
+    salesInvoiceRepository.softDelete(id)
     return { success: true }
   }
 }

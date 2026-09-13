@@ -8,7 +8,7 @@ export interface AppWorkspaceProps {
   activeTabId: string
   setActiveTabId: (id: string) => void
   onCloseTab: (id: string) => void
-  onNavigate: (id: string, label: string, module: AppMenuChild['module']) => void
+  onNavigate: (id: string, label: string, module: AppMenuChild['module'] | 'home') => void
   visibleScreenIds: Set<string>
 }
 

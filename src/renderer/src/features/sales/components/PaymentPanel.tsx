@@ -30,7 +30,7 @@ export const PaymentPanel: React.FC<PaymentPanelProps> = ({
       <div className="flex items-center justify-between border-b border-slate-100 pb-2">
         <span className="font-bold text-slate-800 flex items-center gap-1.5">
           <span>💳</span>
-          <span>Payment Collection (F6)</span>
+          <span>Payment Collection</span>
         </span>
         <button
           type="button"

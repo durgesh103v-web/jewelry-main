@@ -103,7 +103,8 @@ export const AppTopNavbar: React.FC<AppTopNavbarProps> = ({
   return (
     <header
       ref={navRef}
-      className="h-12 bg-white border-b border-slate-200/90 px-3.5 flex items-center justify-between select-none shadow-2xs relative z-30"
+      className="h-11 bg-white border-b border-slate-200/90 px-3.5 flex items-center justify-between select-none shadow-sm relative z-30"
+      style={{ boxShadow: '0 1px 0 #e2e8f0, 0 2px 8px rgba(15,23,42,0.04)' }}
     >
       {/* 1. LEFT SECTION: NAVIGATION MENUS */}
       <div className="flex items-center gap-1 shrink-0">

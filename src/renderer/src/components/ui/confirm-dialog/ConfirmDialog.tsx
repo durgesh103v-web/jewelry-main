@@ -2,11 +2,13 @@ import React, { useEffect } from 'react'
 import { FiAlertTriangle, FiInfo, FiTrash2, FiX } from 'react-icons/fi'
 
 export interface ConfirmDialogProps {
-  open: boolean
+  open?: boolean
+  isOpen?: boolean
   onConfirm: () => void
   onCancel: () => void
   title: string
-  description: React.ReactNode
+  description?: React.ReactNode
+  message?: React.ReactNode
   confirmLabel?: string
   cancelLabel?: string
   variant?: 'danger' | 'warning' | 'primary'
@@ -14,27 +16,32 @@ export interface ConfirmDialogProps {
 }
 
 export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
-  open,
+  open: openProp,
+  isOpen: isOpenProp,
   onConfirm,
   onCancel,
   title,
-  description,
+  description: descriptionProp,
+  message: messageProp,
   confirmLabel = 'Confirm',
   cancelLabel = 'Cancel',
   variant = 'danger',
   loading = false
 }) => {
+  const isDialogOpen = Boolean(openProp ?? isOpenProp ?? false)
+  const dialogDescription = descriptionProp ?? messageProp ?? null
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent): void => {
-      if (open && e.key === 'Escape' && !loading) {
+      if (isDialogOpen && e.key === 'Escape' && !loading) {
         onCancel()
       }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [open, onCancel, loading])
+  }, [isDialogOpen, onCancel, loading])
 
-  if (!open) return null
+  if (!isDialogOpen) return null
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -80,7 +87,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
                 {title}
               </h3>
               <div className="text-xs text-slate-600 leading-relaxed mt-1.5 font-normal">
-                {description}
+                {dialogDescription}
               </div>
             </div>
           </div>

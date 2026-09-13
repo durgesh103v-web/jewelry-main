@@ -173,6 +173,11 @@ button.bg-rose-600 * {
     display: flex;
     flex-direction: column;
     box-sizing: border-box;
+    transition: box-shadow var(--duration-fast) var(--ease-default);
+  }
+
+  .erp-card-panel:focus-within {
+    box-shadow: var(--shadow-md);
   }
 
   .erp-card-panel-header {
@@ -185,7 +190,7 @@ button.bg-rose-600 * {
   }
 
   .erp-card-panel-title {
-    font-size: 15px;
+    font-size: 13px;
     font-weight: var(--font-weight-bold);
     color: var(--color-text-primary);
     margin: 0;
@@ -229,15 +234,16 @@ button.bg-rose-600 * {
   }
 
   .erp-table td {
-    padding: 10px 12px;
+    padding: 9px 12px;
     border-bottom: 1px solid var(--color-border-muted);
     color: var(--color-text-primary);
     vertical-align: middle;
     transition: background-color var(--duration-fast) var(--ease-default);
+    font-size: 12px;
   }
 
   .erp-table tr:hover td {
-    background: var(--color-background-muted);
+    background: #fafbfc;
   }
 
   .erp-table tr:last-child td {
@@ -288,6 +294,35 @@ button.bg-rose-600 * {
     color: #b91c1c;
     background: #fee2e2;
     border-color: #fecaca;
+  }
+
+  /* Activity stream type pills (sale / purchase / advance / order) */
+  .table-status-pill.sale,
+  .erp-status-pill.sale {
+    color: #065f46;
+    background: #d1fae5;
+    border-color: #a7f3d0;
+  }
+
+  .table-status-pill.purchase,
+  .erp-status-pill.purchase {
+    color: #1e40af;
+    background: #dbeafe;
+    border-color: #bfdbfe;
+  }
+
+  .table-status-pill.advance,
+  .erp-status-pill.advance {
+    color: #6d28d9;
+    background: #ede9fe;
+    border-color: #ddd6fe;
+  }
+
+  .table-status-pill.order,
+  .erp-status-pill.order {
+    color: #92400e;
+    background: #fef3c7;
+    border-color: #fde68a;
   }
 
   /* 5. Quick Action Button Pills */

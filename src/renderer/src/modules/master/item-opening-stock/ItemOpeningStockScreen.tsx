@@ -10,7 +10,6 @@ import {
   FiLayers,
   FiRotateCcw,
   FiCheck,
-  FiAward,
   FiChevronDown
 } from 'react-icons/fi'
 import AppAlert from '../../../components/ui/AppAlert'
@@ -574,8 +573,8 @@ export function ItemOpeningStockScreen({ onClose: _onClose }: { onClose?: () => 
       const payload = {
         stockDate: form.stockDate || today,
         itemId: form.itemId,
-        stampId: form.stampId || undefined,
-        designId: form.designId || undefined,
+        stampId: form.stampId || '',
+        designId: form.designId || '',
         huid: form.huid.trim().toUpperCase(),
         location: form.location.trim(),
         diamondCarats: toNumber(form.diamondCarats),

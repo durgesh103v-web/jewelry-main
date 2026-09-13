@@ -6,7 +6,7 @@ import type {
   ManufacturingReconciliationSummary,
   KarigarMetalLedgerRecord
 } from '@shared/types/manufacturing'
-import { formatDate, formatCurrency, formatWeight } from '../../../utils/formatters'
+import { formatDate, formatWeight } from '../../../utils/formatters'
 import { getFriendlyErrorMessage } from '../../../utils/getFriendlyErrorMessage'
 
 type MfgTab = 'ORDERS' | 'MATERIAL_ISSUE' | 'RECEIPTS' | 'RECONCILIATION' | 'KARIGARS'

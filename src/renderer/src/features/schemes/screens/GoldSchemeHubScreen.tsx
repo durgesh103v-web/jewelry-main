@@ -539,9 +539,9 @@ export const GoldSchemeHubScreen: React.FC<GoldSchemeHubScreenProps> = ({
                         <td className="py-2 px-3">
                           <div className="font-bold text-slate-900">{a.customerName}</div>
                           <div className="text-[10px] text-slate-500 font-mono flex items-center gap-1.5 mt-0.5">
-                            {a.customerCode && (
+                            {(a as any).customerCode && (
                               <span className="bg-slate-100 px-1.5 py-0.2 rounded border border-slate-200 font-semibold text-slate-700">
-                                {a.customerCode}
+                                {(a as any).customerCode}
                               </span>
                             )}
                             <span>{a.customerMobile || '-'}</span>

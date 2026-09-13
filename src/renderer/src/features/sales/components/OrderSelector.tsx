@@ -123,7 +123,7 @@ export const OrderSelector: React.FC<OrderSelectorProps> = ({
                           <span className="ml-2 font-normal text-slate-500">({o.orderDate})</span>
                         </div>
                         <div className="text-[11px] text-slate-500 mt-0.5">
-                          Delivery Due: {o.deliveryDate || 'N/A'} • Items: {o.items?.length || 1}
+                          Delivery Due: {o.expectedDeliveryDate || (o as any).deliveryDate || 'N/A'} • Items: {o.items?.length || 1}
                         </div>
                       </div>
                       <div className="text-right">

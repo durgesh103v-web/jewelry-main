@@ -4,7 +4,7 @@ import type { CustomerRecord } from '@shared/types/customer'
 import type { QuotationRecord, QuotationDraftItem, LabourRateType } from '../types'
 import { CustomerSelector } from '../../sales/components/CustomerSelector'
 import { ItemSearchModal } from '../../sales/components/ItemSearchModal'
-import { formatCurrency, formatWeight } from '../../../utils/formatters'
+import { formatWeight } from '../../../utils/formatters'
 import { getFriendlyErrorMessage } from '../../../utils/getFriendlyErrorMessage'
 
 interface NewQuotationModalProps {

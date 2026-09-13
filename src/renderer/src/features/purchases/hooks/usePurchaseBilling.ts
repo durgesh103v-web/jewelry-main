@@ -10,9 +10,18 @@ import type { PurchaseInvoiceRecord } from '@shared/types/purchaseInvoice'
 import type { PricingResult } from '@shared/types/pricing'
 import { roundNumber } from '@shared/jewelleryFormula'
 
+function getTodayISO(): string {
+  const d = new Date()
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
 export function usePurchaseBilling() {
   const [supplier, setSupplier] = useState<SupplierRecord | null>(null)
   const [supplierInvoiceNumber, setSupplierInvoiceNumber] = useState<string>('')
+  const [invoiceDate, setInvoiceDate] = useState<string>(getTodayISO())
   const [items, setItems] = useState<PurchaseBillItem[]>([])
   const [payments, setPayments] = useState<PurchasePaymentLine[]>([
     { id: uuidv4(), paymentMethod: 'CASH', amount: 0, paymentReference: '', notes: '' }
@@ -297,6 +306,7 @@ export function usePurchaseBilling() {
         supplierId: supplier.id,
         accountId: supplier.accountId,
         supplierInvoiceNumber,
+        invoiceDate,
         metalType,
         notes,
         items: items.map((it) => ({
@@ -353,6 +363,7 @@ export function usePurchaseBilling() {
     supplier,
     items,
     supplierInvoiceNumber,
+    invoiceDate,
     metalType,
     notes,
     payments,
@@ -364,6 +375,7 @@ export function usePurchaseBilling() {
   const resetPurchase = useCallback(() => {
     setSupplier(null)
     setSupplierInvoiceNumber('')
+    setInvoiceDate(getTodayISO())
     setItems([])
     setPayments([{ id: uuidv4(), paymentMethod: 'CASH', amount: 0, paymentReference: '', notes: '' }])
     setNotes('')
@@ -379,6 +391,8 @@ export function usePurchaseBilling() {
     setSupplier,
     supplierInvoiceNumber,
     setSupplierInvoiceNumber,
+    invoiceDate,
+    setInvoiceDate,
     items,
     addItem,
     updateItem,

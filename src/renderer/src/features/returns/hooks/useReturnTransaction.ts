@@ -9,6 +9,14 @@ import type {
 import type { SelectedReturnItem, ReturnLifecycleStage } from '../types'
 import { roundNumber } from '@shared/jewelleryFormula'
 
+function getTodayISO(): string {
+  const d = new Date()
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
 export function useReturnTransaction(returnType: ReturnType) {
   const [originalInvoice, setOriginalInvoice] = useState<any | null>(null)
   const [returnableItems, setReturnableItems] = useState<ReturnableInvoiceItem[]>([])
@@ -16,6 +24,7 @@ export function useReturnTransaction(returnType: ReturnType) {
   const [refunds, setRefunds] = useState<(ReturnRefundPayload & { id: string })[]>([])
   const [reason, setReason] = useState<string>('')
   const [notes, setNotes] = useState<string>('')
+  const [returnDate, setReturnDate] = useState<string>(getTodayISO())
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
   const [completedReturn, setCompletedReturn] = useState<ReturnRecord | null>(null)
@@ -172,6 +181,7 @@ export function useReturnTransaction(returnType: ReturnType) {
     try {
       const payload = {
         returnType,
+        returnDate,
         originalInvoiceId: originalInvoice.id,
         reason,
         notes,
@@ -212,7 +222,7 @@ export function useReturnTransaction(returnType: ReturnType) {
       isSubmittingRef.current = false
       setIsSubmitting(false)
     }
-  }, [returnType, originalInvoice, selectedItems, refunds, reason, notes])
+  }, [returnType, returnDate, originalInvoice, selectedItems, refunds, reason, notes])
 
   // 7. Reset Return
   const resetReturn = useCallback(() => {
@@ -222,6 +232,7 @@ export function useReturnTransaction(returnType: ReturnType) {
     setRefunds([])
     setReason('')
     setNotes('')
+    setReturnDate(getTodayISO())
     setError(null)
     setCompletedReturn(null)
     isSubmittingRef.current = false
@@ -244,6 +255,8 @@ export function useReturnTransaction(returnType: ReturnType) {
     setReason,
     notes,
     setNotes,
+    returnDate,
+    setReturnDate,
     summary,
     hasUnsavedChanges,
     isSubmitting,

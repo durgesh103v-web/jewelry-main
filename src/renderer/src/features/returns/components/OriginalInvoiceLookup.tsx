@@ -97,19 +97,19 @@ export const OriginalInvoiceLookup: React.FC<OriginalInvoiceLookupProps> = ({
         : selectedInvoice.supplierName || selectedInvoice.accountName || 'Supplier'
 
     return (
-      <div className="flex items-center justify-between p-3.5 bg-card border border-border rounded-xl shadow-sm">
+      <div className="flex items-center justify-between p-3.5 bg-white border border-slate-200 rounded-xl shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm">
+          <div className="w-9 h-9 rounded-full bg-amber-50 border border-amber-200 text-amber-700 flex items-center justify-center font-bold text-sm">
             {returnType === 'SALES_RETURN' ? '🧾' : '📦'}
           </div>
           <div>
-            <div className="font-bold text-foreground text-sm flex items-center gap-2">
+            <div className="font-bold text-slate-900 text-sm flex items-center gap-2">
               <span>{selectedInvoice.invoiceNumber}</span>
-              <span className="text-xs px-2 py-0.5 bg-muted text-muted-foreground rounded font-mono">
+              <span className="text-xs px-2 py-0.5 bg-slate-100 text-slate-500 rounded-md font-mono">
                 {selectedInvoice.invoiceDate}
               </span>
             </div>
-            <div className="text-xs text-muted-foreground flex items-center gap-3 mt-0.5">
+            <div className="text-[11px] text-slate-500 flex items-center gap-3 mt-0.5">
               <span>👤 {partyName}</span>
               <span>💰 ₹{selectedInvoice.grandTotal?.toLocaleString()}</span>
               <span>📦 {selectedInvoice.totalPcs || selectedInvoice.items?.length || 0} pcs</span>
@@ -120,7 +120,7 @@ export const OriginalInvoiceLookup: React.FC<OriginalInvoiceLookupProps> = ({
           <button
             type="button"
             onClick={() => onSelectInvoice(null)}
-            className="text-xs px-2.5 py-1 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded transition-colors font-medium"
+            className="text-xs px-2.5 py-1 text-slate-500 hover:text-rose-700 hover:bg-rose-50 border border-transparent hover:border-rose-200 rounded-lg transition-all font-semibold cursor-pointer"
           >
             Change Invoice
           </button>
@@ -139,20 +139,19 @@ export const OriginalInvoiceLookup: React.FC<OriginalInvoiceLookupProps> = ({
           onKeyDown={handleKeyDown}
           placeholder={`Search original ${returnType === 'SALES_RETURN' ? 'Sales Invoice (SL-...)' : 'Purchase Invoice (PR-...)'} by number or party...`}
           disabled={disabled}
-          className="w-full h-11 pl-10 pr-4 text-sm bg-background border border-input rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent placeholder:text-muted-foreground shadow-sm"
+          className="w-full h-10 pl-10 pr-4 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 placeholder:text-slate-400 shadow-sm disabled:opacity-50"
+          autoFocus
         />
-        <div className="absolute left-3.5 top-3 text-muted-foreground">
-          🔍
-        </div>
+        <div className="absolute left-3.5 top-2.5 text-slate-400 text-sm">🔍</div>
         {isLoading && (
-          <div className="absolute right-3.5 top-3 text-xs text-muted-foreground animate-pulse">
+          <div className="absolute right-3.5 top-3 text-[11px] text-slate-400">
             Searching...
           </div>
         )}
       </div>
 
       {isOpen && results.length > 0 && (
-        <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-xl shadow-xl max-h-64 overflow-y-auto">
+        <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-64 overflow-y-auto">
           {results.map((inv, idx) => {
             const isSelected = idx === selectedIndex
             const party =
@@ -169,22 +168,20 @@ export const OriginalInvoiceLookup: React.FC<OriginalInvoiceLookupProps> = ({
                   setSearch('')
                   setIsOpen(false)
                 }}
-                className={`w-full text-left px-4 py-3 text-sm border-b border-border/50 last:border-none flex items-center justify-between transition-colors ${
-                  isSelected ? 'bg-primary/10 ring-1 ring-primary' : 'hover:bg-accent/50'
+                className={`w-full text-left px-4 py-3 text-sm border-b border-slate-100 last:border-none flex items-center justify-between transition-colors cursor-pointer ${
+                  isSelected ? 'bg-amber-50 border-l-2 border-l-amber-500' : 'hover:bg-slate-50'
                 }`}
               >
                 <div>
-                  <div className="font-bold text-foreground font-mono flex items-center gap-2">
+                  <div className="font-bold text-slate-900 font-mono flex items-center gap-2">
                     <span>{inv.invoiceNumber}</span>
-                    <span className="text-[11px] font-normal text-muted-foreground">({inv.invoiceDate})</span>
+                    <span className="text-[11px] font-normal text-slate-400">({inv.invoiceDate})</span>
                   </div>
-                  <div className="text-xs text-muted-foreground mt-0.5">
+                  <div className="text-xs text-slate-500 mt-0.5">
                     👤 {party} • Total: ₹{inv.grandTotal?.toLocaleString()}
                   </div>
                 </div>
-                <span className="text-xs font-semibold text-primary">
-                  Select →
-                </span>
+                <span className="text-xs font-bold text-amber-700">Select →</span>
               </button>
             )
           })}

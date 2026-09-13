@@ -306,76 +306,72 @@ export function DashboardScreen({
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 w-full" aria-label="Executive KPI Overview">
         {/* KPI 1: TODAY'S SALE */}
         <div
-          className="erp-card-panel p-3 border-l-4 border-l-amber-500 cursor-pointer hover:shadow-md hover:-translate-y-px transition-all"
+          className="dashboard-kpi-card kpi-sale"
           onClick={() => openQuickScreen('sale-register', 'Sale Register', 'reports')}
         >
-          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest truncate">Today&apos;s Sale</div>
-          <div className="text-lg font-bold text-slate-800 erp-mono-num leading-tight mt-1 truncate">{kpis.sales.count} Bills</div>
-          <div className="text-[11px] font-medium text-slate-500 truncate mt-1">
-            {kpis.sales.fineWeight > 0 ? `${formatWeight(kpis.sales.fineWeight)} fine · ` : ''}
+          <div className="kpi-label">Today&apos;s Sale</div>
+          <div className="kpi-primary-val">{kpis.sales.count} Bills</div>
+          <div className="kpi-sub-val">
+            {kpis.sales.fineWeight > 0 ? `${formatWeight(kpis.sales.fineWeight)} · ` : ''}
             {formatCurrency(kpis.sales.amount, true)}
           </div>
         </div>
 
         {/* KPI 2: TODAY'S PURCHASE */}
         <div
-          className="erp-card-panel p-3 border-l-4 border-l-emerald-600 cursor-pointer hover:shadow-md hover:-translate-y-px transition-all"
+          className="dashboard-kpi-card kpi-purchase"
           onClick={() => openQuickScreen('purchase-register', 'Purchase Register', 'reports')}
         >
-          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest truncate">Today&apos;s Purchase</div>
-          <div className="text-lg font-bold text-slate-800 erp-mono-num leading-tight mt-1 truncate">{kpis.purchases.count} Bills</div>
-          <div className="text-[11px] font-medium text-slate-500 truncate mt-1">
-            {kpis.purchases.fineWeight > 0 ? `${formatWeight(kpis.purchases.fineWeight)} fine · ` : ''}
+          <div className="kpi-label">Today&apos;s Purchase</div>
+          <div className="kpi-primary-val">{kpis.purchases.count} Bills</div>
+          <div className="kpi-sub-val">
+            {kpis.purchases.fineWeight > 0 ? `${formatWeight(kpis.purchases.fineWeight)} · ` : ''}
             {formatCurrency(kpis.purchases.amount, true)}
           </div>
         </div>
 
         {/* KPI 3: CASH IN HAND */}
         <div
-          className="erp-card-panel p-3 border-l-4 border-l-sky-500 cursor-pointer hover:shadow-md hover:-translate-y-px transition-all"
+          className="dashboard-kpi-card kpi-cash"
           onClick={() => openQuickScreen('cash-book', 'Cash Book', 'reports')}
         >
-          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest truncate">Cash in Hand</div>
-          <div className="text-lg font-bold text-slate-800 erp-mono-num leading-tight mt-1 truncate">
+          <div className="kpi-label">Cash in Hand</div>
+          <div className="kpi-primary-val">
             ₹{Math.round(kpis.cash.closing).toLocaleString('en-IN')}
           </div>
-          <div className="text-[11px] font-medium text-slate-500 truncate mt-1">
-            Today&apos;s net ₹{Math.round(kpis.cash.net).toLocaleString('en-IN')}
+          <div className="kpi-sub-val">
+            Net ₹{Math.round(kpis.cash.net).toLocaleString('en-IN')}
           </div>
         </div>
 
         {/* KPI 4: RECEIVABLE */}
         <div
-          className="erp-card-panel p-3 border-l-4 border-l-rose-500 cursor-pointer hover:shadow-md hover:-translate-y-px transition-all"
+          className="dashboard-kpi-card kpi-receivable"
           onClick={() => openQuickScreen('outstanding', 'Outstanding', 'reports')}
         >
-          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest truncate">Receivable</div>
-          <div className="text-lg font-bold text-slate-800 erp-mono-num leading-tight mt-1 truncate">{kpis.receivables.count} A/c</div>
-          <div className="text-[11px] font-medium text-slate-500 truncate mt-1">
-            Owing {formatCurrency(kpis.receivables.amount, true)}
-          </div>
+          <div className="kpi-label">Receivable</div>
+          <div className="kpi-primary-val">{kpis.receivables.count} A/c</div>
+          <div className="kpi-sub-val">Owing {formatCurrency(kpis.receivables.amount, true)}</div>
         </div>
 
         {/* KPI 5: PAYABLE */}
         <div
-          className="erp-card-panel p-3 border-l-4 border-l-slate-400 cursor-pointer hover:shadow-md hover:-translate-y-px transition-all"
+          className="dashboard-kpi-card kpi-payable"
           onClick={() => openQuickScreen('outstanding', 'Outstanding', 'reports')}
         >
-          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest truncate">Payable</div>
-          <div className="text-lg font-bold text-slate-800 erp-mono-num leading-tight mt-1 truncate">{kpis.payables.count} A/c</div>
-          <div className="text-[11px] font-medium text-slate-500 truncate mt-1">
-            Owed {formatCurrency(kpis.payables.amount, true)}
-          </div>
+          <div className="kpi-label">Payable</div>
+          <div className="kpi-primary-val">{kpis.payables.count} A/c</div>
+          <div className="kpi-sub-val">Owed {formatCurrency(kpis.payables.amount, true)}</div>
         </div>
 
         {/* KPI 6: REMINDERS */}
         <div
-          className="erp-card-panel p-3 border-l-4 border-l-amber-600 cursor-pointer hover:shadow-md hover:-translate-y-px transition-all"
+          className="dashboard-kpi-card kpi-reminder"
           onClick={() => openQuickScreen('reminder', 'Reminder', 'utility')}
         >
-          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest truncate">Reminders</div>
-          <div className="text-lg font-bold text-slate-800 erp-mono-num leading-tight mt-1 truncate">{overdueCount} Overdue</div>
-          <div className="text-[11px] font-medium text-slate-500 truncate mt-1">{upcomingCount} upcoming</div>
+          <div className="kpi-label">Reminders</div>
+          <div className="kpi-primary-val">{overdueCount} Overdue</div>
+          <div className="kpi-sub-val">{upcomingCount} upcoming</div>
         </div>
       </div>
 

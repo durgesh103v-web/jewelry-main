@@ -34,7 +34,15 @@ export const SalesItemTable: React.FC<SalesItemTableProps> = ({
         </div>
         <div className="font-extrabold text-sm text-slate-900">No Items on Active Invoice</div>
         <p className="text-xs text-slate-500 mt-1 max-w-sm">
-          Scan a barcode tag or press <kbd className="px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded font-mono text-[10px] text-slate-800 font-bold">F4</kbd> to search inventory.
+          Scan a barcode tag or{' '}
+          <button
+            type="button"
+            onClick={onOpenSearch}
+            className="text-amber-700 hover:text-amber-800 font-bold underline cursor-pointer"
+          >
+            press F4 to search inventory
+          </button>
+          .
         </p>
 
         {/* 1-Click Quick Add Samples */}

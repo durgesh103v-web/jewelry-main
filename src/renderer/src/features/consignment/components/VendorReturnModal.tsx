@@ -189,7 +189,7 @@ export const VendorReturnModal: React.FC<VendorReturnModalProps> = ({
     try {
       const payload: ReturnConsignmentItemsPayload = {
         consignmentInwardId: inward.id,
-        itemIds: selectedIds,
+        consignmentItemIds: selectedIds,
         returnDate,
         notes: notes.trim() || undefined
       }
