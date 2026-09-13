@@ -230,6 +230,7 @@ type SavedApprovalHeader = {
   account_id: string
   account_name: string
   mobile_number: string
+  phone?: string
   metal_type: string
   narration: string
   reminder_date: string

@@ -19,23 +19,47 @@ export function AppWorkspace({
   onNavigate,
   visibleScreenIds
 }: AppWorkspaceProps): React.JSX.Element {
-  const activeTab = tabs.find((tab) => tab.id === activeTabId) ?? tabs[0] ?? {
-    id: 'dashboard',
-    label: 'Dashboard',
-    module: 'home'
-  }
+  const safeTabs =
+    tabs.length > 0
+      ? tabs
+      : [
+          {
+            id: 'dashboard',
+            label: 'Dashboard',
+            module: 'home' as const
+          }
+        ]
 
   return (
     <div className="erp-app-workspace-inner">
-      {/* Main Workspace Canvas (Full Height, Tabs moved to Footer Taskbar) */}
-      <main className="workspace-screen-canvas">
-        <ScreenRenderer
-          activeTab={activeTab}
-          onCloseTab={onCloseTab}
-          onNavigate={onNavigate}
-          visibleScreenIds={visibleScreenIds}
-        />
+      {/* Main Workspace Canvas (Full Height, Multi-Tab Persistent Keep-Alive) */}
+      <main className="workspace-screen-canvas relative w-full h-full flex-1">
+        {safeTabs.map((tab) => {
+          const isActive = tab.id === activeTabId
+          return (
+            <div
+              key={tab.id}
+              className={`w-full h-full flex-1 flex flex-col ${isActive ? 'flex' : 'hidden'}`}
+              style={{
+                display: isActive ? 'flex' : 'none',
+                flex: 1,
+                width: '100%',
+                height: '100%',
+                minHeight: 0
+              }}
+              aria-hidden={!isActive}
+            >
+              <ScreenRenderer
+                activeTab={tab}
+                onCloseTab={onCloseTab}
+                onNavigate={onNavigate}
+                visibleScreenIds={visibleScreenIds}
+              />
+            </div>
+          )
+        })}
       </main>
     </div>
   )
 }
+

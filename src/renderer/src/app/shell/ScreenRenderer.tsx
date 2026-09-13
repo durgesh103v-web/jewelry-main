@@ -111,11 +111,12 @@ export function ScreenRenderer({
   return (
     <Suspense
       fallback={
-        <LoadingState
-          message={`Loading ${activeTab.label}...`}
-          subMessage="Preparing workspace canvas, database queries & valuation state..."
-          onCancel={() => onNavigate('dashboard', 'Dashboard', 'home')}
-        />
+        <div className="w-full h-full flex-1 flex flex-col items-center justify-center p-8 bg-[var(--color-background-app,#f8fafc)]">
+          <LoadingState
+            compact
+            message={`Loading ${activeTab.label}...`}
+          />
+        </div>
       }
     >
       <Component

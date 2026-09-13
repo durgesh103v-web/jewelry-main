@@ -644,21 +644,24 @@ function SaleReturnScreen({ onClose }: { onClose: () => void }): React.JSX.Eleme
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-[11px] text-slate-500 font-medium">Metal:</span>
-                  <div className="inline-flex rounded-lg border border-slate-200 p-0.5 bg-slate-50">
-                    {(['Gold', 'Silver', 'Diamond', 'Other'] as MetalType[]).map((m) => (
-                      <button
-                        key={m}
-                        type="button"
-                        onClick={() => handleMetalChange(m)}
-                        className={`px-2 py-0.5 text-[11px] font-semibold rounded-md transition-all cursor-pointer ${
-                          header.metalType === m
-                            ? 'bg-white text-amber-800 shadow-2xs border border-slate-200/80'
-                            : 'text-slate-600 hover:text-slate-900'
-                        }`}
-                      >
-                        {m}
-                      </button>
-                    ))}
+                  <div className="inline-flex items-center rounded-lg border border-slate-200 p-0.5 bg-slate-50">
+                    {(['Gold', 'Silver', 'Diamond', 'Other'] as MetalType[]).map((m) => {
+                      const isSelected = header.metalType === m
+                      return (
+                        <button
+                          key={m}
+                          type="button"
+                          onClick={() => handleMetalChange(m)}
+                          className={`h-6 px-2.5 text-[11px] font-semibold rounded-md transition-colors duration-100 cursor-pointer flex items-center border ${
+                            isSelected
+                              ? 'bg-white text-amber-800 shadow-2xs border-slate-200/90 font-bold'
+                              : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-100/60'
+                          }`}
+                        >
+                          {m}
+                        </button>
+                      )
+                    })}
                   </div>
                 </div>
               </div>
