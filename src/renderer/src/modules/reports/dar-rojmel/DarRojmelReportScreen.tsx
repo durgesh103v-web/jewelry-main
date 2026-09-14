@@ -1,8 +1,23 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import dayjs from 'dayjs'
+import {
+  FiTrendingUp,
+  FiX,
+  FiCalendar,
+  FiRefreshCw,
+  FiDownload,
+  FiPrinter,
+  FiSearch,
+  FiInbox,
+  FiFilter
+} from 'react-icons/fi'
 import AppAlert from '../../../components/ui/AppAlert'
 import { getFriendlyErrorMessage } from '../../../utils/getFriendlyErrorMessage'
 
 type AlertType = 'success' | 'error' | 'warning'
+type DatePreset = 'TODAY' | 'YESTERDAY' | 'THIS_WEEK' | 'THIS_MONTH' | 'THIS_FY'
+
+const today = dayjs().format('YYYY-MM-DD')
 
 const emptySummary: DarRojmelSummary = {
   totalFine: 0,
@@ -12,9 +27,10 @@ const emptySummary: DarRojmelSummary = {
 }
 
 function formatFine(value: number): string {
-  return Number(value || 0)
-    .toFixed(3)
-    .replace(/\.?0+$/, '')
+  return Number(value || 0).toLocaleString('en-IN', {
+    minimumFractionDigits: 3,
+    maximumFractionDigits: 3
+  })
 }
 
 function formatAmount(value: number | null): string {
@@ -35,10 +51,8 @@ function formatRate(value: number | null): string {
 
 function formatDate(value: string): string {
   if (!value) return ''
-
   const [year, month, day] = value.split('-')
   if (!year || !month || !day) return value
-
   return `${day}/${month}/${year}`
 }
 
@@ -75,8 +89,9 @@ function groupRowsByDay(rows: DarRojmelRow[]): DayGroup[] {
 }
 
 function DarRojmelReportScreen({ onClose }: { onClose: () => void }): React.JSX.Element {
-  const [fromDate, setFromDate] = useState('')
-  const [toDate, setToDate] = useState('')
+  const [fromDate, setFromDate] = useState(dayjs().startOf('month').format('YYYY-MM-DD'))
+  const [toDate, setToDate] = useState(today)
+  const [activePreset, setActivePreset] = useState<DatePreset | null>('THIS_MONTH')
   const [rows, setRows] = useState<DarRojmelRow[]>([])
   const [summary, setSummary] = useState<DarRojmelSummary>(emptySummary)
   const [typeFilter, setTypeFilter] = useState('All')
@@ -100,6 +115,30 @@ function DarRojmelReportScreen({ onClose }: { onClose: () => void }): React.JSX.
     }, 3000)
   }, [])
 
+  const setPreset = (preset: DatePreset) => {
+    setActivePreset(preset)
+    const now = dayjs()
+    if (preset === 'TODAY') {
+      const d = now.format('YYYY-MM-DD')
+      setFromDate(d)
+      setToDate(d)
+    } else if (preset === 'YESTERDAY') {
+      const d = now.subtract(1, 'day').format('YYYY-MM-DD')
+      setFromDate(d)
+      setToDate(d)
+    } else if (preset === 'THIS_WEEK') {
+      setFromDate(now.startOf('week').format('YYYY-MM-DD'))
+      setToDate(now.endOf('week').format('YYYY-MM-DD'))
+    } else if (preset === 'THIS_MONTH') {
+      setFromDate(now.startOf('month').format('YYYY-MM-DD'))
+      setToDate(now.endOf('month').format('YYYY-MM-DD'))
+    } else if (preset === 'THIS_FY') {
+      const currentYear = now.month() >= 3 ? now.year() : now.year() - 1
+      setFromDate(`${currentYear}-04-01`)
+      setToDate(`${currentYear + 1}-03-31`)
+    }
+  }
+
   const loadReport = useCallback(async (): Promise<void> => {
     if (fromDate && toDate && fromDate > toDate) {
       showAlert('warning', 'From date cannot be after to date.')
@@ -122,19 +161,8 @@ function DarRojmelReportScreen({ onClose }: { onClose: () => void }): React.JSX.
   }, [fromDate, toDate, showAlert])
 
   useEffect(() => {
-    const loadTimer = window.setTimeout(() => {
-      void loadReport()
-    }, 0)
-
-    return () => {
-      window.clearTimeout(loadTimer)
-
-      if (alertTimerRef.current) {
-        window.clearTimeout(alertTimerRef.current)
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+    void loadReport()
+  }, [loadReport])
 
   const filteredRows = useMemo(() => {
     const keyword = searchText.trim().toLowerCase()
@@ -143,9 +171,9 @@ function DarRojmelReportScreen({ onClose }: { onClose: () => void }): React.JSX.
       const typeMatch = typeFilter === 'All' || row.transactionType === typeFilter
       const keywordMatch =
         !keyword ||
-        row.billNo.toLowerCase().includes(keyword) ||
-        row.accountName.toLowerCase().includes(keyword) ||
-        row.metalType.toLowerCase().includes(keyword)
+        row.billNo?.toLowerCase().includes(keyword) ||
+        row.accountName?.toLowerCase().includes(keyword) ||
+        row.metalType?.toLowerCase().includes(keyword)
 
       return typeMatch && keywordMatch
     })
@@ -153,196 +181,323 @@ function DarRojmelReportScreen({ onClose }: { onClose: () => void }): React.JSX.
 
   const dayGroups = useMemo(() => groupRowsByDay(filteredRows), [filteredRows])
 
-  return (
-    <div className="fine-report-screen">
-      <div className="fine-report-window">
-        <div className="form-title-bar no-print">
-          <span>Dar Rojmel</span>
+  const handleExportCsv = () => {
+    if (filteredRows.length === 0) {
+      showAlert('warning', 'No Dar Rojmel records to export.')
+      return
+    }
+    const headers = ['Sr', 'Date', 'Type', 'Bill No', 'Account Name', 'Metal', 'Fine (g)', 'Rate (INR)', 'Amount (INR)']
+    const escapeCsv = (val: any) => `"${String(val ?? '').replace(/"/g, '""')}"`
+    const csvRows = filteredRows.map((r, idx) => [
+      idx + 1,
+      escapeCsv(formatDate(r.entryDate)),
+      escapeCsv(getTransactionLabel(r.transactionType)),
+      escapeCsv(r.billNo),
+      escapeCsv(r.accountName),
+      escapeCsv(r.metalType),
+      r.fine || 0,
+      r.rate || 0,
+      r.amount || 0
+    ])
 
-          <button className="module-close-btn" type="button" onClick={onClose}>
-            &times;
-          </button>
+    const csvContent = '\uFEFF' + [headers.join(','), ...csvRows.map((r) => r.join(','))].join('\n')
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `dar_rojmel_${fromDate}_to_${toDate}.csv`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+    showAlert('success', 'Exported Dar Rojmel CSV successfully.')
+  }
+
+  const presets: { id: DatePreset; label: string }[] = [
+    { id: 'TODAY', label: 'Today' },
+    { id: 'YESTERDAY', label: 'Yesterday' },
+    { id: 'THIS_WEEK', label: 'This Week' },
+    { id: 'THIS_MONTH', label: 'This Month' },
+    { id: 'THIS_FY', label: 'This FY' }
+  ]
+
+  return (
+    <div className="flex flex-col h-full bg-slate-100 font-sans text-slate-800 select-none overflow-hidden">
+      {/* Header Bar */}
+      <header className="h-13 px-4 border-b border-slate-200/90 bg-white flex items-center justify-between shadow-2xs shrink-0 z-10">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-700 text-base shadow-2xs font-bold">
+            <FiTrendingUp className="w-4 h-4" />
+          </div>
+          <div>
+            <h1 className="font-bold text-sm text-slate-900 tracking-tight">Dar Rojmel Register</h1>
+            <p className="text-[11px] text-slate-500 font-medium leading-none mt-0.5">
+              Day-wise rate-based trading movements across Sauda Book, sales and purchases
+            </p>
+          </div>
         </div>
 
-        <div className="fine-report-body">
-          <div className="no-print">
+        <button
+          type="button"
+          onClick={onClose}
+          title="Close"
+          className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer text-sm font-bold"
+        >
+          <FiX className="w-4 h-4" />
+        </button>
+      </header>
+
+      {/* Main Workspace */}
+      <div className="flex-1 flex flex-col p-3 gap-2.5 overflow-hidden">
+        {alertMessage && (
+          <div className="shrink-0">
             <AppAlert type={alertType} message={alertMessage} onClose={() => setAlertMessage('')} />
           </div>
+        )}
 
-          <div className="fine-report-toolbar no-print">
-            <div className="form-field">
-              <label htmlFor="dar-rojmel-from-date">From Date</label>
-              <input
-                id="dar-rojmel-from-date"
-                type="date"
-                value={fromDate}
-                onChange={(event) => setFromDate(event.target.value)}
-              />
-            </div>
-
-            <div className="form-field">
-              <label htmlFor="dar-rojmel-to-date">To Date</label>
-              <input
-                id="dar-rojmel-to-date"
-                type="date"
-                value={toDate}
-                onChange={(event) => setToDate(event.target.value)}
-              />
-            </div>
-
-            <div className="form-field">
-              <label htmlFor="dar-rojmel-type-filter">Type</label>
-              <select
-                id="dar-rojmel-type-filter"
-                value={typeFilter}
-                onChange={(event) => setTypeFilter(event.target.value)}
+        {/* Filter Bar */}
+        <div className="bg-white px-3 py-2 rounded-xl border border-slate-200/90 shadow-2xs flex flex-wrap items-center justify-between gap-2.5 text-xs shrink-0">
+          {/* Date Presets */}
+          <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200/80">
+            {presets.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => setPreset(p.id)}
+                className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer border ${
+                  activePreset === p.id
+                    ? 'bg-amber-500 text-white font-bold border-amber-600 shadow-2xs'
+                    : 'text-slate-700 hover:text-amber-900 hover:bg-amber-50/70 border-transparent font-medium'
+                }`}
               >
-                <option value="All">All</option>
-                <option value="SALE">Sale</option>
-                <option value="PURCHASE">Purchase</option>
-                <option value="SAUDA">Sauda</option>
-              </select>
-            </div>
+                {p.label}
+              </button>
+            ))}
+          </div>
 
-            <div className="list-search">
-              <label htmlFor="dar-rojmel-search">Search</label>
-              <input
-                id="dar-rojmel-search"
-                value={searchText}
-                onChange={(event) => setSearchText(event.target.value)}
-                placeholder="Search bill no, account, metal"
-              />
+          {/* Date Range */}
+          <div className="flex items-center gap-2">
+            <span className="text-slate-600 font-semibold flex items-center gap-1">
+              <FiCalendar className="w-3.5 h-3.5 text-amber-600" />
+              From:
+            </span>
+            <input
+              type="date"
+              value={fromDate}
+              onChange={(e) => {
+                setActivePreset(null)
+                setFromDate(e.target.value)
+              }}
+              className="h-8 px-2.5 text-xs bg-white border border-slate-200 rounded-lg text-slate-800 focus:ring-1 focus:ring-amber-500 font-semibold shadow-2xs"
+            />
+            <span className="text-slate-600 font-semibold">To:</span>
+            <input
+              type="date"
+              value={toDate}
+              onChange={(e) => {
+                setActivePreset(null)
+                setToDate(e.target.value)
+              }}
+              className="h-8 px-2.5 text-xs bg-white border border-slate-200 rounded-lg text-slate-800 focus:ring-1 focus:ring-amber-500 font-semibold shadow-2xs"
+            />
+          </div>
 
-              {searchText && (
-                <button
-                  className="search-clear-btn"
-                  type="button"
-                  onClick={() => setSearchText('')}
-                >
-                  &times;
-                </button>
-              )}
-            </div>
+          {/* Type Filter */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-slate-600 font-semibold flex items-center gap-1">
+              <FiFilter className="w-3.5 h-3.5 text-slate-400" />
+              Type:
+            </span>
+            <select
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value)}
+              className="h-8 px-2.5 text-xs bg-white border border-slate-200 rounded-lg text-slate-800 focus:ring-1 focus:ring-amber-500 font-semibold shadow-2xs"
+            >
+              <option value="All">All Types</option>
+              <option value="SALE">Sale</option>
+              <option value="PURCHASE">Purchase</option>
+              <option value="SAUDA">Sauda</option>
+            </select>
+          </div>
 
+          {/* Search */}
+          <div className="relative min-w-[200px] flex-1 max-w-sm">
+            <FiSearch className="absolute left-2.5 top-2.5 w-3.5 h-3.5 text-slate-400" />
+            <input
+              type="text"
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              placeholder="Search bill no, account, metal..."
+              className="w-full h-8 pl-8 pr-3 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 focus:bg-white focus:ring-1 focus:ring-amber-500 shadow-2xs font-medium"
+            />
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex items-center gap-2">
             <button
-              className="btn-new"
               type="button"
               onClick={() => void loadReport()}
               disabled={loading}
+              className="h-8 px-3 bg-white hover:bg-amber-50 text-slate-700 hover:text-amber-900 border border-slate-300 hover:border-amber-300 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer disabled:opacity-50"
             >
-              {loading ? 'Loading...' : 'Show'}
+              <FiRefreshCw className={`w-3.5 h-3.5 text-amber-600 ${loading ? 'animate-spin' : ''}`} />
+              <span>{loading ? 'Loading...' : 'Refresh'}</span>
             </button>
 
-            <button className="btn-save" type="button" onClick={() => window.print()}>
-              Print
+            <button
+              type="button"
+              onClick={handleExportCsv}
+              disabled={loading}
+              className="h-8 px-3.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs border border-amber-600 cursor-pointer disabled:opacity-50"
+            >
+              <FiDownload className="w-3.5 h-3.5" />
+              <span>Export CSV</span>
             </button>
 
-            <div className="record-summary">
-              Records: <strong>{rows.length}</strong> | Showing:{' '}
-              <strong>{filteredRows.length}</strong>
-            </div>
+            <button
+              type="button"
+              onClick={() => window.print()}
+              className="h-8 px-3 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer"
+            >
+              <FiPrinter className="w-3.5 h-3.5 text-slate-600" />
+              <span>Print</span>
+            </button>
           </div>
+        </div>
 
-          <div className="fine-report-print-title">
-            <h2>Dar Rojmel</h2>
-            <p>
-              From {fromDate ? formatDate(fromDate) : 'Beginning'} To{' '}
-              {toDate ? formatDate(toDate) : 'Today'}
-            </p>
+        {/* KPI Metrics */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 shrink-0">
+          <div className="p-3 rounded-xl border border-slate-200/90 bg-white shadow-2xs flex flex-col justify-center">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total Fine (g)</span>
+            <span className="text-sm font-extrabold font-mono text-slate-900 mt-0.5">
+              {formatFine(summary.totalFine)}g
+            </span>
           </div>
-
-          <div className="fine-report-summary">
-            <div>
-              <span>Total Fine</span>
-              <strong>{formatFine(summary.totalFine)}</strong>
-            </div>
-            <div>
-              <span>Total Sauda Amount</span>
-              <strong>{formatAmount(summary.totalAmount)}</strong>
-            </div>
-            <div>
-              <span>Sauda Entries</span>
-              <strong>{summary.saudaCount}</strong>
-            </div>
-            <div>
-              <span>Total Records</span>
-              <strong>{summary.recordCount}</strong>
-            </div>
+          <div className="p-3 rounded-xl border border-amber-200/80 bg-amber-50/40 shadow-2xs flex flex-col justify-center">
+            <span className="text-[11px] font-bold text-amber-800 uppercase tracking-wider">Total Sauda Amount</span>
+            <span className="text-sm font-extrabold font-mono text-amber-800 mt-0.5">
+              ₹{formatAmount(summary.totalAmount)}
+            </span>
           </div>
+          <div className="p-3 rounded-xl border border-slate-200/90 bg-white shadow-2xs flex flex-col justify-center">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Sauda Entries</span>
+            <span className="text-sm font-extrabold font-mono text-slate-900 mt-0.5">
+              {summary.saudaCount}
+            </span>
+          </div>
+          <div className="p-3 rounded-xl border border-slate-200/90 bg-white shadow-2xs flex flex-col justify-center">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total Records</span>
+            <span className="text-sm font-extrabold font-mono text-slate-900 mt-0.5">
+              {summary.recordCount}
+            </span>
+          </div>
+        </div>
 
-          <div className="table-panel">
-            <table>
-              <thead>
+        {/* Data Table */}
+        <div className="flex-1 overflow-auto border border-slate-200/90 rounded-xl bg-white shadow-2xs flex flex-col">
+          {dayGroups.length === 0 && !loading ? (
+            <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">
+              <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-600 mb-3 shadow-2xs">
+                <FiInbox className="w-7 h-7" />
+              </div>
+              <h3 className="font-bold text-sm text-slate-800 mb-1">No Rate-Based Dealings Found</h3>
+              <p className="text-xs text-slate-500 max-w-sm mb-3">
+                No dealings found for the selected filter criteria.
+              </p>
+              <button
+                type="button"
+                onClick={() => setPreset('THIS_MONTH')}
+                className="px-3 py-1.5 text-xs font-semibold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-300 rounded-lg shadow-2xs transition-all cursor-pointer"
+              >
+                Reset to This Month
+              </button>
+            </div>
+          ) : (
+            <table className="w-full text-left text-xs border-collapse">
+              <thead className="bg-slate-100 text-slate-700 uppercase text-[11px] font-bold tracking-wider sticky top-0 z-10 border-b border-slate-200">
                 <tr>
-                  <th>Sr</th>
-                  <th>Date</th>
-                  <th>Type</th>
-                  <th>Bill No</th>
-                  <th>Account</th>
-                  <th>Metal</th>
-                  <th>Fine</th>
-                  <th>Rate</th>
-                  <th>Amount</th>
+                  <th className="py-2.5 px-3 w-12 text-center">#</th>
+                  <th className="py-2.5 px-3">Date</th>
+                  <th className="py-2.5 px-3">Type</th>
+                  <th className="py-2.5 px-3">Bill / Ref No</th>
+                  <th className="py-2.5 px-3">Account Name</th>
+                  <th className="py-2.5 px-3">Metal</th>
+                  <th className="py-2.5 px-3 text-right">Fine (g)</th>
+                  <th className="py-2.5 px-3 text-right">Rate (₹)</th>
+                  <th className="py-2.5 px-3 text-right">Amount (₹)</th>
                 </tr>
               </thead>
-
-              <tbody>
-                {loading ? (
-                  <tr>
-                    <td colSpan={9} className="empty-row">
-                      Loading Dar Rojmel...
-                    </td>
-                  </tr>
-                ) : dayGroups.length === 0 ? (
-                  <tr>
-                    <td colSpan={9} className="empty-row">
-                      No rate-based dealings found for selected range.
-                    </td>
-                  </tr>
-                ) : (
-                  dayGroups.map((group) => {
-                    let srNo = 0
-
-                    return (
-                      <Fragment key={group.entryDate}>
-                        {group.rows.map((row) => {
-                          srNo += 1
-                          return (
-                            <tr key={row.id}>
-                              <td>{srNo}</td>
-                              <td>{formatDate(row.entryDate)}</td>
-                              <td>{getTransactionLabel(row.transactionType)}</td>
-                              <td>{row.billNo}</td>
-                              <td>{row.accountName}</td>
-                              <td>{row.metalType}</td>
-                              <td>{formatFine(row.fine)}</td>
-                              <td>{formatRate(row.rate)}</td>
-                              <td>{formatAmount(row.amount)}</td>
-                            </tr>
-                          )
-                        })}
-                        <tr key={`${group.entryDate}-subtotal`} className="cash-book-total-row">
-                          <td colSpan={6}>{formatDate(group.entryDate)} — Day Total</td>
-                          <td>{formatFine(group.totalFine)}</td>
-                          <td>-</td>
-                          <td>{formatAmount(group.totalAmount)}</td>
-                        </tr>
-                      </Fragment>
-                    )
-                  })
-                )}
+              <tbody className="divide-y divide-slate-100">
+                {dayGroups.map((group) => {
+                  let srNo = 0
+                  return (
+                    <Fragment key={group.entryDate}>
+                      {group.rows.map((row) => {
+                        srNo += 1
+                        return (
+                          <tr key={row.id} className="hover:bg-amber-50/40 text-slate-700 font-medium">
+                            <td className="py-2 px-3 text-center text-slate-400 font-mono text-[11px]">{srNo}</td>
+                            <td className="py-2 px-3 font-mono text-[11px]">{formatDate(row.entryDate)}</td>
+                            <td className="py-2 px-3">
+                              <span
+                                className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                  row.transactionType === 'SAUDA'
+                                    ? 'bg-purple-100 text-purple-800 border border-purple-200'
+                                    : row.transactionType === 'SALE'
+                                    ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                                    : 'bg-blue-100 text-blue-800 border border-blue-200'
+                                }`}
+                              >
+                                {getTransactionLabel(row.transactionType)}
+                              </span>
+                            </td>
+                            <td className="py-2 px-3 font-mono font-bold text-slate-900">{row.billNo}</td>
+                            <td className="py-2 px-3 font-semibold text-slate-900">{row.accountName}</td>
+                            <td className="py-2 px-3 text-slate-600">{row.metalType}</td>
+                            <td className="py-2 px-3 text-right font-mono font-bold text-slate-900">
+                              {formatFine(row.fine)}g
+                            </td>
+                            <td className="py-2 px-3 text-right font-mono font-medium text-slate-700">
+                              {row.rate ? `₹${formatRate(row.rate)}` : '-'}
+                            </td>
+                            <td className="py-2 px-3 text-right font-mono font-bold text-emerald-600">
+                              {row.amount ? `₹${formatAmount(row.amount)}` : '-'}
+                            </td>
+                          </tr>
+                        )
+                      })}
+                      <tr key={`${group.entryDate}-subtotal`} className="bg-slate-100/90 font-bold border-y border-slate-200 text-slate-900">
+                        <td colSpan={6} className="py-2 px-3 text-right uppercase text-[11px] tracking-wider text-slate-600">
+                          {formatDate(group.entryDate)} — Day Subtotal:
+                        </td>
+                        <td className="py-2 px-3 text-right font-mono text-amber-800">
+                          {formatFine(group.totalFine)}g
+                        </td>
+                        <td className="py-2 px-3 text-right font-mono">-</td>
+                        <td className="py-2 px-3 text-right font-mono text-emerald-700">
+                          ₹{formatAmount(group.totalAmount)}
+                        </td>
+                      </tr>
+                    </Fragment>
+                  )
+                })}
               </tbody>
+              <tfoot className="bg-slate-100 font-bold border-t-2 border-slate-300 text-slate-900 sticky bottom-0">
+                <tr>
+                  <td colSpan={6} className="py-2.5 px-3 text-right uppercase text-[11px] tracking-wider">
+                    Total:
+                  </td>
+                  <td className="py-2.5 px-3 text-right font-mono text-amber-800">
+                    {formatFine(summary.totalFine)}g
+                  </td>
+                  <td className="py-2.5 px-3 text-right font-mono">-</td>
+                  <td className="py-2.5 px-3 text-right font-mono text-emerald-700">
+                    ₹{formatAmount(summary.totalAmount)}
+                  </td>
+                </tr>
+              </tfoot>
             </table>
-          </div>
-
-          <div className="screen-help-text no-print">
-            Dar Rojmel lists every rate-based dealing day-wise, grouped with a sub-total per day.
-            Sauda Book entries carry a real trading Rate and Amount as recorded at entry time.
-            Sale and Purchase bills do not carry a per-item trading rate anywhere in this system
-            (only the fine-to-cash conversion rate on the payment section of a bill exists, which
-            is a different figure) — so Sale and Purchase rows here show Date / Account / Metal /
-            Fine only, with Rate and Amount displayed as &quot;-&quot;.
-          </div>
+          )}
         </div>
       </div>
     </div>

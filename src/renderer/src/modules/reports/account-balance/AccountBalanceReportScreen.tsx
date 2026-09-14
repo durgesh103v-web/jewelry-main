@@ -1,4 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  FiUsers,
+  FiX,
+  FiRefreshCw,
+  FiDownload,
+  FiPrinter,
+  FiSearch,
+  FiInbox,
+  FiFilter
+} from 'react-icons/fi'
 import AppAlert from '../../../components/ui/AppAlert'
 import { getFriendlyErrorMessage } from '../../../utils/getFriendlyErrorMessage'
 
@@ -24,56 +34,28 @@ type AccountBalanceReportRecord = {
 }
 
 function formatNumber(value: number): string {
-  return Number(value || 0)
-    .toFixed(3)
-    .replace(/\.?0+$/, '')
+  return Number(value || 0).toLocaleString('en-IN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 3
+  })
+}
+
+function formatAmount(value: number): string {
+  return Number(value || 0).toLocaleString('en-IN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })
 }
 
 function AccountBalanceReportScreen({ onClose }: { onClose: () => void }): React.JSX.Element {
   const [records, setRecords] = useState<AccountBalanceReportRecord[]>([])
   const [searchText, setSearchText] = useState('')
+  const [groupFilter, setGroupFilter] = useState('All')
   const [loading, setLoading] = useState(false)
-
   const [alertMessage, setAlertMessage] = useState('')
   const [alertType, setAlertType] = useState<AlertType>('success')
 
   const alertTimerRef = useRef<number | null>(null)
-
-  const filteredRecords = useMemo(() => {
-    const keyword = searchText.trim().toLowerCase()
-
-    if (!keyword) return records
-
-    return records.filter((record) => {
-      return (
-        record.accountName.toLowerCase().includes(keyword) ||
-        record.otherName.toLowerCase().includes(keyword) ||
-        record.mobileNumber.toLowerCase().includes(keyword) ||
-        record.city.toLowerCase().includes(keyword) ||
-        record.groupName.toLowerCase().includes(keyword)
-      )
-    })
-  }, [records, searchText])
-
-  const totals = useMemo(() => {
-    return filteredRecords.reduce(
-      (total, record) => {
-        total.goldFine += record.goldFine
-        total.silverFine += record.silverFine
-        total.cash += record.cash
-        total.anamat += record.anamat
-        total.bank += record.bank
-        return total
-      },
-      {
-        goldFine: 0,
-        silverFine: 0,
-        cash: 0,
-        anamat: 0,
-        bank: 0
-      }
-    )
-  }, [filteredRecords])
 
   const showAlert = useCallback((type: AlertType, message: string): void => {
     setAlertType(type)
@@ -92,7 +74,7 @@ function AccountBalanceReportScreen({ onClose }: { onClose: () => void }): React
     try {
       setLoading(true)
       const data = await window.api.reports.accountBalance()
-      setRecords(data)
+      setRecords(data || [])
     } catch (error) {
       showAlert('error', getFriendlyErrorMessage(error))
     } finally {
@@ -101,153 +83,318 @@ function AccountBalanceReportScreen({ onClose }: { onClose: () => void }): React
   }, [showAlert])
 
   useEffect(() => {
-    const loadTimer = window.setTimeout(() => {
-      void loadReport()
-    }, 0)
-
-    return () => {
-      window.clearTimeout(loadTimer)
-
-      if (alertTimerRef.current) {
-        window.clearTimeout(alertTimerRef.current)
-      }
-    }
+    void loadReport()
   }, [loadReport])
 
-  return (
-    <div className="account-balance-report-screen">
-      <div className="account-balance-report-window">
-        <div className="form-title-bar">
-          <span>Account Balance</span>
+  const groupsList = useMemo(() => {
+    const set = new Set<string>()
+    records.forEach((r) => {
+      if (r.groupName) set.add(r.groupName)
+    })
+    return ['All', ...Array.from(set).sort()]
+  }, [records])
 
-          <button className="module-close-btn" type="button" onClick={onClose}>
-            &times;
-          </button>
+  const filteredRecords = useMemo(() => {
+    const keyword = searchText.trim().toLowerCase()
+
+    return records.filter((record) => {
+      const matchesGroup = groupFilter === 'All' || record.groupName === groupFilter
+      const matchesKeyword =
+        !keyword ||
+        record.accountName?.toLowerCase().includes(keyword) ||
+        record.otherName?.toLowerCase().includes(keyword) ||
+        record.mobileNumber?.toLowerCase().includes(keyword) ||
+        record.city?.toLowerCase().includes(keyword) ||
+        record.groupName?.toLowerCase().includes(keyword)
+
+      return matchesGroup && matchesKeyword
+    })
+  }, [records, searchText, groupFilter])
+
+  const totals = useMemo(() => {
+    return filteredRecords.reduce(
+      (total, record) => {
+        total.goldFine += record.goldFine || 0
+        total.silverFine += record.silverFine || 0
+        total.cash += record.cash || 0
+        total.anamat += record.anamat || 0
+        total.bank += record.bank || 0
+        return total
+      },
+      {
+        goldFine: 0,
+        silverFine: 0,
+        cash: 0,
+        anamat: 0,
+        bank: 0
+      }
+    )
+  }, [filteredRecords])
+
+  const handleExportCsv = () => {
+    if (filteredRecords.length === 0) {
+      showAlert('warning', 'No account balance records to export.')
+      return
+    }
+    const headers = ['Sr', 'Account Name', 'Other Name', 'Group', 'Mobile', 'City', 'Gold Fine (g)', 'Silver Fine (g)', 'Cash Balance (INR)', 'Anamat (INR)', 'Bank Balance (INR)']
+    const escapeCsv = (val: any) => `"${String(val ?? '').replace(/"/g, '""')}"`
+    const csvRows = [
+      ...filteredRecords.map((r, idx) => [
+        idx + 1,
+        escapeCsv(r.accountName),
+        escapeCsv(r.otherName || '-'),
+        escapeCsv(r.groupName),
+        escapeCsv(r.mobileNumber || '-'),
+        escapeCsv(r.city || '-'),
+        r.goldFine || 0,
+        r.silverFine || 0,
+        r.cash || 0,
+        r.anamat || 0,
+        r.bank || 0
+      ]),
+      ['Total', '', '', '', '', '', totals.goldFine, totals.silverFine, totals.cash, totals.anamat, totals.bank]
+    ]
+
+    const csvContent = '\uFEFF' + [headers.join(','), ...csvRows.map((r) => r.join(','))].join('\n')
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `account_balances_${new Date().toISOString().slice(0, 10)}.csv`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+    showAlert('success', 'Exported Account Balances CSV successfully.')
+  }
+
+  return (
+    <div className="flex flex-col h-full bg-slate-100 font-sans text-slate-800 select-none overflow-hidden">
+      {/* Header Bar */}
+      <header className="h-13 px-4 border-b border-slate-200/90 bg-white flex items-center justify-between shadow-2xs shrink-0 z-10">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-700 text-base shadow-2xs font-bold">
+            <FiUsers className="w-4 h-4" />
+          </div>
+          <div>
+            <h1 className="font-bold text-sm text-slate-900 tracking-tight">Account Balances Master</h1>
+            <p className="text-[11px] text-slate-500 font-medium leading-none mt-0.5">
+              Live balances across Gold Fine, Silver Fine, Cash, Anamat & Bank for all accounts
+            </p>
+          </div>
         </div>
 
-        <div className="account-balance-report-body">
-          <AppAlert type={alertType} message={alertMessage} onClose={() => setAlertMessage('')} />
+        <button
+          type="button"
+          onClick={onClose}
+          title="Close"
+          className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer text-sm font-bold"
+        >
+          <FiX className="w-4 h-4" />
+        </button>
+      </header>
 
-          <div className="account-balance-toolbar">
-            <div className="list-search">
-              <label htmlFor="account-balance-search">Search</label>
+      {/* Main Workspace */}
+      <div className="flex-1 flex flex-col p-3 gap-2.5 overflow-hidden">
+        {alertMessage && (
+          <div className="shrink-0">
+            <AppAlert type={alertType} message={alertMessage} onClose={() => setAlertMessage('')} />
+          </div>
+        )}
 
-              <input
-                id="account-balance-search"
-                value={searchText}
-                onChange={(event) => setSearchText(event.target.value)}
-                placeholder="Search account, mobile, city, group"
-              />
+        {/* Filter Bar */}
+        <div className="bg-white px-3 py-2 rounded-xl border border-slate-200/90 shadow-2xs flex flex-wrap items-center justify-between gap-2.5 text-xs shrink-0">
+          {/* Group Filter */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-slate-600 font-semibold flex items-center gap-1">
+              <FiFilter className="w-3.5 h-3.5 text-slate-400" />
+              Account Group:
+            </span>
+            <select
+              value={groupFilter}
+              onChange={(e) => setGroupFilter(e.target.value)}
+              className="h-8 px-2.5 text-xs bg-white border border-slate-200 rounded-lg text-slate-800 focus:ring-1 focus:ring-amber-500 font-semibold shadow-2xs"
+            >
+              {groupsList.map((g) => (
+                <option key={g} value={g}>
+                  {g === 'All' ? 'All Groups' : g}
+                </option>
+              ))}
+            </select>
+          </div>
 
-              {searchText && (
-                <button
-                  className="search-clear-btn"
-                  type="button"
-                  onClick={() => setSearchText('')}
-                >
-                  &times;
-                </button>
-              )}
-            </div>
+          {/* Search */}
+          <div className="relative min-w-[240px] flex-1 max-w-md">
+            <FiSearch className="absolute left-2.5 top-2.5 w-3.5 h-3.5 text-slate-400" />
+            <input
+              type="text"
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              placeholder="Search account name, mobile, city, group..."
+              className="w-full h-8 pl-8 pr-3 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 focus:bg-white focus:ring-1 focus:ring-amber-500 shadow-2xs font-medium"
+            />
+          </div>
 
+          {/* Action Buttons */}
+          <div className="flex items-center gap-2">
             <button
-              className="btn-new"
               type="button"
               onClick={() => void loadReport()}
               disabled={loading}
+              className="h-8 px-3 bg-white hover:bg-amber-50 text-slate-700 hover:text-amber-900 border border-slate-300 hover:border-amber-300 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer disabled:opacity-50"
             >
-              Refresh
+              <FiRefreshCw className={`w-3.5 h-3.5 text-amber-600 ${loading ? 'animate-spin' : ''}`} />
+              <span>{loading ? 'Loading...' : 'Refresh'}</span>
             </button>
 
-            <div className="record-summary">
-              Accounts: <strong>{records.length}</strong> | Showing:{' '}
-              <strong>{filteredRecords.length}</strong>
-            </div>
+            <button
+              type="button"
+              onClick={handleExportCsv}
+              disabled={loading}
+              className="h-8 px-3.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs border border-amber-600 cursor-pointer disabled:opacity-50"
+            >
+              <FiDownload className="w-3.5 h-3.5" />
+              <span>Export CSV</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => window.print()}
+              className="h-8 px-3 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer"
+            >
+              <FiPrinter className="w-3.5 h-3.5 text-slate-600" />
+              <span>Print</span>
+            </button>
           </div>
+        </div>
 
-          <div className="account-balance-summary">
-            <div>
-              <span>Gold Fine</span>
-              <strong>{formatNumber(totals.goldFine)}</strong>
-            </div>
-
-            <div>
-              <span>Silver Fine</span>
-              <strong>{formatNumber(totals.silverFine)}</strong>
-            </div>
-
-            <div>
-              <span>Cash</span>
-              <strong>{formatNumber(totals.cash)}</strong>
-            </div>
-
-            <div>
-              <span>Anamat</span>
-              <strong>{formatNumber(totals.anamat)}</strong>
-            </div>
-
-            <div>
-              <span>Bank</span>
-              <strong>{formatNumber(totals.bank)}</strong>
-            </div>
+        {/* KPI Metrics */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5 shrink-0">
+          <div className="p-3 rounded-xl border border-amber-200/80 bg-amber-50/40 shadow-2xs flex flex-col justify-center">
+            <span className="text-[11px] font-bold text-amber-800 uppercase tracking-wider">Gold Fine Total</span>
+            <span className="text-sm font-extrabold font-mono text-amber-800 mt-0.5">
+              {formatNumber(totals.goldFine)}g
+            </span>
           </div>
+          <div className="p-3 rounded-xl border border-slate-200/90 bg-white shadow-2xs flex flex-col justify-center">
+            <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">Silver Fine Total</span>
+            <span className="text-sm font-extrabold font-mono text-slate-800 mt-0.5">
+              {formatNumber(totals.silverFine)}g
+            </span>
+          </div>
+          <div className="p-3 rounded-xl border border-emerald-200/80 bg-emerald-50/40 shadow-2xs flex flex-col justify-center">
+            <span className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider">Cash Balance</span>
+            <span className="text-sm font-extrabold font-mono text-emerald-700 mt-0.5">
+              ₹{formatAmount(totals.cash)}
+            </span>
+          </div>
+          <div className="p-3 rounded-xl border border-purple-200/80 bg-purple-50/40 shadow-2xs flex flex-col justify-center">
+            <span className="text-[11px] font-bold text-purple-800 uppercase tracking-wider">Anamat Held</span>
+            <span className="text-sm font-extrabold font-mono text-purple-700 mt-0.5">
+              ₹{formatAmount(totals.anamat)}
+            </span>
+          </div>
+          <div className="p-3 rounded-xl border border-blue-200/80 bg-blue-50/40 shadow-2xs flex flex-col justify-center">
+            <span className="text-[11px] font-bold text-blue-800 uppercase tracking-wider">Bank Balance</span>
+            <span className="text-sm font-extrabold font-mono text-blue-700 mt-0.5">
+              ₹{formatAmount(totals.bank)}
+            </span>
+          </div>
+        </div>
 
-          <div className="table-panel account-balance-table-panel">
-            <table>
-              <thead>
+        {/* Data Table */}
+        <div className="flex-1 overflow-auto border border-slate-200/90 rounded-xl bg-white shadow-2xs flex flex-col">
+          {filteredRecords.length === 0 && !loading ? (
+            <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">
+              <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-600 mb-3 shadow-2xs">
+                <FiInbox className="w-7 h-7" />
+              </div>
+              <h3 className="font-bold text-sm text-slate-800 mb-1">No Accounts Found</h3>
+              <p className="text-xs text-slate-500 max-w-sm mb-3">
+                {searchText ? 'No accounts matched your search keyword.' : 'No accounts recorded in the system.'}
+              </p>
+              {searchText && (
+                <button
+                  type="button"
+                  onClick={() => setSearchText('')}
+                  className="px-3 py-1.5 text-xs font-semibold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-300 rounded-lg shadow-2xs transition-all cursor-pointer"
+                >
+                  Clear Search Filter
+                </button>
+              )}
+            </div>
+          ) : (
+            <table className="w-full text-left text-xs border-collapse">
+              <thead className="bg-slate-100 text-slate-700 uppercase text-[11px] font-bold tracking-wider sticky top-0 z-10 border-b border-slate-200">
                 <tr>
-                  <th>Sr</th>
-                  <th>Account</th>
-                  <th>Other Name</th>
-                  <th>Group</th>
-                  <th>Mobile</th>
-                  <th>City</th>
-                  <th>Gold Fine</th>
-                  <th>Silver Fine</th>
-                  <th>Cash</th>
-                  <th>Anamat</th>
-                  <th>Bank</th>
+                  <th className="py-2.5 px-3 w-12 text-center">#</th>
+                  <th className="py-2.5 px-3">Account Name</th>
+                  <th className="py-2.5 px-3">Other / Alias</th>
+                  <th className="py-2.5 px-3">Group</th>
+                  <th className="py-2.5 px-3">Mobile</th>
+                  <th className="py-2.5 px-3">City</th>
+                  <th className="py-2.5 px-3 text-right">Gold Fine (g)</th>
+                  <th className="py-2.5 px-3 text-right">Silver Fine (g)</th>
+                  <th className="py-2.5 px-3 text-right">Cash (₹)</th>
+                  <th className="py-2.5 px-3 text-right">Anamat (₹)</th>
+                  <th className="py-2.5 px-3 text-right">Bank (₹)</th>
                 </tr>
               </thead>
-
-              <tbody>
-                {loading ? (
-                  <tr>
-                    <td colSpan={11} className="empty-row">
-                      Loading account balance...
+              <tbody className="divide-y divide-slate-100">
+                {filteredRecords.map((record, index) => (
+                  <tr key={record.id} className="hover:bg-amber-50/40 text-slate-700 font-medium">
+                    <td className="py-2 px-3 text-center text-slate-400 font-mono text-[11px]">{index + 1}</td>
+                    <td className="py-2 px-3 font-semibold text-slate-900">{record.accountName}</td>
+                    <td className="py-2 px-3 text-slate-500">{record.otherName || '-'}</td>
+                    <td className="py-2 px-3">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-800 border border-slate-200">
+                        {record.groupName}
+                      </span>
+                    </td>
+                    <td className="py-2 px-3 font-mono text-slate-600">{record.mobileNumber || '-'}</td>
+                    <td className="py-2 px-3 text-slate-600">{record.city || '-'}</td>
+                    <td className="py-2 px-3 text-right font-mono font-bold text-amber-800">
+                      {record.goldFine ? `${formatNumber(record.goldFine)}g` : '-'}
+                    </td>
+                    <td className="py-2 px-3 text-right font-mono font-bold text-slate-800">
+                      {record.silverFine ? `${formatNumber(record.silverFine)}g` : '-'}
+                    </td>
+                    <td className="py-2 px-3 text-right font-mono font-bold text-emerald-600">
+                      {record.cash ? `₹${formatAmount(record.cash)}` : '-'}
+                    </td>
+                    <td className="py-2 px-3 text-right font-mono font-bold text-purple-700">
+                      {record.anamat ? `₹${formatAmount(record.anamat)}` : '-'}
+                    </td>
+                    <td className="py-2 px-3 text-right font-mono font-bold text-blue-700">
+                      {record.bank ? `₹${formatAmount(record.bank)}` : '-'}
                     </td>
                   </tr>
-                ) : filteredRecords.length === 0 ? (
-                  <tr>
-                    <td colSpan={11} className="empty-row">
-                      {searchText ? 'No matching account found.' : 'No account balance found.'}
-                    </td>
-                  </tr>
-                ) : (
-                  filteredRecords.map((record, index) => (
-                    <tr key={record.id}>
-                      <td>{index + 1}</td>
-                      <td>{record.accountName}</td>
-                      <td>{record.otherName || '-'}</td>
-                      <td>{record.groupName}</td>
-                      <td>{record.mobileNumber || '-'}</td>
-                      <td>{record.city || '-'}</td>
-                      <td>{formatNumber(record.goldFine)}</td>
-                      <td>{formatNumber(record.silverFine)}</td>
-                      <td>{formatNumber(record.cash)}</td>
-                      <td>{formatNumber(record.anamat)}</td>
-                      <td>{formatNumber(record.bank)}</td>
-                    </tr>
-                  ))
-                )}
+                ))}
               </tbody>
+              <tfoot className="bg-slate-100 font-bold border-t-2 border-slate-300 text-slate-900 sticky bottom-0">
+                <tr>
+                  <td colSpan={6} className="py-2.5 px-3 text-right uppercase text-[11px] tracking-wider">
+                    Grand Totals:
+                  </td>
+                  <td className="py-2.5 px-3 text-right font-mono text-amber-800">
+                    {formatNumber(totals.goldFine)}g
+                  </td>
+                  <td className="py-2.5 px-3 text-right font-mono text-slate-900">
+                    {formatNumber(totals.silverFine)}g
+                  </td>
+                  <td className="py-2.5 px-3 text-right font-mono text-emerald-700">
+                    ₹{formatAmount(totals.cash)}
+                  </td>
+                  <td className="py-2.5 px-3 text-right font-mono text-purple-800">
+                    ₹{formatAmount(totals.anamat)}
+                  </td>
+                  <td className="py-2.5 px-3 text-right font-mono text-blue-800">
+                    ₹{formatAmount(totals.bank)}
+                  </td>
+                </tr>
+              </tfoot>
             </table>
-          </div>
-
-          <div className="screen-help-text">
-            This report shows current account balance after opening balance, sale bills, purchase
-            bills, Dar/Jama payments, Cash Receipt, Cash Payment, and cancelled bills.
-          </div>
+          )}
         </div>
       </div>
     </div>

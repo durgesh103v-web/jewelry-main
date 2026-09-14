@@ -1,4 +1,22 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
+import {
+  FiPlus,
+  FiSave,
+  FiFilePlus,
+  FiRefreshCw,
+  FiTrash2,
+  FiEye,
+  FiSearch,
+  FiX,
+  FiCheckCircle,
+  FiCornerDownLeft,
+  FiRotateCcw,
+  FiEdit3,
+  FiLayers,
+  FiCheckSquare,
+  FiInbox,
+  FiDownload
+} from 'react-icons/fi'
 import AppAlert from '../../../components/ui/AppAlert'
 import AppConfirmDialog from '../../../components/ui/AppConfirmDialog'
 import { getFriendlyErrorMessage } from '../../../utils/getFriendlyErrorMessage'
@@ -702,6 +720,49 @@ function ApprovalScreen({ onClose }: { onClose: () => void }): React.JSX.Element
     }
   }
 
+  const handleExportApprovalsCsv = (): void => {
+    if (filteredApprovals.length === 0) {
+      showAlert('warning', 'No approvals to export.')
+      return
+    }
+    const headers = [
+      'Sr',
+      'Approval No',
+      'Date',
+      'Customer Account',
+      'Mobile',
+      'Metal',
+      'Total Fine (g)',
+      'Total Majuri (INR)',
+      'Status'
+    ]
+    const escapeCsv = (val: any) => `"${String(val ?? '').replace(/"/g, '""')}"`
+    const rows = filteredApprovals.map((a, idx) => [
+      idx + 1,
+      escapeCsv(a.approval_no),
+      escapeCsv(formatDate(a.approval_date)),
+      escapeCsv(a.account_name),
+      escapeCsv(a.mobile_number),
+      escapeCsv(a.metal_type),
+      formatNumber(a.item_fine_total),
+      formatNumber(a.item_majuri_total),
+      escapeCsv(getStatusLabel(a.status))
+    ])
+
+    const csvContent =
+      '\uFEFF' + [headers.join(','), ...rows.map((row) => row.join(','))].join('\r\n')
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `approvals_register_${new Date().toISOString().slice(0, 10)}.csv`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+    showAlert('success', 'Exported Approvals Register CSV successfully.')
+  }
+
   useEffect(() => {
     const loadTimer = window.setTimeout(() => {
       void loadInitialData()
@@ -722,7 +783,7 @@ function ApprovalScreen({ onClose }: { onClose: () => void }): React.JSX.Element
       <header className="h-13 px-4 border-b border-slate-200/90 bg-white flex items-center justify-between shadow-xs shrink-0 z-10">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-700 text-base shadow-2xs font-bold">
-            🤝
+            <FiCheckSquare className="w-4 h-4 text-amber-700" />
           </div>
           <div>
             <h1 className="font-bold text-sm text-slate-900 tracking-tight flex items-center gap-2">
@@ -747,9 +808,10 @@ function ApprovalScreen({ onClose }: { onClose: () => void }): React.JSX.Element
             <button
               type="button"
               onClick={() => void resetForm()}
-              className="h-8 px-3 text-xs font-semibold bg-white border border-slate-200 text-slate-600 hover:bg-rose-50 hover:border-rose-200 hover:text-rose-700 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer"
+              className="h-8 px-3 text-xs font-semibold bg-white border border-slate-200 text-slate-600 hover:bg-rose-50 hover:border-rose-200 hover:text-rose-700 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
             >
-              ✕ Clear Form
+              <FiX size={13} />
+              <span>Clear Form</span>
             </button>
           )}
 
@@ -760,7 +822,7 @@ function ApprovalScreen({ onClose }: { onClose: () => void }): React.JSX.Element
               className="h-8 w-8 flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer text-sm font-bold"
               title="Close Tab"
             >
-              ✕
+              <FiX size={16} />
             </button>
           )}
         </div>
@@ -1145,15 +1207,16 @@ function ApprovalScreen({ onClose }: { onClose: () => void }): React.JSX.Element
                 className="h-9 px-5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 active:scale-[0.98] text-white font-bold text-xs shadow-md shadow-amber-500/20 flex items-center justify-center gap-2 cursor-pointer transition-all"
                 style={{ color: '#ffffff' }}
               >
-                <span>➕</span>
+                <FiPlus size={15} />
                 <span>Add Item to Approval</span>
               </button>
               <button
                 type="button"
                 onClick={clearItemForm}
-                className="h-9 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors cursor-pointer"
+                className="h-9 px-4 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-xs transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs"
               >
-                Clear Fields
+                <FiRotateCcw size={13} className="text-slate-500" />
+                <span>Clear Fields</span>
               </button>
             </div>
           </div>
@@ -1212,8 +1275,8 @@ function ApprovalScreen({ onClose }: { onClose: () => void }): React.JSX.Element
                     <tr>
                       <td colSpan={15} className="py-8 text-center text-slate-400">
                         <div className="flex flex-col items-center justify-center gap-1">
-                          <span className="text-2xl">📦</span>
-                          <span className="font-semibold text-xs text-slate-500">
+                          <FiInbox className="w-7 h-7 text-amber-500/50 mb-1" />
+                          <span className="font-semibold text-xs text-slate-600">
                             No items added to approval yet
                           </span>
                           <span className="text-[11px] text-slate-400">
@@ -1243,9 +1306,11 @@ function ApprovalScreen({ onClose }: { onClose: () => void }): React.JSX.Element
                           <button
                             type="button"
                             onClick={() => setItemDeleteTarget(line)}
-                            className="px-2 py-1 text-[11px] font-bold rounded-md bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 transition-colors cursor-pointer"
+                            className="px-2 py-1 text-[11px] font-bold rounded-md bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 transition-colors cursor-pointer flex items-center gap-1 mx-auto"
+                            title="Remove item from list"
                           >
-                            Remove
+                            <FiTrash2 size={11} />
+                            <span>Remove</span>
                           </button>
                         </td>
                       </tr>
@@ -1283,7 +1348,11 @@ function ApprovalScreen({ onClose }: { onClose: () => void }): React.JSX.Element
                   className="h-10 px-6 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 active:scale-[0.98] disabled:opacity-50 text-white font-bold text-xs shadow-md shadow-amber-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
                   style={{ color: '#ffffff' }}
                 >
-                  <span>💾</span>
+                  {saving ? (
+                    <FiRefreshCw size={14} className="animate-spin text-white" />
+                  ) : (
+                    <FiSave size={14} />
+                  )}
                   <span>{saving ? 'Saving...' : editingId ? 'Update Approval' : 'Post & Save Approval'}</span>
                 </button>
 
@@ -1291,9 +1360,9 @@ function ApprovalScreen({ onClose }: { onClose: () => void }): React.JSX.Element
                   type="button"
                   onClick={() => void resetForm()}
                   disabled={saving}
-                  className="h-10 px-4 rounded-xl bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                  className="h-10 px-4 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
                 >
-                  <span>✨</span>
+                  <FiFilePlus size={14} className="text-amber-600" />
                   <span>New Blank Approval</span>
                 </button>
               </div>
@@ -1330,16 +1399,16 @@ function ApprovalScreen({ onClose }: { onClose: () => void }): React.JSX.Element
                     key={tab.id}
                     type="button"
                     onClick={() => setStatusFilter(tab.id as 'ALL' | ApprovalStatus)}
-                    className={`h-7 px-3 text-xs font-semibold rounded-lg transition-colors duration-100 cursor-pointer flex items-center gap-1.5 border ${
+                    className={`h-7 px-3 text-xs font-semibold rounded-lg transition-all cursor-pointer flex items-center gap-1.5 border ${
                       isSelected
-                        ? 'bg-white text-slate-900 shadow-2xs border-slate-200'
-                        : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-100/60'
+                        ? 'bg-amber-500 text-white shadow-2xs border-amber-600 font-bold'
+                        : 'border-transparent text-slate-600 hover:text-amber-900 hover:bg-amber-50/60 font-medium'
                     }`}
                   >
                     <span>{tab.label}</span>
                     <span
                       className={`text-[10px] px-1.5 py-0.5 leading-none rounded-full font-mono font-bold transition-colors ${
-                        isSelected ? 'bg-amber-100 text-amber-800' : 'bg-slate-200/80 text-slate-600'
+                        isSelected ? 'bg-amber-600 text-white border border-amber-400/40' : 'bg-slate-200/80 text-slate-600'
                       }`}
                     >
                       {tab.count}
@@ -1356,15 +1425,16 @@ function ApprovalScreen({ onClose }: { onClose: () => void }): React.JSX.Element
                   value={searchText}
                   onChange={(e) => setSearchText(e.target.value)}
                   placeholder="Search approval no, account, phone..."
-                  className="w-full h-8 px-2.5 pr-7 text-xs bg-white border border-slate-200 rounded-lg text-slate-800 focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs"
+                  className="w-full h-8 pl-7 pr-7 text-xs bg-white border border-slate-200 rounded-lg text-slate-800 focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs placeholder-slate-400"
                 />
+                <FiSearch size={13} className="absolute left-2.5 top-2.5 text-slate-400" />
                 {searchText && (
                   <button
                     type="button"
                     onClick={() => setSearchText('')}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs font-bold cursor-pointer"
+                    className="absolute right-2 top-2 text-slate-400 hover:text-slate-600 text-xs font-bold cursor-pointer"
                   >
-                    ✕
+                    <FiX size={13} />
                   </button>
                 )}
               </div>
@@ -1373,10 +1443,20 @@ function ApprovalScreen({ onClose }: { onClose: () => void }): React.JSX.Element
                 type="button"
                 onClick={() => void loadApprovals()}
                 disabled={loading}
-                className="h-8 px-3 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+                className="h-8 px-3 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs disabled:opacity-50"
               >
-                <span>🔄</span>
+                <FiRefreshCw size={13} className={loading ? 'animate-spin text-amber-600' : 'text-slate-500'} />
                 <span>Refresh</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleExportApprovalsCsv}
+                disabled={loading || filteredApprovals.length === 0}
+                className="h-8 px-3.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs border border-amber-600 cursor-pointer disabled:opacity-50"
+              >
+                <FiDownload size={13} />
+                <span>Export CSV</span>
               </button>
 
               <div className="text-xs text-slate-500 font-medium">
@@ -1443,9 +1523,11 @@ function ApprovalScreen({ onClose }: { onClose: () => void }): React.JSX.Element
                             type="button"
                             onClick={() => void handleOpenDetail(approval)}
                             disabled={opening}
-                            className="px-2.5 py-1 text-[11px] font-semibold rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer"
+                            className="px-2.5 py-1 text-[11px] font-semibold rounded-md bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 transition-all cursor-pointer flex items-center gap-1 shadow-2xs"
+                            title="View Details"
                           >
-                            View
+                            <FiEye size={11} className="text-slate-500" />
+                            <span>View</span>
                           </button>
 
                           {approval.status === 'pending' && (
@@ -1453,9 +1535,11 @@ function ApprovalScreen({ onClose }: { onClose: () => void }): React.JSX.Element
                               type="button"
                               onClick={() => void handleEditApproval(approval)}
                               disabled={opening || saving}
-                              className="px-2.5 py-1 text-[11px] font-semibold rounded-md bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 transition-colors cursor-pointer"
+                              className="px-2.5 py-1 text-[11px] font-semibold rounded-md bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 transition-all cursor-pointer flex items-center gap-1 shadow-2xs"
+                              title="Edit Approval"
                             >
-                              Edit
+                              <FiEdit3 size={11} />
+                              <span>Edit</span>
                             </button>
                           )}
 
@@ -1464,9 +1548,11 @@ function ApprovalScreen({ onClose }: { onClose: () => void }): React.JSX.Element
                               type="button"
                               onClick={() => setConvertTarget(approval)}
                               disabled={converting}
-                              className="px-2.5 py-1 text-[11px] font-bold rounded-md bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 transition-colors cursor-pointer"
+                              className="px-2.5 py-1 text-[11px] font-bold rounded-md bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 transition-all cursor-pointer flex items-center gap-1 shadow-2xs"
+                              title="Convert to regular Sale"
                             >
-                              Convert to Sale
+                              <FiCheckCircle size={11} />
+                              <span>Convert to Sale</span>
                             </button>
                           )}
 
@@ -1475,9 +1561,11 @@ function ApprovalScreen({ onClose }: { onClose: () => void }): React.JSX.Element
                               type="button"
                               onClick={() => setReturnAllTarget(approval)}
                               disabled={returning}
-                              className="px-2.5 py-1 text-[11px] font-semibold rounded-md bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 transition-colors cursor-pointer"
+                              className="px-2.5 py-1 text-[11px] font-semibold rounded-md bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 transition-all cursor-pointer flex items-center gap-1 shadow-2xs"
+                              title="Return all items to stock"
                             >
-                              Return All
+                              <FiCornerDownLeft size={11} />
+                              <span>Return All</span>
                             </button>
                           )}
 
@@ -1486,9 +1574,11 @@ function ApprovalScreen({ onClose }: { onClose: () => void }): React.JSX.Element
                               type="button"
                               onClick={() => setApprovalDeleteTarget(approval)}
                               disabled={deleting}
-                              className="px-2.5 py-1 text-[11px] font-semibold rounded-md bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition-colors cursor-pointer"
+                              className="px-2.5 py-1 text-[11px] font-semibold rounded-md bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition-all cursor-pointer flex items-center gap-1 shadow-2xs"
+                              title="Delete Approval"
                             >
-                              Delete
+                              <FiTrash2 size={11} />
+                              <span>Delete</span>
                             </button>
                           )}
                         </div>
@@ -1578,7 +1668,9 @@ function ApprovalScreen({ onClose }: { onClose: () => void }): React.JSX.Element
           <div className="w-full max-w-3xl bg-white rounded-2xl border border-slate-200 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
             <div className="h-13 px-4 border-b border-slate-200 bg-white flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="text-base">🤝</span>
+                <div className="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-700">
+                  <FiLayers size={14} />
+                </div>
                 <span className="font-bold text-sm text-slate-900">
                   Approval Details: {detailRecord.header.approval_no}
                 </span>
@@ -1591,7 +1683,7 @@ function ApprovalScreen({ onClose }: { onClose: () => void }): React.JSX.Element
                 onClick={() => setDetailRecord(null)}
                 className="h-8 w-8 flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer text-sm font-bold"
               >
-                ✕
+                <FiX size={16} />
               </button>
             </div>
 
@@ -1691,10 +1783,11 @@ function ApprovalScreen({ onClose }: { onClose: () => void }): React.JSX.Element
                       type="button"
                       onClick={() => void handleReturnSelectedLines()}
                       disabled={returning || selectedDetailLineIds.length === 0}
-                      className="px-4 py-2 text-xs font-bold rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white transition-all shadow-md shadow-blue-500/20 cursor-pointer"
+                      className="h-9 px-4 text-xs font-bold rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white transition-all shadow-md shadow-blue-500/20 cursor-pointer flex items-center gap-1.5"
                       style={{ color: '#ffffff' }}
                     >
-                      {returning ? 'Please wait...' : 'Return Selected Items'}
+                      <FiCornerDownLeft size={13} />
+                      <span>{returning ? 'Please wait...' : 'Return Selected Items'}</span>
                     </button>
                   </div>
                 )}

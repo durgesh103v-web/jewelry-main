@@ -1,5 +1,18 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import dayjs from 'dayjs'
+import {
+  FiRefreshCw,
+  FiDownload,
+  FiPrinter,
+  FiSearch,
+  FiX,
+  FiArrowRight,
+  FiFileText,
+  FiPieChart,
+  FiBarChart2,
+  FiGrid,
+  FiSliders
+} from 'react-icons/fi'
 
 interface TaxComplianceHubScreenProps {
   onClose?: () => void
@@ -27,11 +40,19 @@ export const TaxComplianceHubScreen: React.FC<TaxComplianceHubScreenProps> = ({
   initialTab = 'DASHBOARD'
 }) => {
   const [activeTab, setActiveTab] = useState<TaxTab>(initialTab)
+  const [activePreset, setActivePreset] = useState<string>('THIS_MONTH')
   const [startDate, setStartDate] = useState<string>(dayjs().startOf('month').format('YYYY-MM-DD'))
   const [endDate, setEndDate] = useState<string>(dayjs().format('YYYY-MM-DD'))
   const [search, setSearch] = useState<string>('')
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<{ type: 'success' | 'info' | 'error'; message: string } | null>(null)
+
+  useEffect(() => {
+    if (!notice) return
+    const timer = window.setTimeout(() => setNotice(null), 4000)
+    return () => window.clearTimeout(timer)
+  }, [notice])
 
   // Report Data States
   const [dashboardData, setDashboardData] = useState<any>(null)
@@ -88,6 +109,7 @@ export const TaxComplianceHubScreen: React.FC<TaxComplianceHubScreenProps> = ({
   }, [loadData])
 
   const setPreset = (preset: 'TODAY' | 'YESTERDAY' | 'THIS_WEEK' | 'THIS_MONTH' | 'THIS_FY') => {
+    setActivePreset(preset)
     const today = dayjs()
     if (preset === 'TODAY') {
       const d = today.format('YYYY-MM-DD')
@@ -110,32 +132,6 @@ export const TaxComplianceHubScreen: React.FC<TaxComplianceHubScreenProps> = ({
     }
   }
 
-  // Simple CSV Export helper
-  const handleExportCsv = () => {
-    let rows: any[] = []
-    const filename = `tax_${activeTab.toLowerCase()}_${startDate}_to_${endDate}.csv`
-
-    if (activeTab === 'GSTR1') rows = gstr1Data?.b2bInvoices || []
-    else if (activeTab === 'HSN_SUMMARY') rows = hsnSummaryData?.items || []
-    else if (activeTab === 'SALES_TAX_REGISTER') rows = salesTaxRegData?.rows || []
-    else if (activeTab === 'PURCHASE_TAX_REGISTER') rows = purchTaxRegData?.rows || []
-    else if (activeTab === 'MASTERS') rows = taxRates
-
-    if (rows.length === 0) return
-
-    const headers = Object.keys(rows[0]).join(',')
-    const csvContent =
-      'data:text/csv;charset=utf-8,' +
-      [headers, ...rows.map((e) => Object.values(e).map((val) => `"${val}"`).join(','))].join('\n')
-
-    const encodedUri = encodeURI(csvContent)
-    const link = document.createElement('a')
-    link.setAttribute('href', encodedUri)
-    link.setAttribute('download', filename)
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-  }
 
   // Filtered Register Rows
   const filteredSalesRows = useMemo(() => {
@@ -212,6 +208,302 @@ export const TaxComplianceHubScreen: React.FC<TaxComplianceHubScreenProps> = ({
     )
   }, [hsnSummaryData])
 
+  // CSV Export Helpers
+  const escapeCsv = (val: any): string => {
+    if (val === null || val === undefined) return '""'
+    const str = String(val)
+    return `"${str.replace(/"/g, '""')}"`
+  }
+
+  const downloadCsv = (filename: string, csvContent: string) => {
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+    setNotice({ type: 'success', message: `Exported ${filename} successfully.` })
+  }
+
+  const handleExportCsv = () => {
+    if (activeTab === 'DASHBOARD') {
+      if (!dashboardData) {
+        setNotice({ type: 'info', message: 'Dashboard data is still loading or unavailable.' })
+        return
+      }
+      const filename = `gst_dashboard_summary_${startDate}_to_${endDate}.csv`
+      const netAmount =
+        dashboardData.netPayableTax > 0
+          ? dashboardData.netPayableTax
+          : Math.abs(Number(dashboardData.totalInputTax || 0) - Number(dashboardData.totalOutputTax || 0))
+      const offsetStatus =
+        dashboardData.netPayableTax > 0 ? 'Net Tax Payable via Challan PMT-06' : 'Excess ITC Carried Forward'
+
+      const lines: string[] = [
+        `"GST & Tax Compliance Dashboard Summary"`,
+        `"Tax Period: ${startDate} to ${endDate}"`,
+        `""`,
+        `"Section","Metric","Amount (INR)"`,
+        `"Output Tax (Sales)","Total Output GST",${dashboardData.totalOutputTax ?? 0}`,
+        `"Output Tax (Sales)","CGST (1.5%)",${dashboardData.outputCgst ?? 0}`,
+        `"Output Tax (Sales)","SGST (1.5%)",${dashboardData.outputSgst ?? 0}`,
+        `"Output Tax (Sales)","IGST (3.0%)",${dashboardData.outputIgst ?? 0}`,
+        `"Output Tax (Sales)","Taxable Sales Turnover",${dashboardData.totalTaxableSales ?? 0}`,
+        `"Input Tax Credit (ITC)","Total Input Tax Credit (ITC)",${dashboardData.totalInputTax ?? 0}`,
+        `"Input Tax Credit (ITC)","CGST ITC",${dashboardData.inputCgst ?? 0}`,
+        `"Input Tax Credit (ITC)","SGST ITC",${dashboardData.inputSgst ?? 0}`,
+        `"Input Tax Credit (ITC)","IGST ITC",${dashboardData.inputIgst ?? 0}`,
+        `"Input Tax Credit (ITC)","Taxable Purchases Turnover",${dashboardData.totalTaxablePurchases ?? 0}`,
+        `"Net GST Position","Net Position Amount",${netAmount}`,
+        `"Net GST Position","Offset Status",${escapeCsv(offsetStatus)}`,
+        `"Turnover & Adjustments","Total Taxable Sales Turnover",${dashboardData.totalTaxableSales ?? 0}`,
+        `"Turnover & Adjustments","Total Taxable Purchases (Inward)",${dashboardData.totalTaxablePurchases ?? 0}`,
+        `"Turnover & Adjustments","Sales Return Credit Notes (Tax Reversed)",${dashboardData.totalCreditNotesTaxReversed ?? 0}`,
+        `"Turnover & Adjustments","Purchase Return Debit Notes (Tax Reversed)",${dashboardData.totalDebitNotesTaxReversed ?? 0}`,
+        `"Turnover & Adjustments","Net Taxable Turnover",${
+          Number(dashboardData.totalTaxableSales || 0) - Number(dashboardData.totalCreditNotesTaxReversed || 0)
+        }`
+      ]
+      downloadCsv(filename, lines.join('\n'))
+      return
+    }
+
+    if (activeTab === 'GSTR1') {
+      const b2b = gstr1Data?.b2bInvoices || []
+      const b2c = gstr1Data?.b2cSummaries || []
+      if (b2b.length === 0 && b2c.length === 0) {
+        setNotice({ type: 'info', message: 'No GSTR-1 records found for this period.' })
+        return
+      }
+      const filename = `gstr1_report_${startDate}_to_${endDate}.csv`
+      const lines: string[] = [
+        `"GSTR-1 Outward Supplies Return"`,
+        `"Tax Period: ${startDate} to ${endDate}"`,
+        `""`,
+        `"TABLE 4: B2B INVOICES (SUPPLIES TO REGISTERED DEALERS)"`,
+        `"GSTIN","Customer Name","Invoice No","Date","Taxable Value (INR)","CGST (INR)","SGST (INR)","IGST (INR)","Invoice Value (INR)"`
+      ]
+      if (b2b.length > 0) {
+        b2b.forEach((b: any) => {
+          lines.push([
+            escapeCsv(b.gstin),
+            escapeCsv(b.customerName),
+            escapeCsv(b.invoiceNumber),
+            escapeCsv(b.invoiceDate),
+            b.taxableValue ?? 0,
+            b.cgstAmount ?? 0,
+            b.sgstAmount ?? 0,
+            b.igstAmount ?? 0,
+            b.invoiceValue ?? 0
+          ].join(','))
+        })
+      } else {
+        lines.push(`"No B2B Invoices with GSTIN recorded in this period."`)
+      }
+      lines.push(`""`)
+      lines.push(`"TABLE 7: B2C SMALL INVOICES (RETAIL COUNTER SALES SUMMARY)"`)
+      lines.push(`"Place of Supply","Tax Rate (%)","Taxable Value (INR)","CGST (INR)","SGST (INR)","IGST (INR)","Total Tax (INR)"`)
+      if (b2c.length > 0) {
+        b2c.forEach((c: any) => {
+          const rowTax = Number(c.cgstAmount || 0) + Number(c.sgstAmount || 0) + Number(c.igstAmount || 0)
+          lines.push([
+            escapeCsv(`State Code: ${c.placeOfSupply}`),
+            c.taxRate ?? 0,
+            c.taxableValue ?? 0,
+            c.cgstAmount ?? 0,
+            c.sgstAmount ?? 0,
+            c.igstAmount ?? 0,
+            rowTax
+          ].join(','))
+        })
+      } else {
+        lines.push(`"No retail B2C counter sales found in this period."`)
+      }
+      downloadCsv(filename, lines.join('\n'))
+      return
+    }
+
+    if (activeTab === 'GSTR3B') {
+      if (!gstr3bData) {
+        setNotice({ type: 'info', message: 'No GSTR-3B data available for this period.' })
+        return
+      }
+      const filename = `gstr3b_summary_${startDate}_to_${endDate}.csv`
+      const lines: string[] = [
+        `"GSTR-3B Statutory Return Summary"`,
+        `"Tax Period: ${startDate} to ${endDate}"`,
+        `""`,
+        `"3.1 DETAILS OF OUTWARD SUPPLIES"`,
+        `"Nature of Supplies","Total Taxable Value (INR)","Integrated Tax (INR)","Central Tax (INR)","State/UT Tax (INR)"`,
+        [
+          escapeCsv(gstr3bData.outwardTaxableSupplies?.natureOfSupplies || 'Outward taxable supplies'),
+          gstr3bData.outwardTaxableSupplies?.totalTaxableValue ?? 0,
+          gstr3bData.outwardTaxableSupplies?.integratedTax ?? 0,
+          gstr3bData.outwardTaxableSupplies?.centralTax ?? 0,
+          gstr3bData.outwardTaxableSupplies?.stateTax ?? 0
+        ].join(','),
+        `""`,
+        `"4.0 ELIGIBLE INPUT TAX CREDIT (ITC)"`,
+        `"Details","Total Taxable (INR)","Integrated Tax (INR)","Central Tax (INR)","State/UT Tax (INR)"`,
+        [
+          escapeCsv(gstr3bData.eligibleItc?.allOtherItc?.natureOfSupplies || 'All other ITC'),
+          gstr3bData.eligibleItc?.allOtherItc?.totalTaxableValue ?? 0,
+          gstr3bData.eligibleItc?.allOtherItc?.integratedTax ?? 0,
+          gstr3bData.eligibleItc?.allOtherItc?.centralTax ?? 0,
+          gstr3bData.eligibleItc?.allOtherItc?.stateTax ?? 0
+        ].join(','),
+        `""`,
+        `"6.1 PAYMENT OF TAX (NET TAX PAYABLE)"`,
+        `"Tax Component","Amount Payable (INR)"`,
+        `"Integrated Tax",${gstr3bData.netTaxPayable?.integratedTax ?? 0}`,
+        `"Central Tax",${gstr3bData.netTaxPayable?.centralTax ?? 0}`,
+        `"State/UT Tax",${gstr3bData.netTaxPayable?.stateTax ?? 0}`,
+        `"Total Net Payable",${gstr3bData.netTaxPayable?.totalPayable ?? 0}`
+      ]
+      downloadCsv(filename, lines.join('\n'))
+      return
+    }
+
+    if (activeTab === 'HSN_SUMMARY') {
+      const items = hsnSummaryData?.items || []
+      if (items.length === 0) {
+        setNotice({ type: 'info', message: 'No HSN records found for this period.' })
+        return
+      }
+      const filename = `hsn_summary_${startDate}_to_${endDate}.csv`
+      const lines: string[] = [
+        `"HSN Summary Report"`,
+        `"Tax Period: ${startDate} to ${endDate}"`,
+        `""`,
+        `"HSN Code","Description","UOM","Quantity","Gross Weight (g)","Taxable Value (INR)","CGST (INR)","SGST (INR)","IGST (INR)","Total Value (INR)"`
+      ]
+      items.forEach((h: any) => {
+        lines.push([
+          escapeCsv(h.hsnCode),
+          escapeCsv(h.description),
+          escapeCsv(h.uom),
+          h.totalQuantity ?? 0,
+          Number(h.totalGrossWeight || 0).toFixed(3),
+          h.taxableValue ?? 0,
+          h.centralTax ?? 0,
+          h.stateTax ?? 0,
+          h.integratedTax ?? 0,
+          h.totalValue ?? 0
+        ].join(','))
+      })
+      lines.push([
+        `"TOTAL"`,
+        `""`,
+        `""`,
+        hsnTotals.qty,
+        hsnTotals.gross.toFixed(3),
+        hsnTotals.taxable,
+        hsnTotals.cgst,
+        hsnTotals.sgst,
+        hsnTotals.igst,
+        hsnTotals.total
+      ].join(','))
+      downloadCsv(filename, lines.join('\n'))
+      return
+    }
+
+    if (activeTab === 'SALES_TAX_REGISTER' || activeTab === 'PURCHASE_TAX_REGISTER') {
+      const isSales = activeTab === 'SALES_TAX_REGISTER'
+      const rows = isSales ? filteredSalesRows : filteredPurchRows
+      if (rows.length === 0) {
+        setNotice({
+          type: 'info',
+          message: `No ${isSales ? 'sales' : 'purchase'} tax records found matching criteria.`
+        })
+        return
+      }
+      const filename = `${isSales ? 'sales' : 'purchase'}_tax_register_${startDate}_to_${endDate}.csv`
+      const lines: string[] = [
+        `"${isSales ? 'Sales' : 'Purchase'} Tax Register"`,
+        `"Tax Period: ${startDate} to ${endDate}"`,
+        `""`,
+        `"Invoice No","Date","Party Name","GSTIN","Tax Mode","Taxable Amount (INR)","CGST (INR)","SGST (INR)","IGST (INR)","Total Tax (INR)","Grand Total (INR)"`
+      ]
+      rows.forEach((r: any) => {
+        lines.push([
+          escapeCsv(r.invoiceNumber),
+          escapeCsv(r.invoiceDate),
+          escapeCsv(r.partyName),
+          escapeCsv(r.partyGstin || '-'),
+          escapeCsv(r.taxMode || 'INTRA_STATE'),
+          r.taxableAmount ?? 0,
+          r.cgstAmount ?? 0,
+          r.sgstAmount ?? 0,
+          r.igstAmount ?? 0,
+          r.totalTax ?? 0,
+          r.grandTotal ?? 0
+        ].join(','))
+      })
+      const totals = isSales ? salesTotals : purchTotals
+      lines.push([
+        `"TOTAL"`,
+        `""`,
+        `""`,
+        `""`,
+        `""`,
+        totals.taxable,
+        totals.cgst,
+        totals.sgst,
+        totals.igst,
+        totals.totalTax,
+        totals.grandTotal
+      ].join(','))
+      downloadCsv(filename, lines.join('\n'))
+      return
+    }
+
+    if (activeTab === 'MASTERS') {
+      if (taxRates.length === 0 && hsnCodes.length === 0) {
+        setNotice({ type: 'info', message: 'No tax master records available to export.' })
+        return
+      }
+      const filename = `tax_masters.csv`
+      const lines: string[] = [
+        `"Statutory GST Tax Rates"`,
+        `"Rate Name","Tax Rate (%)","CGST (%)","SGST (%)","IGST (%)","Type","Status"`
+      ]
+      if (taxRates.length > 0) {
+        taxRates.forEach((r: any) => {
+          lines.push([
+            escapeCsv(r.name),
+            r.rate ?? 0,
+            r.cgstRate ?? 0,
+            r.sgstRate ?? 0,
+            r.igstRate ?? 0,
+            escapeCsv(r.type || ''),
+            escapeCsv(r.active ? 'Active' : 'Inactive')
+          ].join(','))
+        })
+      } else {
+        lines.push(`"No tax rates configured."`)
+      }
+      lines.push(`""`)
+      lines.push(`"HSN Code Catalogue"`)
+      lines.push(`"HSN Code","Description","GST Rate (%)"`)
+      if (hsnCodes.length > 0) {
+        hsnCodes.forEach((h: any) => {
+          lines.push([
+            escapeCsv(h.code),
+            escapeCsv(h.description),
+            h.taxRate ?? 0
+          ].join(','))
+        })
+      } else {
+        lines.push(`"No HSN codes configured."`)
+      }
+      downloadCsv(filename, lines.join('\n'))
+      return
+    }
+  }
+
   return (
     <div className="flex flex-col h-full bg-slate-100 font-sans text-slate-800 select-none overflow-hidden">
       {/* ── TOP HEADER BAR ── */}
@@ -255,79 +547,86 @@ export const TaxComplianceHubScreen: React.FC<TaxComplianceHubScreenProps> = ({
         <button
           type="button"
           onClick={() => setActiveTab('DASHBOARD')}
-          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 border ${
             activeTab === 'DASHBOARD'
-              ? 'bg-amber-500/10 text-amber-800 border border-amber-500/30 font-bold shadow-2xs'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-transparent'
+              ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-xs font-bold border-amber-600'
+              : 'text-slate-600 hover:text-amber-900 hover:bg-amber-50/70 border-transparent'
           }`}
         >
-          Tax Dashboard
+          <FiBarChart2 size={13} />
+          <span>Tax Dashboard</span>
         </button>
         <button
           type="button"
           onClick={() => setActiveTab('GSTR1')}
-          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 border ${
             activeTab === 'GSTR1'
-              ? 'bg-amber-500/10 text-amber-800 border border-amber-500/30 font-bold shadow-2xs'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-transparent'
+              ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-xs font-bold border-amber-600'
+              : 'text-slate-600 hover:text-amber-900 hover:bg-amber-50/70 border-transparent'
           }`}
         >
-          GSTR-1
+          <FiFileText size={13} />
+          <span>GSTR-1</span>
         </button>
         <button
           type="button"
           onClick={() => setActiveTab('GSTR3B')}
-          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 border ${
             activeTab === 'GSTR3B'
-              ? 'bg-amber-500/10 text-amber-800 border border-amber-500/30 font-bold shadow-2xs'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-transparent'
+              ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-xs font-bold border-amber-600'
+              : 'text-slate-600 hover:text-amber-900 hover:bg-amber-50/70 border-transparent'
           }`}
         >
-          GSTR-3B
+          <FiPieChart size={13} />
+          <span>GSTR-3B</span>
         </button>
         <button
           type="button"
           onClick={() => setActiveTab('HSN_SUMMARY')}
-          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 border ${
             activeTab === 'HSN_SUMMARY'
-              ? 'bg-amber-500/10 text-amber-800 border border-amber-500/30 font-bold shadow-2xs'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-transparent'
+              ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-xs font-bold border-amber-600'
+              : 'text-slate-600 hover:text-amber-900 hover:bg-amber-50/70 border-transparent'
           }`}
         >
-          HSN Summary
+          <FiGrid size={13} />
+          <span>HSN Summary</span>
         </button>
         <button
           type="button"
           onClick={() => setActiveTab('SALES_TAX_REGISTER')}
-          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 border ${
             activeTab === 'SALES_TAX_REGISTER'
-              ? 'bg-amber-500/10 text-amber-800 border border-amber-500/30 font-bold shadow-2xs'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-transparent'
+              ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-xs font-bold border-amber-600'
+              : 'text-slate-600 hover:text-amber-900 hover:bg-amber-50/70 border-transparent'
           }`}
         >
-          Sales Tax Register
+          <FiFileText size={13} />
+          <span>Sales Tax Register</span>
         </button>
         <button
           type="button"
           onClick={() => setActiveTab('PURCHASE_TAX_REGISTER')}
-          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 border ${
             activeTab === 'PURCHASE_TAX_REGISTER'
-              ? 'bg-amber-500/10 text-amber-800 border border-amber-500/30 font-bold shadow-2xs'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-transparent'
+              ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-xs font-bold border-amber-600'
+              : 'text-slate-600 hover:text-amber-900 hover:bg-amber-50/70 border-transparent'
           }`}
         >
-          Purchase Tax Register
+          <FiFileText size={13} />
+          <span>Purchase Tax Register</span>
         </button>
         <button
           type="button"
           onClick={() => setActiveTab('MASTERS')}
-          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 border ${
             activeTab === 'MASTERS'
-              ? 'bg-amber-500/10 text-amber-800 border border-amber-500/30 font-bold shadow-2xs'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-transparent'
+              ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-xs font-bold border-amber-600'
+              : 'text-slate-600 hover:text-amber-900 hover:bg-amber-50/70 border-transparent'
           }`}
         >
-          Tax Masters
+          <FiSliders size={13} />
+          <span>Tax Masters</span>
         </button>
       </div>
 
@@ -338,24 +637,31 @@ export const TaxComplianceHubScreen: React.FC<TaxComplianceHubScreenProps> = ({
           <div className="bg-white px-3 py-2 rounded-xl border border-slate-200/90 shadow-2xs flex flex-wrap items-center justify-between gap-2.5 text-xs shrink-0">
             {/* Quick Date Presets */}
             <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200/80">
-              {(['TODAY', 'YESTERDAY', 'THIS_WEEK', 'THIS_MONTH', 'THIS_FY'] as const).map((preset) => (
-                <button
-                  key={preset}
-                  type="button"
-                  onClick={() => setPreset(preset)}
-                  className="px-2.5 py-1 rounded text-xs font-medium text-slate-700 hover:text-slate-900 hover:bg-white transition-colors cursor-pointer"
-                >
-                  {preset === 'TODAY'
-                    ? 'Today'
-                    : preset === 'YESTERDAY'
-                      ? 'Yesterday'
-                      : preset === 'THIS_WEEK'
-                        ? 'This Week'
-                        : preset === 'THIS_MONTH'
-                          ? 'This Month'
-                          : 'This FY'}
-                </button>
-              ))}
+              {(['TODAY', 'YESTERDAY', 'THIS_WEEK', 'THIS_MONTH', 'THIS_FY'] as const).map((preset) => {
+                const isSelected = activePreset === preset
+                return (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => setPreset(preset)}
+                    className={`px-2.5 py-1 rounded-md text-xs transition-all cursor-pointer border ${
+                      isSelected
+                        ? 'bg-amber-500 text-white shadow-2xs font-bold border-amber-600'
+                        : 'text-slate-600 hover:text-amber-900 hover:bg-amber-50/70 border-transparent font-medium'
+                    }`}
+                  >
+                    {preset === 'TODAY'
+                      ? 'Today'
+                      : preset === 'YESTERDAY'
+                        ? 'Yesterday'
+                        : preset === 'THIS_WEEK'
+                          ? 'This Week'
+                          : preset === 'THIS_MONTH'
+                            ? 'This Month'
+                            : 'This FY'}
+                  </button>
+                )
+              })}
             </div>
 
             {/* Date Pickers */}
@@ -364,14 +670,20 @@ export const TaxComplianceHubScreen: React.FC<TaxComplianceHubScreenProps> = ({
               <input
                 type="date"
                 value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
+                onChange={(e) => {
+                  setStartDate(e.target.value)
+                  setActivePreset('')
+                }}
                 className="h-8 px-2.5 text-xs bg-white border border-slate-200 rounded-lg text-slate-800 focus:ring-1 focus:ring-amber-500 font-medium shadow-2xs"
               />
               <span className="text-slate-500 font-medium">To:</span>
               <input
                 type="date"
                 value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
+                onChange={(e) => {
+                  setEndDate(e.target.value)
+                  setActivePreset('')
+                }}
                 className="h-8 px-2.5 text-xs bg-white border border-slate-200 rounded-lg text-slate-800 focus:ring-1 focus:ring-amber-500 font-medium shadow-2xs"
               />
             </div>
@@ -393,14 +705,14 @@ export const TaxComplianceHubScreen: React.FC<TaxComplianceHubScreenProps> = ({
                     placeholder="Filter by party, bill no..."
                     className="w-52 h-8 pl-7 pr-7 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 focus:bg-white focus:ring-1 focus:ring-amber-500 focus:border-amber-500 transition-colors shadow-2xs"
                   />
-                  <span className="absolute left-2.5 top-2 text-xs text-slate-400">🔍</span>
+                  <FiSearch size={13} className="absolute left-2.5 top-2.5 text-slate-400" />
                   {search && (
                     <button
                       type="button"
                       onClick={() => setSearch('')}
-                      className="absolute right-2 top-1.5 text-xs text-slate-400 hover:text-slate-600 cursor-pointer"
+                      className="absolute right-2 top-2 text-xs text-slate-400 hover:text-slate-600 cursor-pointer"
                     >
-                      ✕
+                      <FiX size={13} />
                     </button>
                   )}
                 </div>
@@ -410,30 +722,57 @@ export const TaxComplianceHubScreen: React.FC<TaxComplianceHubScreenProps> = ({
                 type="button"
                 onClick={() => void loadData()}
                 disabled={isLoading}
-                className="h-8 px-2.5 text-xs font-semibold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs disabled:opacity-50"
+                className="h-8 px-3 text-xs font-semibold text-slate-700 hover:text-amber-900 bg-white hover:bg-amber-50 border border-slate-300 hover:border-amber-300 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs disabled:opacity-50 active:scale-95"
                 title="Refresh Data"
               >
-                🔄 Refresh
+                <FiRefreshCw size={13} className={isLoading ? 'animate-spin text-amber-600' : ''} />
+                <span>Refresh</span>
               </button>
 
               <button
                 type="button"
                 onClick={handleExportCsv}
-                className="h-8 px-3 text-xs font-semibold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs"
+                className="h-8 px-3.5 text-xs font-bold text-white bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 active:from-amber-700 active:to-amber-800 border border-amber-600 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 shadow-xs active:scale-95"
                 title="Export to CSV"
               >
-                <span>📊</span> Export CSV
+                <FiDownload size={13} />
+                <span>Export CSV</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => window.print()}
-                className="h-8 px-3 text-xs font-semibold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs"
+                className="h-8 px-3 text-xs font-semibold text-slate-700 hover:text-amber-900 bg-white hover:bg-amber-50 border border-slate-300 hover:border-amber-300 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs active:scale-95"
                 title="Print Report"
               >
-                <span>🖨️</span> Print
+                <FiPrinter size={13} className="text-slate-600" />
+                <span>Print</span>
               </button>
             </div>
+          </div>
+        )}
+
+        {notice && (
+          <div
+            className={`p-3 rounded-xl text-xs flex items-center justify-between border ${
+              notice.type === 'success'
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                : notice.type === 'info'
+                ? 'bg-sky-50 border-sky-200 text-sky-800'
+                : 'bg-rose-50 border-rose-200 text-rose-800'
+            }`}
+          >
+            <div className="flex items-center gap-2 font-medium">
+              <span>{notice.type === 'success' ? '✅' : notice.type === 'info' ? 'ℹ️' : '⚠️'}</span>
+              <span>{notice.message}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setNotice(null)}
+              className="text-slate-400 hover:text-slate-600 cursor-pointer font-bold ml-2"
+            >
+              ✕
+            </button>
           </div>
         )}
 
@@ -689,16 +1028,18 @@ export const TaxComplianceHubScreen: React.FC<TaxComplianceHubScreenProps> = ({
                   <button
                     type="button"
                     onClick={() => setActiveTab('GSTR1')}
-                    className="h-8 px-3 text-xs font-semibold text-amber-800 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg transition-colors cursor-pointer"
+                    className="h-8 px-3 text-xs font-bold text-white bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 active:from-amber-700 active:to-amber-800 border border-amber-600 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 shadow-xs active:scale-95"
                   >
-                    View GSTR-1 →
+                    <span>View GSTR-1</span>
+                    <FiArrowRight size={13} />
                   </button>
                   <button
                     type="button"
                     onClick={() => setActiveTab('GSTR3B')}
-                    className="h-8 px-3 text-xs font-semibold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-lg transition-colors cursor-pointer"
+                    className="h-8 px-3 text-xs font-semibold text-slate-700 hover:text-amber-900 bg-white hover:bg-amber-50 border border-slate-300 hover:border-amber-300 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs active:scale-95"
                   >
-                    View GSTR-3B →
+                    <span>View GSTR-3B</span>
+                    <FiArrowRight size={13} />
                   </button>
                 </div>
               </div>

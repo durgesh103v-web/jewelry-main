@@ -1,5 +1,20 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
-import AppAlert from '../../../components/ui/AppAlert'
+import {
+  FiFileText,
+  FiSearch,
+  FiX,
+  FiPlus,
+  FiRotateCcw,
+  FiSave,
+  FiFilePlus,
+  FiTrash2,
+  FiPrinter,
+  FiEdit3,
+  FiCornerDownLeft,
+  FiRefreshCw,
+  FiAlertCircle,
+  FiCheckCircle
+} from 'react-icons/fi'
 import AppConfirmDialog from '../../../components/ui/AppConfirmDialog'
 import { getFriendlyErrorMessage } from '../../../utils/getFriendlyErrorMessage'
 import { calculateSaleItemTotals, type LabourRateType } from '../../../utils/jewelleryFormula'
@@ -105,7 +120,6 @@ function getTodayDate(): string {
 
 function toNumber(value: string | number): number {
   if (value === '') return 0
-
   const numberValue = Number(value)
   return Number.isFinite(numberValue) ? numberValue : 0
 }
@@ -129,10 +143,8 @@ function formatAmount(value: number): string {
 
 function formatDate(value: string): string {
   if (!value) return ''
-
   const [year, month, day] = value.split('-')
   if (!year || !month || !day) return value
-
   return `${day}/${month}/${year}`
 }
 
@@ -151,15 +163,10 @@ function getStatusLabel(status: EstimateStatus): string {
   return 'Cancelled'
 }
 
-// Same-state assumption used for live preview only: mirrors the server-side rule in
-// estimate.service.ts. When the account has no state on file (typical for a walk-in retail
-// customer) or the firm's own state is not configured, we default to intra-state (CGST + SGST).
 function isInterState(firmState: string, accountState: string): boolean {
   const cleanFirmState = firmState.trim().toLowerCase()
   const cleanAccountState = accountState.trim().toLowerCase()
-
   if (!cleanFirmState || !cleanAccountState) return false
-
   return cleanFirmState !== cleanAccountState
 }
 
@@ -169,13 +176,10 @@ function computeGstSplit(
   interState: boolean
 ): { cgst: number; sgst: number; igst: number } {
   const totalTax = roundMoney((taxableAmount * gstRate) / 100)
-
   if (interState) {
     return { cgst: 0, sgst: 0, igst: totalTax }
   }
-
   const half = roundMoney(totalTax / 2)
-
   return { cgst: half, sgst: roundMoney(totalTax - half), igst: 0 }
 }
 
@@ -314,11 +318,13 @@ function RetailSaleEstimateScreen({ onClose }: { onClose: () => void }): React.J
   const statusCounts = useMemo(() => {
     return estimates.reduce(
       (counts, estimate) => {
+        counts.all += 1
         counts.open += estimate.status === 'OPEN' ? 1 : 0
         counts.converted += estimate.status === 'CONVERTED' ? 1 : 0
+        counts.cancelled += estimate.status === 'CANCELLED' ? 1 : 0
         return counts
       },
-      { open: 0, converted: 0 }
+      { all: 0, open: 0, converted: 0, cancelled: 0 }
     )
   }, [estimates])
 
@@ -332,7 +338,7 @@ function RetailSaleEstimateScreen({ onClose }: { onClose: () => void }): React.J
 
     alertTimerRef.current = window.setTimeout(() => {
       setAlertMessage('')
-    }, 3000)
+    }, 4000)
   }, [])
 
   const focusNextOnEnter = (
@@ -363,6 +369,38 @@ function RetailSaleEstimateScreen({ onClose }: { onClose: () => void }): React.J
       ...current,
       [fieldName]: value
     }))
+  }
+
+  const handleBarcodeKeyDown = async (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter') {
+      event.preventDefault()
+      const code = itemForm.barcode.trim()
+      if (!code) return
+      try {
+        const tag = await (window.api as any).barcodes?.getByCode?.(code)
+        if (tag) {
+          const item = items.find((i) => i.id === tag.itemId)
+          setItemForm((current) => ({
+            ...current,
+            barcode: tag.barcode,
+            itemId: tag.itemId || current.itemId,
+            stampId: tag.stampId || current.stampId,
+            stampName: tag.stampName || current.stampName,
+            designId: tag.designId || current.designId,
+            designName: tag.designName || current.designName,
+            grossWeight: tag.grossWeight ? String(tag.grossWeight) : current.grossWeight,
+            packWeight: tag.packWeight ? String(tag.packWeight) : current.packWeight,
+            tunch: tag.purityTunch ? String(tag.purityTunch) : current.tunch,
+            wastage: tag.wastagePercent ? String(tag.wastagePercent) : current.wastage,
+            hsnCode: item?.gstHsnCode || tag.hsnCode || current.hsnCode,
+            pcs: '1'
+          }))
+          showAlert('success', `Scanned barcode: ${tag.barcode}`)
+        }
+      } catch {
+        // Non-fatal
+      }
+    }
   }
 
   const loadAccounts = useCallback(async (): Promise<void> => {
@@ -457,7 +495,6 @@ function RetailSaleEstimateScreen({ onClose }: { onClose: () => void }): React.J
 
   const clearItemForm = (): void => {
     setItemForm(initialItemForm)
-
     window.setTimeout(() => {
       itemSelectRef.current?.focus()
     }, 0)
@@ -465,13 +502,13 @@ function RetailSaleEstimateScreen({ onClose }: { onClose: () => void }): React.J
 
   const handleAddItemLine = (): void => {
     if (!selectedItem) {
-      showAlert('warning', 'Please select item.')
+      showAlert('warning', 'Please select an item.')
       itemSelectRef.current?.focus()
       return
     }
 
     if (toNumber(itemForm.pcs) <= 0) {
-      showAlert('warning', 'Please enter pcs.')
+      showAlert('warning', 'Please enter pieces quantity.')
       pcsInputRef.current?.focus()
       return
     }
@@ -525,20 +562,19 @@ function RetailSaleEstimateScreen({ onClose }: { onClose: () => void }): React.J
 
   const handleConfirmDeleteItemLine = (): void => {
     if (!itemDeleteTarget) return
-
     setItemLines((current) => current.filter((line) => line.id !== itemDeleteTarget.id))
     setItemDeleteTarget(null)
   }
 
   const validateEstimate = (): boolean => {
     if (!header.accountId) {
-      showAlert('warning', 'Please select account.')
+      showAlert('warning', 'Please select customer account.')
       accountSelectRef.current?.focus()
       return false
     }
 
     if (itemLines.length === 0) {
-      showAlert('warning', 'Please add at least one item.')
+      showAlert('warning', 'Please add at least one item to estimate.')
       itemSelectRef.current?.focus()
       return false
     }
@@ -588,7 +624,6 @@ function RetailSaleEstimateScreen({ onClose }: { onClose: () => void }): React.J
 
     try {
       setSaving(true)
-
       const payload = buildPayload()
 
       if (editingId) {
@@ -674,15 +709,12 @@ function RetailSaleEstimateScreen({ onClose }: { onClose: () => void }): React.J
 
   const handleConfirmDeleteEstimate = async (): Promise<void> => {
     if (!estimateDeleteTarget) return
-
     try {
       setDeleting(true)
       const result = await window.api.estimates.remove(estimateDeleteTarget.id)
-
       if (editingId === estimateDeleteTarget.id) {
         await resetForm()
       }
-
       setEstimateDeleteTarget(null)
       await loadEstimates()
       showAlert('success', `Estimate ${result.estimateNo} deleted successfully.`)
@@ -695,11 +727,9 @@ function RetailSaleEstimateScreen({ onClose }: { onClose: () => void }): React.J
 
   const handleConfirmConvertToSale = async (): Promise<void> => {
     if (!convertTarget) return
-
     try {
       setConverting(true)
       const result = await window.api.estimates.convertToSale(convertTarget.id)
-
       setConvertTarget(null)
       await loadEstimates()
       showAlert(
@@ -732,7 +762,6 @@ function RetailSaleEstimateScreen({ onClose }: { onClose: () => void }): React.J
 
     return () => {
       window.clearTimeout(loadTimer)
-
       if (alertTimerRef.current) {
         window.clearTimeout(alertTimerRef.current)
       }
@@ -740,386 +769,585 @@ function RetailSaleEstimateScreen({ onClose }: { onClose: () => void }): React.J
   }, [loadInitialData])
 
   return (
-    <div className="approval-screen">
-      <div className="approval-window">
-        <div className="form-title-bar">
-          <span>Retail Sale Estimate</span>
-
-          <button className="module-close-btn" type="button" onClick={onClose}>
-            &times;
-          </button>
+    <div className="flex flex-col h-full bg-slate-100 text-slate-800 font-sans select-none overflow-hidden">
+      {/* ── TOP HEADER BAR ── */}
+      <header className="h-13 px-4 border-b border-slate-200/90 bg-white flex items-center justify-between shadow-2xs shrink-0 z-10">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-700 text-base shadow-2xs font-bold">
+            <FiFileText size={18} />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="font-bold text-sm text-slate-900 tracking-tight">
+                {editingId ? `Edit Retail Sale Estimate (${header.estimateNo})` : 'Retail Sale Estimate'}
+              </h1>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                ESTIMATE VOUCHER
+              </span>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200">
+                Non-Ledger
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-500 font-medium leading-none mt-0.5">
+              Generate quotation estimates with automated GST calculation before formal conversion
+            </p>
+          </div>
         </div>
 
-        <div className="approval-body">
-          <AppAlert type={alertType} message={alertMessage} onClose={() => setAlertMessage('')} />
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer text-sm font-bold"
+            title="Close Tab"
+          >
+            <FiX size={16} />
+          </button>
+        )}
+      </header>
 
-          <div className="approval-panel">
-            <div className="section-title">
-              {editingId ? `Edit Estimate ${header.estimateNo}` : 'Estimate Header'}
+      {/* ── WORKSPACE CONTENT ── */}
+      <div className="flex-1 overflow-y-auto p-3 space-y-3">
+        {/* Alert Notifications */}
+        {alertMessage && (
+          <div
+            className={`p-3 rounded-xl text-xs flex items-center justify-between border shadow-2xs ${
+              alertType === 'success'
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                : alertType === 'warning'
+                  ? 'bg-amber-50 border-amber-200 text-amber-800'
+                  : 'bg-rose-50 border-rose-200 text-rose-800'
+            }`}
+          >
+            <div className="flex items-center gap-2 font-medium">
+              {alertType === 'success' ? (
+                <FiCheckCircle size={14} className="text-emerald-600" />
+              ) : (
+                <FiAlertCircle size={14} className="text-amber-600" />
+              )}
+              <span>{alertMessage}</span>
             </div>
-
-            <div className="approval-header-grid">
-              <div className="form-field">
-                <label>Est. No.</label>
-                <input value={header.estimateNo} disabled />
-              </div>
-
-              <div className="form-field">
-                <label>Date</label>
-                <input
-                  type="date"
-                  value={header.estimateDate}
-                  onChange={(event) =>
-                    setHeader((current) => ({ ...current, estimateDate: event.target.value }))
-                  }
-                />
-              </div>
-
-              <div className="form-field">
-                <label>Acc Name</label>
-                <select
-                  ref={accountSelectRef}
-                  value={header.accountId}
-                  onChange={(event) => handleAccountChange(event.target.value)}
-                >
-                  <option value="">Select Account</option>
-                  {activeAccounts.map((account) => (
-                    <option key={account.id} value={account.id}>
-                      {account.accountName}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="form-field">
-                <label>Phone</label>
-                <input
-                  value={header.phone}
-                  onChange={(event) =>
-                    setHeader((current) => ({ ...current, phone: event.target.value }))
-                  }
-                />
-              </div>
-
-              <div className="form-field">
-                <label>Gold / Silver</label>
-                <select
-                  value={header.metalType}
-                  onChange={(event) => handleMetalChange(event.target.value as MetalType)}
-                >
-                  <option>Gold</option>
-                  <option>Silver</option>
-                  <option>Diamond</option>
-                  <option>Other</option>
-                </select>
-              </div>
-
-              <div className="form-field">
-                <label>Valid Until</label>
-                <input
-                  type="date"
-                  value={header.validUntil}
-                  onChange={(event) =>
-                    setHeader((current) => ({ ...current, validUntil: event.target.value }))
-                  }
-                />
-              </div>
-            </div>
-
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
-                gap: '8px',
-                marginTop: '8px'
-              }}
+            <button
+              type="button"
+              onClick={() => setAlertMessage('')}
+              className="text-slate-400 hover:text-slate-600 cursor-pointer"
             >
-              <div className="form-field">
-                <label>Narration</label>
-                <input
-                  value={header.narration}
-                  onChange={(event) =>
-                    setHeader((current) => ({ ...current, narration: event.target.value }))
-                  }
-                  placeholder="Optional"
-                />
-              </div>
+              <FiX size={14} />
+            </button>
+          </div>
+        )}
 
-              <div className="form-field readonly-field">
-                <label>GST Type (auto)</label>
-                <input value={interState ? 'Inter-State (IGST)' : 'Intra-State (CGST + SGST)'} disabled />
+        {/* ── 1. ESTIMATE HEADER CARD ── */}
+        <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-4">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-4 bg-amber-500 rounded-full inline-block" />
+              <h2 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                {editingId ? `Edit Estimate ${header.estimateNo}` : 'Estimate Header'}
+              </h2>
+            </div>
+            <span className="text-[11px] text-slate-400 font-medium">
+              Customer details & estimate validity duration
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+            <div>
+              <label className="text-[11px] font-semibold text-slate-600 block mb-1 uppercase tracking-wide">
+                Est. No.
+              </label>
+              <input
+                value={header.estimateNo}
+                disabled
+                className="w-full h-8.5 px-2.5 text-xs bg-slate-100 border border-slate-200 rounded-lg text-amber-900 font-mono font-bold shadow-2xs cursor-not-allowed"
+              />
+            </div>
+
+            <div>
+              <label className="text-[11px] font-semibold text-slate-600 block mb-1 uppercase tracking-wide">
+                Date
+              </label>
+              <input
+                type="date"
+                value={header.estimateDate}
+                onChange={(event) =>
+                  setHeader((current) => ({ ...current, estimateDate: event.target.value }))
+                }
+                className="w-full h-8.5 px-2.5 text-xs bg-white border border-slate-200 rounded-lg text-slate-800 focus:ring-1 focus:ring-amber-500 focus:border-amber-500 transition-colors shadow-2xs font-medium"
+              />
+            </div>
+
+            <div className="sm:col-span-2">
+              <label className="text-[11px] font-semibold text-slate-600 block mb-1 uppercase tracking-wide">
+                Account / Customer <span className="text-rose-500">*</span>
+              </label>
+              <select
+                ref={accountSelectRef}
+                value={header.accountId}
+                onChange={(event) => handleAccountChange(event.target.value)}
+                className="w-full h-8.5 px-2.5 text-xs bg-white border border-slate-200 rounded-lg text-slate-800 focus:ring-1 focus:ring-amber-500 focus:border-amber-500 transition-colors shadow-2xs font-semibold"
+              >
+                <option value="">Select Account</option>
+                {activeAccounts.map((account) => (
+                  <option key={account.id} value={account.id}>
+                    {account.accountName} {account.mobileNumber ? `(${account.mobileNumber})` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="text-[11px] font-semibold text-slate-600 block mb-1 uppercase tracking-wide">
+                Phone
+              </label>
+              <input
+                value={header.phone}
+                onChange={(event) =>
+                  setHeader((current) => ({ ...current, phone: event.target.value }))
+                }
+                placeholder="Mobile number"
+                className="w-full h-8.5 px-2.5 text-xs bg-white border border-slate-200 rounded-lg text-slate-800 focus:ring-1 focus:ring-amber-500 focus:border-amber-500 transition-colors shadow-2xs"
+              />
+            </div>
+
+            <div>
+              <label className="text-[11px] font-semibold text-slate-600 block mb-1 uppercase tracking-wide">
+                Metal Type
+              </label>
+              <select
+                value={header.metalType}
+                onChange={(event) => handleMetalChange(event.target.value as MetalType)}
+                className="w-full h-8.5 px-2.5 text-xs bg-white border border-slate-200 rounded-lg text-slate-800 focus:ring-1 focus:ring-amber-500 focus:border-amber-500 transition-colors shadow-2xs font-semibold"
+              >
+                <option value="Gold">Gold</option>
+                <option value="Silver">Silver</option>
+                <option value="Diamond">Diamond</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="text-[11px] font-semibold text-slate-600 block mb-1 uppercase tracking-wide">
+                Valid Until
+              </label>
+              <input
+                type="date"
+                value={header.validUntil}
+                onChange={(event) =>
+                  setHeader((current) => ({ ...current, validUntil: event.target.value }))
+                }
+                className="w-full h-8.5 px-2.5 text-xs bg-white border border-slate-200 rounded-lg text-slate-800 focus:ring-1 focus:ring-amber-500 focus:border-amber-500 transition-colors shadow-2xs font-medium"
+              />
+            </div>
+
+            <div className="sm:col-span-3">
+              <label className="text-[11px] font-semibold text-slate-600 block mb-1 uppercase tracking-wide">
+                Narration / Purpose
+              </label>
+              <input
+                value={header.narration}
+                onChange={(event) =>
+                  setHeader((current) => ({ ...current, narration: event.target.value }))
+                }
+                placeholder="Remarks, terms, or customer notes"
+                className="w-full h-8.5 px-2.5 text-xs bg-white border border-slate-200 rounded-lg text-slate-800 focus:ring-1 focus:ring-amber-500 focus:border-amber-500 transition-colors shadow-2xs"
+              />
+            </div>
+
+            <div className="sm:col-span-2">
+              <label className="text-[11px] font-semibold text-slate-600 block mb-1 uppercase tracking-wide">
+                GST Tax Mode (Auto)
+              </label>
+              <div className="h-8.5 px-2.5 bg-slate-100 border border-slate-200 rounded-lg text-xs font-semibold flex items-center shadow-2xs">
+                <span
+                  className={`px-2 py-0.5 rounded text-[11px] font-bold ${
+                    interState
+                      ? 'bg-blue-100 text-blue-900 border border-blue-300'
+                      : 'bg-amber-100 text-amber-900 border border-amber-300'
+                  }`}
+                >
+                  {interState ? 'Inter-State (IGST 3%)' : 'Intra-State (CGST 1.5% + SGST 1.5%)'}
+                </span>
               </div>
             </div>
           </div>
+        </div>
 
-          <div className="approval-panel">
-            <div className="section-title">Item Entry</div>
+        {/* ── 2. ITEM ENTRY CARD ── */}
+        <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-4">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-4 bg-amber-500 rounded-full inline-block" />
+              <h2 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                Item Entry
+              </h2>
+            </div>
+            <span className="text-[11px] text-slate-400 font-medium">
+              Scan barcode or select jewellery item to calculate live GST estimate
+            </span>
+          </div>
 
-            <div className="estimate-item-entry-grid">
-              <div className="form-field">
-                <label>Stamp</label>
-                <input value={itemForm.stampName || '-'} disabled />
-              </div>
-
-              <div className="form-field">
-                <label>Item Name</label>
-                <select
-                  ref={itemSelectRef}
-                  value={itemForm.itemId}
-                  onChange={(event) => handleItemChange(event.target.value)}
-                  onKeyDown={(event) => focusNextOnEnter(event, pcsInputRef.current)}
-                >
-                  <option value="">Select Item</option>
-                  {activeItems.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.itemName}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="form-field">
-                <label>Item Design</label>
-                <input value={itemForm.designName || '-'} disabled />
-              </div>
-
-              <div className="form-field">
-                <label>Pcs</label>
-                <input
-                  ref={pcsInputRef}
-                  value={itemForm.pcs}
-                  onChange={(event) => handleItemDecimalChange(event.target.value, 'pcs')}
-                  onKeyDown={(event) => focusNextOnEnter(event, grossWeightInputRef.current)}
-                  placeholder="0"
-                />
-              </div>
-
-              <div className="form-field">
-                <label>Gr. Wt.</label>
-                <input
-                  ref={grossWeightInputRef}
-                  value={itemForm.grossWeight}
-                  onChange={(event) => handleItemDecimalChange(event.target.value, 'grossWeight')}
-                  onKeyDown={(event) => focusNextOnEnter(event, addWeightInputRef.current)}
-                  placeholder="0"
-                />
-              </div>
-
-              <div className="form-field">
-                <label>Pack Wt.</label>
-                <input
-                  value={itemForm.packWeight}
-                  onChange={(event) => handleItemDecimalChange(event.target.value, 'packWeight')}
-                  placeholder="0"
-                />
-              </div>
-
-              <div className="form-field readonly-field">
-                <label>Less Wt.</label>
-                <input value={formatNumber(itemPreview.lessWeight)} disabled />
-              </div>
-
-              <div className="form-field">
-                <label>Add Wt.</label>
-                <input
-                  ref={addWeightInputRef}
-                  value={itemForm.addWeight}
-                  onChange={(event) => handleItemDecimalChange(event.target.value, 'addWeight')}
-                  onKeyDown={(event) => focusNextOnEnter(event, wastageInputRef.current)}
-                  placeholder="0"
-                />
-              </div>
-
-              <div className="form-field readonly-field">
-                <label>Net Wt.</label>
-                <input value={formatNumber(itemPreview.netWeight)} disabled />
-              </div>
-
-              <div className="form-field">
-                <label>Tunch</label>
-                <input
-                  value={itemForm.tunch}
-                  onChange={(event) => handleItemDecimalChange(event.target.value, 'tunch')}
-                  placeholder="0"
-                />
-              </div>
-
-              <div className="form-field">
-                <label>Wstg</label>
-                <input
-                  ref={wastageInputRef}
-                  value={itemForm.wastage}
-                  onChange={(event) => handleItemDecimalChange(event.target.value, 'wastage')}
-                  onKeyDown={(event) => focusNextOnEnter(event, labourRateInputRef.current)}
-                  placeholder="0"
-                />
-              </div>
-
-              <div className="form-field readonly-field">
-                <label>Hishob</label>
-                <input value={formatNumber(itemPreview.hishob)} disabled />
-              </div>
-
-              <div className="form-field">
-                <label>Majuri Rate</label>
-                <input
-                  ref={labourRateInputRef}
-                  value={itemForm.labourRate}
-                  onChange={(event) => handleItemDecimalChange(event.target.value, 'labourRate')}
-                  onKeyDown={(event) => focusNextOnEnter(event, taxableAmountInputRef.current)}
-                  placeholder="0"
-                />
-              </div>
-
-              <div className="form-field">
-                <label>Unit</label>
-                <select
-                  value={itemForm.labourRateType}
-                  onChange={(event) =>
-                    setItemForm((current) => ({
-                      ...current,
-                      labourRateType: event.target.value as LabourRateType
-                    }))
-                  }
-                >
-                  <option value="Kg">Kg</option>
-                  <option value="Gm">Gm</option>
-                  <option value="Pcs">Pcs</option>
-                </select>
-              </div>
-
-              <div className="form-field readonly-field">
-                <label>Fine</label>
-                <input value={formatNumber(itemPreview.fine)} disabled />
-              </div>
-
-              <div className="form-field readonly-field">
-                <label>Majuri</label>
-                <input value={formatNumber(itemPreview.majuri)} disabled />
-              </div>
-
-              <div className="form-field">
-                <label>HSN Code</label>
-                <input
-                  value={itemForm.hsnCode}
-                  onChange={(event) =>
-                    setItemForm((current) => ({ ...current, hsnCode: event.target.value }))
-                  }
-                  placeholder="HSN"
-                />
-              </div>
-
-              <div className="form-field">
-                <label>GST %</label>
-                <input
-                  value={itemForm.gstRate}
-                  onChange={(event) => handleItemDecimalChange(event.target.value, 'gstRate')}
-                  placeholder="0"
-                />
-              </div>
-
-              <div className="form-field">
-                <label>Taxable Amt</label>
-                <input
-                  ref={taxableAmountInputRef}
-                  value={itemForm.taxableAmount}
-                  onChange={(event) => handleItemDecimalChange(event.target.value, 'taxableAmount')}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter') {
-                      event.preventDefault()
-                      handleAddItemLine()
-                    }
-                  }}
-                  placeholder="0"
-                />
-              </div>
-
-              <div className="form-field readonly-field">
-                <label>CGST</label>
-                <input value={formatAmount(itemPreview.cgst)} disabled />
-              </div>
-
-              <div className="form-field readonly-field">
-                <label>SGST</label>
-                <input value={formatAmount(itemPreview.sgst)} disabled />
-              </div>
-
-              <div className="form-field readonly-field">
-                <label>IGST</label>
-                <input value={formatAmount(itemPreview.igst)} disabled />
-              </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-12 gap-2.5 items-end">
+            <div className="col-span-2 sm:col-span-2">
+              <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase tracking-wider">
+                Barcode
+              </label>
+              <input
+                value={itemForm.barcode}
+                onChange={(e) => setItemForm((c) => ({ ...c, barcode: e.target.value }))}
+                onKeyDown={handleBarcodeKeyDown}
+                placeholder="Scan / Enter"
+                className="w-full h-8 px-2 text-xs bg-white border border-slate-200 rounded-lg focus:ring-1 focus:ring-amber-500 focus:border-amber-500 font-mono text-slate-800 shadow-2xs"
+              />
             </div>
 
-            <div className="button-row approval-item-button-row">
-              <button className="btn-save" onClick={handleAddItemLine}>
-                Add Item
+            <div className="col-span-2 sm:col-span-3">
+              <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase tracking-wider">
+                Item Name <span className="text-rose-500">*</span>
+              </label>
+              <select
+                ref={itemSelectRef}
+                value={itemForm.itemId}
+                onChange={(event) => handleItemChange(event.target.value)}
+                onKeyDown={(event) => focusNextOnEnter(event, pcsInputRef.current)}
+                className="w-full h-8 px-2 text-xs bg-white border border-slate-200 rounded-lg focus:ring-1 focus:ring-amber-500 focus:border-amber-500 font-semibold text-slate-800 shadow-2xs"
+              >
+                <option value="">Select Item</option>
+                {activeItems.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.itemName}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase tracking-wider">
+                Stamp
+              </label>
+              <input
+                value={itemForm.stampName || '-'}
+                disabled
+                className="w-full h-8 px-2 text-xs bg-slate-100 border border-slate-200 rounded-lg text-slate-700 font-medium shadow-2xs"
+              />
+            </div>
+
+            <div>
+              <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase tracking-wider">
+                Design
+              </label>
+              <input
+                value={itemForm.designName || '-'}
+                disabled
+                className="w-full h-8 px-2 text-xs bg-slate-100 border border-slate-200 rounded-lg text-slate-700 font-medium shadow-2xs"
+              />
+            </div>
+
+            <div>
+              <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase tracking-wider">
+                Pcs
+              </label>
+              <input
+                ref={pcsInputRef}
+                value={itemForm.pcs}
+                onChange={(event) => handleItemDecimalChange(event.target.value, 'pcs')}
+                onKeyDown={(event) => focusNextOnEnter(event, grossWeightInputRef.current)}
+                placeholder="0"
+                className="w-full h-8 px-2 text-xs bg-white border border-slate-200 rounded-lg focus:ring-1 focus:ring-amber-500 focus:border-amber-500 text-center font-mono font-medium shadow-2xs"
+              />
+            </div>
+
+            <div>
+              <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase tracking-wider">
+                Gross Wt (g)
+              </label>
+              <input
+                ref={grossWeightInputRef}
+                value={itemForm.grossWeight}
+                onChange={(event) => handleItemDecimalChange(event.target.value, 'grossWeight')}
+                onKeyDown={(event) => focusNextOnEnter(event, addWeightInputRef.current)}
+                placeholder="0.000"
+                className="w-full h-8 px-2 text-xs bg-white border border-slate-200 rounded-lg focus:ring-1 focus:ring-amber-500 focus:border-amber-500 text-right font-mono font-bold text-slate-900 shadow-2xs"
+              />
+            </div>
+
+            <div>
+              <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase tracking-wider">
+                Pack Wt
+              </label>
+              <input
+                value={itemForm.packWeight}
+                onChange={(event) => handleItemDecimalChange(event.target.value, 'packWeight')}
+                placeholder="0.000"
+                className="w-full h-8 px-2 text-xs bg-white border border-slate-200 rounded-lg focus:ring-1 focus:ring-amber-500 focus:border-amber-500 text-right font-mono shadow-2xs"
+              />
+            </div>
+
+            <div>
+              <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase tracking-wider">
+                Less Wt
+              </label>
+              <input
+                value={formatNumber(itemPreview.lessWeight)}
+                disabled
+                className="w-full h-8 px-2 text-xs bg-slate-100 border border-slate-200 rounded-lg text-right font-mono text-slate-600 shadow-2xs"
+              />
+            </div>
+
+            <div>
+              <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase tracking-wider">
+                Add Wt
+              </label>
+              <input
+                ref={addWeightInputRef}
+                value={itemForm.addWeight}
+                onChange={(event) => handleItemDecimalChange(event.target.value, 'addWeight')}
+                onKeyDown={(event) => focusNextOnEnter(event, wastageInputRef.current)}
+                placeholder="0.000"
+                className="w-full h-8 px-2 text-xs bg-white border border-slate-200 rounded-lg focus:ring-1 focus:ring-amber-500 focus:border-amber-500 text-right font-mono shadow-2xs"
+              />
+            </div>
+
+            <div>
+              <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase tracking-wider">
+                Net Wt (g)
+              </label>
+              <input
+                value={formatNumber(itemPreview.netWeight)}
+                disabled
+                className="w-full h-8 px-2 text-xs bg-amber-50/80 border border-amber-200 rounded-lg text-right font-mono font-bold text-amber-950 shadow-2xs"
+              />
+            </div>
+
+            <div>
+              <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase tracking-wider">
+                Tunch %
+              </label>
+              <input
+                value={itemForm.tunch}
+                onChange={(event) => handleItemDecimalChange(event.target.value, 'tunch')}
+                placeholder="0"
+                className="w-full h-8 px-2 text-xs bg-white border border-slate-200 rounded-lg focus:ring-1 focus:ring-amber-500 focus:border-amber-500 text-center font-mono shadow-2xs"
+              />
+            </div>
+
+            <div>
+              <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase tracking-wider">
+                Wstg %
+              </label>
+              <input
+                ref={wastageInputRef}
+                value={itemForm.wastage}
+                onChange={(event) => handleItemDecimalChange(event.target.value, 'wastage')}
+                onKeyDown={(event) => focusNextOnEnter(event, labourRateInputRef.current)}
+                placeholder="0"
+                className="w-full h-8 px-2 text-xs bg-white border border-slate-200 rounded-lg focus:ring-1 focus:ring-amber-500 focus:border-amber-500 text-center font-mono shadow-2xs"
+              />
+            </div>
+
+            <div>
+              <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase tracking-wider">
+                Hishob
+              </label>
+              <input
+                value={formatNumber(itemPreview.hishob)}
+                disabled
+                className="w-full h-8 px-2 text-xs bg-slate-100 border border-slate-200 rounded-lg text-center font-mono text-slate-700 shadow-2xs"
+              />
+            </div>
+
+            <div>
+              <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase tracking-wider">
+                Majuri Rate
+              </label>
+              <input
+                ref={labourRateInputRef}
+                value={itemForm.labourRate}
+                onChange={(event) => handleItemDecimalChange(event.target.value, 'labourRate')}
+                onKeyDown={(event) => focusNextOnEnter(event, taxableAmountInputRef.current)}
+                placeholder="0"
+                className="w-full h-8 px-2 text-xs bg-white border border-slate-200 rounded-lg focus:ring-1 focus:ring-amber-500 focus:border-amber-500 text-right font-mono shadow-2xs"
+              />
+            </div>
+
+            <div>
+              <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase tracking-wider">
+                Unit
+              </label>
+              <select
+                value={itemForm.labourRateType}
+                onChange={(event) =>
+                  setItemForm((current) => ({
+                    ...current,
+                    labourRateType: event.target.value as LabourRateType
+                  }))
+                }
+                className="w-full h-8 px-2 text-xs bg-white border border-slate-200 rounded-lg focus:ring-1 focus:ring-amber-500 focus:border-amber-500 font-medium shadow-2xs"
+              >
+                <option value="Kg">Kg</option>
+                <option value="Gm">Gm</option>
+                <option value="Pcs">Pcs</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase tracking-wider">
+                Fine
+              </label>
+              <input
+                value={formatNumber(itemPreview.fine)}
+                disabled
+                className="w-full h-8 px-2 text-xs bg-slate-100 border border-slate-200 rounded-lg text-right font-mono text-slate-800 shadow-2xs"
+              />
+            </div>
+
+            <div>
+              <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase tracking-wider">
+                Majuri (₹)
+              </label>
+              <input
+                value={formatNumber(itemPreview.majuri)}
+                disabled
+                className="w-full h-8 px-2 text-xs bg-slate-100 border border-slate-200 rounded-lg text-right font-mono text-slate-800 shadow-2xs"
+              />
+            </div>
+
+            <div>
+              <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase tracking-wider">
+                HSN
+              </label>
+              <input
+                value={itemForm.hsnCode}
+                onChange={(event) =>
+                  setItemForm((current) => ({ ...current, hsnCode: event.target.value }))
+                }
+                placeholder="HSN"
+                className="w-full h-8 px-2 text-xs bg-white border border-slate-200 rounded-lg focus:ring-1 focus:ring-amber-500 focus:border-amber-500 font-mono shadow-2xs"
+              />
+            </div>
+
+            <div>
+              <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase tracking-wider">
+                GST %
+              </label>
+              <input
+                value={itemForm.gstRate}
+                onChange={(event) => handleItemDecimalChange(event.target.value, 'gstRate')}
+                placeholder="3"
+                className="w-full h-8 px-2 text-xs bg-white border border-slate-200 rounded-lg focus:ring-1 focus:ring-amber-500 focus:border-amber-500 text-center font-mono shadow-2xs"
+              />
+            </div>
+
+            <div className="col-span-2">
+              <label className="text-[10px] font-bold text-slate-600 block mb-1 uppercase tracking-wider">
+                Taxable Amt (₹)
+              </label>
+              <input
+                ref={taxableAmountInputRef}
+                value={itemForm.taxableAmount}
+                onChange={(event) => handleItemDecimalChange(event.target.value, 'taxableAmount')}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.preventDefault()
+                    handleAddItemLine()
+                  }
+                }}
+                placeholder="0.00"
+                className="w-full h-8 px-2 text-xs bg-white border border-slate-200 rounded-lg focus:ring-1 focus:ring-amber-500 focus:border-amber-500 text-right font-mono font-bold text-slate-900 shadow-2xs"
+              />
+            </div>
+
+            <div className="col-span-2 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleAddItemLine}
+                className="flex-1 h-8 px-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 active:from-amber-700 active:to-amber-800 text-white font-bold rounded-lg text-xs transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer active:scale-95"
+              >
+                <FiPlus size={14} />
+                <span>Add Item</span>
               </button>
 
-              <button className="btn-new" onClick={clearItemForm}>
-                Clear Item
+              <button
+                type="button"
+                onClick={clearItemForm}
+                className="h-8 px-2.5 bg-white hover:bg-slate-50 text-slate-700 font-semibold rounded-lg text-xs transition-colors border border-slate-300 shadow-2xs cursor-pointer flex items-center gap-1 active:scale-95"
+                title="Clear Item Form"
+              >
+                <FiRotateCcw size={13} />
               </button>
             </div>
           </div>
+        </div>
 
-          <div className="table-panel approval-item-table-panel">
-            <table>
-              <thead>
+        {/* ── 3. ESTIMATE ITEMS TABLE ── */}
+        <div className="rounded-2xl border border-slate-200/90 bg-white shadow-xs overflow-hidden">
+          <div className="px-4 py-2.5 bg-slate-50/80 border-b border-slate-100 flex items-center justify-between">
+            <span className="text-xs font-bold uppercase tracking-wide text-slate-800">
+              Estimate Line Items ({itemLines.length})
+            </span>
+            <span className="text-[11px] text-slate-500">
+              Total Weight: <strong className="text-slate-800">{formatNumber(itemSummaryTotals.grossWeight)} g</strong>
+            </span>
+          </div>
+
+          <div className="overflow-x-auto max-h-60">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead className="bg-slate-100/90 text-slate-700 uppercase text-[11px] font-bold border-b border-slate-200 sticky top-0 z-10">
                 <tr>
-                  <th>Sr</th>
-                  <th>Item</th>
-                  <th>Pcs</th>
-                  <th>Net Wt.</th>
-                  <th>Tunch</th>
-                  <th>Wstg</th>
-                  <th>Fine</th>
-                  <th>Majuri</th>
-                  <th>HSN</th>
-                  <th>GST%</th>
-                  <th>Taxable</th>
-                  <th>CGST</th>
-                  <th>SGST</th>
-                  <th>IGST</th>
-                  <th>Action</th>
+                  <th className="py-2.5 px-3 text-center w-10">#</th>
+                  <th className="py-2.5 px-3">Item</th>
+                  <th className="py-2.5 px-2 text-center">Pcs</th>
+                  <th className="py-2.5 px-3 text-right">Net Wt (g)</th>
+                  <th className="py-2.5 px-2 text-center">Tunch</th>
+                  <th className="py-2.5 px-2 text-center">Wstg</th>
+                  <th className="py-2.5 px-3 text-right">Fine</th>
+                  <th className="py-2.5 px-3 text-right">Majuri (₹)</th>
+                  <th className="py-2.5 px-2 text-center">HSN</th>
+                  <th className="py-2.5 px-2 text-center">GST%</th>
+                  <th className="py-2.5 px-3 text-right">Taxable (₹)</th>
+                  <th className="py-2.5 px-3 text-right">CGST (₹)</th>
+                  <th className="py-2.5 px-3 text-right">SGST (₹)</th>
+                  <th className="py-2.5 px-3 text-right">IGST (₹)</th>
+                  <th className="py-2.5 px-3 text-center w-16">Action</th>
                 </tr>
               </thead>
 
-              <tbody>
-                {loading ? (
+              <tbody className="divide-y divide-slate-100 text-slate-800">
+                {itemLines.length === 0 ? (
                   <tr>
-                    <td colSpan={15} className="empty-row">
-                      Loading...
-                    </td>
-                  </tr>
-                ) : itemLines.length === 0 ? (
-                  <tr>
-                    <td colSpan={15} className="empty-row">
-                      No item added yet.
+                    <td colSpan={15} className="py-8 text-center text-slate-400 italic">
+                      No items added yet. Enter item details above and click &quot;Add Item&quot;.
                     </td>
                   </tr>
                 ) : (
                   itemLines.map((line, index) => (
-                    <tr key={line.id}>
-                      <td>{index + 1}</td>
-                      <td>{line.itemName}</td>
-                      <td>{formatNumber(line.pcs)}</td>
-                      <td>{formatNumber(line.netWeight)}</td>
-                      <td>{formatNumber(line.tunch)}</td>
-                      <td>{formatNumber(line.wastage)}</td>
-                      <td>{formatNumber(line.fine)}</td>
-                      <td>{formatAmount(line.majuri)}</td>
-                      <td>{line.hsnCode || '-'}</td>
-                      <td>{formatNumber(line.gstRate)}</td>
-                      <td>{formatAmount(line.taxableAmount)}</td>
-                      <td>{formatAmount(line.cgstAmount)}</td>
-                      <td>{formatAmount(line.sgstAmount)}</td>
-                      <td>{formatAmount(line.igstAmount)}</td>
-                      <td>
+                    <tr key={line.id} className="hover:bg-amber-50/40 transition-colors">
+                      <td className="py-2 px-3 text-center font-mono text-slate-400">{index + 1}</td>
+                      <td className="py-2 px-3 font-semibold text-slate-900">{line.itemName}</td>
+                      <td className="py-2 px-2 text-center font-mono font-medium">{line.pcs}</td>
+                      <td className="py-2 px-3 text-right font-mono font-bold text-amber-950">
+                        {formatNumber(line.netWeight)}
+                      </td>
+                      <td className="py-2 px-2 text-center font-mono text-slate-600">{line.tunch}%</td>
+                      <td className="py-2 px-2 text-center font-mono text-slate-600">{line.wastage}%</td>
+                      <td className="py-2 px-3 text-right font-mono font-medium">{formatNumber(line.fine)}</td>
+                      <td className="py-2 px-3 text-right font-mono font-medium">{formatAmount(line.majuri)}</td>
+                      <td className="py-2 px-2 text-center font-mono text-slate-500">{line.hsnCode || '-'}</td>
+                      <td className="py-2 px-2 text-center font-mono font-semibold">{line.gstRate}%</td>
+                      <td className="py-2 px-3 text-right font-mono font-bold text-slate-900">
+                        ₹{formatAmount(line.taxableAmount)}
+                      </td>
+                      <td className="py-2 px-3 text-right font-mono text-slate-700">₹{formatAmount(line.cgstAmount)}</td>
+                      <td className="py-2 px-3 text-right font-mono text-slate-700">₹{formatAmount(line.sgstAmount)}</td>
+                      <td className="py-2 px-3 text-right font-mono text-slate-700">₹{formatAmount(line.igstAmount)}</td>
+                      <td className="py-2 px-3 text-center">
                         <button
-                          className="btn-delete-small"
                           type="button"
                           onClick={() => setItemDeleteTarget(line)}
+                          className="p-1 text-rose-600 hover:text-rose-800 hover:bg-rose-50 rounded transition-colors cursor-pointer"
+                          title="Remove item"
                         >
-                          Remove
+                          <FiTrash2 size={13} />
                         </button>
                       </td>
                     </tr>
@@ -1128,246 +1356,315 @@ function RetailSaleEstimateScreen({ onClose }: { onClose: () => void }): React.J
               </tbody>
             </table>
           </div>
+        </div>
 
-          <div className="sale-item-summary-row">
-            <div>
-              <span>Pcs</span>
-              <strong>{formatNumber(itemSummaryTotals.pcs)}</strong>
-            </div>
-
-            <div>
-              <span>Gr. Wt.</span>
-              <strong>{formatNumber(itemSummaryTotals.grossWeight)}</strong>
-            </div>
-
-            <div>
-              <span>Net Wt.</span>
-              <strong>{formatNumber(itemSummaryTotals.netWeight)}</strong>
-            </div>
-
-            <div>
-              <span>Fine</span>
-              <strong>{formatNumber(itemFineTotal)}</strong>
-            </div>
-
-            <div>
-              <span>Majuri</span>
-              <strong>{formatNumber(itemMajuriTotal)}</strong>
+        {/* ── 4. SUMMARY METRIC CARDS ── */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5">
+          <div className="p-3 rounded-xl border border-slate-200/90 bg-white shadow-2xs">
+            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Total Pcs</div>
+            <div className="mt-0.5 text-base font-bold tabular-nums text-slate-900">
+              {formatNumber(itemSummaryTotals.pcs)}
             </div>
           </div>
 
-          <div className="gst-report-summary">
-            <div>
-              <span>Taxable Amt</span>
-              <strong>{formatAmount(gstTotals.taxableAmount)}</strong>
-            </div>
-            <div>
-              <span>CGST</span>
-              <strong>{formatAmount(gstTotals.cgstAmount)}</strong>
-            </div>
-            <div>
-              <span>SGST</span>
-              <strong>{formatAmount(gstTotals.sgstAmount)}</strong>
-            </div>
-            <div>
-              <span>IGST</span>
-              <strong>{formatAmount(gstTotals.igstAmount)}</strong>
-            </div>
-            <div>
-              <span>Total Tax</span>
-              <strong>
-                {formatAmount(gstTotals.cgstAmount + gstTotals.sgstAmount + gstTotals.igstAmount)}
-              </strong>
-            </div>
-            <div>
-              <span>Grand Total</span>
-              <strong>
-                {formatAmount(
-                  gstTotals.taxableAmount +
-                    gstTotals.cgstAmount +
-                    gstTotals.sgstAmount +
-                    gstTotals.igstAmount +
-                    itemMajuriTotal
-                )}
-              </strong>
+          <div className="p-3 rounded-xl border border-slate-200/90 bg-white shadow-2xs">
+            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Gross Wt</div>
+            <div className="mt-0.5 text-base font-bold tabular-nums text-slate-900">
+              {formatNumber(itemSummaryTotals.grossWeight)} g
             </div>
           </div>
 
-          <div className="approval-footer-actions">
+          <div className="p-3 rounded-xl border border-slate-200/90 bg-white shadow-2xs">
+            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Net Wt</div>
+            <div className="mt-0.5 text-base font-bold tabular-nums text-amber-950 font-mono">
+              {formatNumber(itemSummaryTotals.netWeight)} g
+            </div>
+          </div>
+
+          <div className="p-3 rounded-xl border border-slate-200/90 bg-white shadow-2xs">
+            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Fine Total</div>
+            <div className="mt-0.5 text-base font-bold tabular-nums text-slate-900">
+              {formatNumber(itemFineTotal)} g
+            </div>
+          </div>
+
+          <div className="p-3 rounded-xl border border-slate-200/90 bg-white shadow-2xs">
+            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Majuri Total</div>
+            <div className="mt-0.5 text-base font-bold tabular-nums text-slate-900">
+              ₹{formatAmount(itemMajuriTotal)}
+            </div>
+          </div>
+
+          <div className="p-3 rounded-xl border border-slate-200/90 bg-white shadow-2xs">
+            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Taxable Turnover</div>
+            <div className="mt-0.5 text-base font-bold tabular-nums text-slate-900">
+              ₹{formatAmount(gstTotals.taxableAmount)}
+            </div>
+          </div>
+
+          <div className="p-3 rounded-xl border border-slate-200/90 bg-white shadow-2xs">
+            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Total GST Tax</div>
+            <div className="mt-0.5 text-base font-bold tabular-nums text-emerald-800">
+              ₹{formatAmount(gstTotals.cgstAmount + gstTotals.sgstAmount + gstTotals.igstAmount)}
+            </div>
+          </div>
+
+          <div className="p-3 rounded-xl border border-amber-200 bg-amber-50/70 shadow-2xs">
+            <div className="text-[10px] font-bold text-amber-900 uppercase tracking-wider">Grand Total</div>
+            <div className="mt-0.5 text-lg font-black tabular-nums text-amber-950 font-mono">
+              ₹
+              {formatAmount(
+                gstTotals.taxableAmount +
+                  gstTotals.cgstAmount +
+                  gstTotals.sgstAmount +
+                  gstTotals.igstAmount +
+                  itemMajuriTotal
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* ── 5. PRIMARY VOUCHER ACTIONS BAR ── */}
+        <div className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-200/90 shadow-2xs">
+          <div className="flex items-center gap-2">
             <button
-              className="btn-save"
+              type="button"
               onClick={() => void handleSaveEstimate()}
               disabled={saving}
+              className="h-9 px-5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 active:from-amber-700 active:to-amber-800 text-white font-bold rounded-lg text-xs transition-all flex items-center gap-2 shadow-xs cursor-pointer active:scale-95 disabled:opacity-50"
             >
-              {saving ? 'Saving...' : editingId ? 'Update Estimate' : 'Save Estimate'}
+              <FiSave size={15} />
+              <span>{saving ? 'Saving...' : editingId ? 'Update Estimate Voucher' : 'Save Estimate Voucher'}</span>
             </button>
 
-            <button className="btn-new" onClick={() => void resetForm()} disabled={saving}>
-              New
+            <button
+              type="button"
+              onClick={() => void resetForm()}
+              disabled={saving}
+              className="h-9 px-3.5 bg-white hover:bg-slate-50 text-slate-700 font-bold rounded-lg text-xs transition-colors border border-slate-300 shadow-2xs flex items-center gap-1.5 active:scale-95 cursor-pointer"
+            >
+              <FiFilePlus size={14} />
+              <span>New Blank</span>
             </button>
           </div>
 
-          <div className="approval-list-panel">
-            <div className="section-title">Saved Estimates</div>
+          <div className="text-xs text-slate-500 font-medium">
+            💡 <em>Estimates are non-ledger entries until converted into confirmed Sales.</em>
+          </div>
+        </div>
 
-            <div className="approval-toolbar">
-              <div className="form-field">
-                <label htmlFor="estimate-status-filter">Status</label>
-                <select
-                  id="estimate-status-filter"
-                  value={statusFilter}
-                  onChange={(event) => setStatusFilter(event.target.value as 'ALL' | EstimateStatus)}
-                >
-                  <option value="ALL">All</option>
-                  <option value="OPEN">Open</option>
-                  <option value="CONVERTED">Converted</option>
-                  <option value="CANCELLED">Cancelled</option>
-                </select>
-              </div>
+        {/* ── 6. SAVED ESTIMATES REGISTER ── */}
+        <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-4 space-y-3">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100 flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-4 bg-amber-500 rounded-full inline-block" />
+              <h2 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                Saved Estimates Register
+              </h2>
+            </div>
 
-              <div className="list-search">
-                <label htmlFor="estimate-search">Search</label>
+            {/* Status Filter Tabs */}
+            <div className="inline-flex items-center rounded-xl border border-slate-200 p-1 bg-slate-50 gap-1 flex-wrap">
+              {[
+                { id: 'ALL', label: 'All', count: statusCounts.all },
+                { id: 'OPEN', label: 'Open', count: statusCounts.open },
+                { id: 'CONVERTED', label: 'Converted', count: statusCounts.converted },
+                { id: 'CANCELLED', label: 'Cancelled', count: statusCounts.cancelled }
+              ].map((tab) => {
+                const isSelected = statusFilter === tab.id
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setStatusFilter(tab.id as 'ALL' | EstimateStatus)}
+                    className={`h-7 px-3 text-xs font-semibold rounded-lg transition-all cursor-pointer flex items-center gap-1.5 border ${
+                      isSelected
+                        ? 'bg-amber-500 text-white shadow-2xs border-amber-600 font-bold'
+                        : 'border-transparent text-slate-600 hover:text-amber-900 hover:bg-amber-50/60 font-medium'
+                    }`}
+                  >
+                    <span>{tab.label}</span>
+                    <span
+                      className={`text-[10px] px-1.5 py-0.5 leading-none rounded-full font-mono font-bold transition-colors ${
+                        isSelected ? 'bg-amber-600 text-white border border-amber-400/40' : 'bg-slate-200/80 text-slate-600'
+                      }`}
+                    >
+                      {tab.count}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* Search & Refresh */}
+            <div className="flex items-center gap-2">
+              <div className="relative w-56">
                 <input
-                  id="estimate-search"
                   value={searchText}
                   onChange={(event) => setSearchText(event.target.value)}
-                  placeholder="Search estimate no, account, mobile, date"
+                  placeholder="Search estimate, party, mobile..."
+                  className="w-full h-8 pl-7 pr-7 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 focus:bg-white focus:ring-1 focus:ring-amber-500 focus:border-amber-500 transition-colors shadow-2xs font-medium"
                 />
+                <FiSearch size={13} className="absolute left-2.5 top-2.5 text-slate-400" />
                 {searchText && (
                   <button
-                    className="search-clear-btn"
                     type="button"
                     onClick={() => setSearchText('')}
+                    className="absolute right-2 top-2 text-xs text-slate-400 hover:text-slate-600 cursor-pointer"
                   >
-                    &times;
+                    <FiX size={13} />
                   </button>
                 )}
               </div>
 
               <button
-                className="btn-new"
                 type="button"
                 onClick={() => void loadEstimates()}
                 disabled={loading}
+                className="h-8 px-3 text-xs font-semibold text-slate-700 hover:text-amber-900 bg-white hover:bg-amber-50 border border-slate-300 hover:border-amber-300 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs disabled:opacity-50 active:scale-95"
+                title="Refresh Register"
               >
-                Refresh
+                <FiRefreshCw size={13} className={loading ? 'animate-spin text-amber-600' : ''} />
+                <span>Refresh</span>
               </button>
-
-              <div className="record-summary">
-                Total: <strong>{estimates.length}</strong> | Open:{' '}
-                <strong>{statusCounts.open}</strong> | Converted:{' '}
-                <strong>{statusCounts.converted}</strong>
-              </div>
             </div>
+          </div>
 
-            <div className="table-panel approval-table-panel">
-              <table>
-                <thead>
+          {/* Register Table */}
+          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-2xs">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead className="bg-slate-50 text-slate-600 uppercase text-[11px] font-bold border-b border-slate-200">
+                <tr>
+                  <th className="py-2.5 px-3 text-center w-10">#</th>
+                  <th className="py-2.5 px-3">Est. No</th>
+                  <th className="py-2.5 px-3">Date</th>
+                  <th className="py-2.5 px-3">Account / Party</th>
+                  <th className="py-2.5 px-3">Mobile</th>
+                  <th className="py-2.5 px-2 text-center">Metal</th>
+                  <th className="py-2.5 px-3 text-right">Fine</th>
+                  <th className="py-2.5 px-3 text-right">Majuri (₹)</th>
+                  <th className="py-2.5 px-3 text-right">Taxable (₹)</th>
+                  <th className="py-2.5 px-2 text-center">Status</th>
+                  <th className="py-2.5 px-3 text-right">Action</th>
+                </tr>
+              </thead>
+
+              <tbody className="divide-y divide-slate-100 text-slate-800">
+                {loading ? (
                   <tr>
-                    <th>Sr</th>
-                    <th>Est. No</th>
-                    <th>Date</th>
-                    <th>Account</th>
-                    <th>Mobile</th>
-                    <th>Metal</th>
-                    <th>Fine</th>
-                    <th>Majuri</th>
-                    <th>Taxable</th>
-                    <th>Status</th>
-                    <th>Action</th>
+                    <td colSpan={11} className="py-12 text-center text-slate-400 font-semibold">
+                      <div className="flex items-center justify-center gap-2">
+                        <span className="inline-block w-4 h-4 rounded-full border-2 border-amber-600 border-t-transparent animate-spin" />
+                        <span>Loading estimates...</span>
+                      </div>
+                    </td>
                   </tr>
-                </thead>
+                ) : filteredEstimates.length === 0 ? (
+                  <tr>
+                    <td colSpan={11} className="py-12 text-center text-slate-400 italic">
+                      {searchText || statusFilter !== 'ALL'
+                        ? 'No matching estimates found for the active filter.'
+                        : 'No estimates recorded yet.'}
+                    </td>
+                  </tr>
+                ) : (
+                  filteredEstimates.map((estimate, index) => (
+                    <tr key={estimate.id} className="hover:bg-amber-50/40 transition-colors">
+                      <td className="py-2 px-3 text-center font-mono text-slate-400">{index + 1}</td>
+                      <td className="py-2 px-3 font-mono font-bold text-amber-900">{estimate.estimate_no}</td>
+                      <td className="py-2 px-3 text-slate-600 whitespace-nowrap font-medium">
+                        {formatDate(estimate.estimate_date)}
+                      </td>
+                      <td className="py-2 px-3 font-semibold text-slate-900">{estimate.account_name}</td>
+                      <td className="py-2 px-3 font-mono text-slate-500">{estimate.mobile_number || '-'}</td>
+                      <td className="py-2 px-2 text-center">
+                        <span
+                          className={`text-[10px] px-2 py-0.5 rounded font-semibold border ${
+                            estimate.metal_type === 'Silver'
+                              ? 'bg-slate-100 text-slate-700 border-slate-300'
+                              : 'bg-amber-50 text-amber-800 border-amber-200'
+                          }`}
+                        >
+                          {estimate.metal_type}
+                        </span>
+                      </td>
+                      <td className="py-2 px-3 text-right font-mono font-medium">
+                        {formatNumber(estimate.item_fine_total)}
+                      </td>
+                      <td className="py-2 px-3 text-right font-mono font-medium">
+                        ₹{formatAmount(estimate.item_majuri_total)}
+                      </td>
+                      <td className="py-2 px-3 text-right font-mono font-bold text-slate-900">
+                        ₹{formatAmount(estimate.taxable_amount)}
+                      </td>
+                      <td className="py-2 px-2 text-center">
+                        <span
+                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                            estimate.status === 'OPEN'
+                              ? 'bg-amber-50 text-amber-900 border-amber-300'
+                              : estimate.status === 'CONVERTED'
+                                ? 'bg-purple-50 text-purple-900 border-purple-300'
+                                : 'bg-slate-100 text-slate-600 border-slate-300'
+                          }`}
+                        >
+                          {getStatusLabel(estimate.status)}
+                        </span>
+                      </td>
+                      <td className="py-2 px-3 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => void handleOpenPreview(estimate)}
+                            disabled={opening}
+                            className="p-1.5 bg-white hover:bg-amber-50 text-slate-700 hover:text-amber-900 border border-slate-300 hover:border-amber-300 rounded-lg shadow-2xs transition-all cursor-pointer"
+                            title="View / Print Estimate"
+                          >
+                            <FiPrinter size={13} />
+                          </button>
 
-                <tbody>
-                  {loading ? (
-                    <tr>
-                      <td colSpan={11} className="empty-row">
-                        Loading estimates...
-                      </td>
-                    </tr>
-                  ) : filteredEstimates.length === 0 ? (
-                    <tr>
-                      <td colSpan={11} className="empty-row">
-                        {searchText || statusFilter !== 'ALL'
-                          ? 'No matching estimate found.'
-                          : 'No estimate saved yet.'}
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredEstimates.map((estimate, index) => (
-                      <tr key={estimate.id}>
-                        <td>{index + 1}</td>
-                        <td>{estimate.estimate_no}</td>
-                        <td>{formatDate(estimate.estimate_date)}</td>
-                        <td>{estimate.account_name}</td>
-                        <td>{estimate.mobile_number || '-'}</td>
-                        <td>{estimate.metal_type}</td>
-                        <td>{formatNumber(estimate.item_fine_total)}</td>
-                        <td>{formatAmount(estimate.item_majuri_total)}</td>
-                        <td>{formatAmount(estimate.taxable_amount)}</td>
-                        <td>
-                          <span className={`approval-badge ${estimate.status.toLowerCase()}`}>
-                            {getStatusLabel(estimate.status)}
-                          </span>
-                        </td>
-                        <td>
-                          <div className="sale-register-actions approval-actions">
+                          {estimate.status === 'OPEN' && (
                             <button
-                              className="table-edit"
                               type="button"
-                              onClick={() => void handleOpenPreview(estimate)}
-                              disabled={opening}
+                              onClick={() => void handleEditEstimate(estimate)}
+                              disabled={opening || saving}
+                              className="p-1.5 bg-white hover:bg-amber-50 text-slate-700 hover:text-amber-900 border border-slate-300 hover:border-amber-300 rounded-lg shadow-2xs transition-all cursor-pointer"
+                              title="Edit Estimate"
                             >
-                              View / Print
+                              <FiEdit3 size={13} />
                             </button>
+                          )}
 
-                            {estimate.status === 'OPEN' && (
-                              <button
-                                className="table-edit"
-                                type="button"
-                                onClick={() => void handleEditEstimate(estimate)}
-                                disabled={opening || saving}
-                              >
-                                Edit
-                              </button>
-                            )}
+                          {estimate.status === 'OPEN' && (
+                            <button
+                              type="button"
+                              onClick={() => setConvertTarget(estimate)}
+                              disabled={converting}
+                              className="px-2 py-1 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold rounded-lg text-xs transition-all flex items-center gap-1 shadow-xs cursor-pointer active:scale-95"
+                              title="Convert to Sale"
+                            >
+                              <FiCornerDownLeft size={12} />
+                              <span>Convert</span>
+                            </button>
+                          )}
 
-                            {estimate.status === 'OPEN' && (
-                              <button
-                                className="table-edit"
-                                type="button"
-                                onClick={() => setConvertTarget(estimate)}
-                                disabled={converting}
-                              >
-                                Convert to Sale
-                              </button>
-                            )}
-
-                            {estimate.status === 'OPEN' && (
-                              <button
-                                className="table-delete"
-                                type="button"
-                                onClick={() => setEstimateDeleteTarget(estimate)}
-                                disabled={deleting}
-                              >
-                                Delete
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="screen-help-text">
-              Estimate is a non-binding quotation - it does not affect stock or account balance
-              until converted to a real Sale. CGST / SGST vs IGST split is computed automatically
-              from the firm and customer state; taxable amount is entered manually per item since
-              this ERP does not keep a live metal rate master.
-            </div>
+                          {estimate.status === 'OPEN' && (
+                            <button
+                              type="button"
+                              onClick={() => setEstimateDeleteTarget(estimate)}
+                              disabled={deleting}
+                              className="p-1.5 text-rose-600 hover:text-rose-800 hover:bg-rose-50 border border-rose-200 rounded-lg shadow-2xs transition-all cursor-pointer"
+                              title="Delete Estimate"
+                            >
+                              <FiTrash2 size={13} />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>

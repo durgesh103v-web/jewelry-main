@@ -1,16 +1,24 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import dayjs from 'dayjs'
+import {
+  FiAward,
+  FiCalendar,
+  FiDollarSign,
+  FiDownload,
+  FiFilter,
+  FiInbox,
+  FiLayers,
+  FiPercent,
+  FiPrinter,
+  FiRefreshCw,
+  FiSearch,
+  FiX
+} from 'react-icons/fi'
 import AppAlert from '../../../components/ui/AppAlert'
 import { getFriendlyErrorMessage } from '../../../utils/getFriendlyErrorMessage'
 
 type AlertType = 'success' | 'error' | 'warning'
-
-const emptySummary: FineMarginSummary = {
-  totalNetWeight: 0,
-  totalFine: 0,
-  totalMajuri: 0,
-  totalWastageFineValue: 0,
-  recordCount: 0
-}
+type DatePreset = 'TODAY' | 'THIS_MONTH' | 'THIS_FY' | 'ALL_TIME'
 
 function formatWeight(value: number): string {
   return Number(value || 0).toLocaleString('en-IN', {
@@ -28,18 +36,16 @@ function formatAmount(value: number): string {
 
 function formatDate(value: string): string {
   if (!value) return ''
-
   const [year, month, day] = value.split('-')
   if (!year || !month || !day) return value
-
   return `${day}/${month}/${year}`
 }
 
 function FineMarginReportScreen({ onClose }: { onClose: () => void }): React.JSX.Element {
   const [fromDate, setFromDate] = useState('')
   const [toDate, setToDate] = useState('')
+  const [activePreset, setActivePreset] = useState<DatePreset>('ALL_TIME')
   const [rows, setRows] = useState<FineMarginRow[]>([])
-  const [, setSummary] = useState<FineMarginSummary>(emptySummary)
   const [searchText, setSearchText] = useState('')
   const [metalFilter, setMetalFilter] = useState('All')
   const [loading, setLoading] = useState(false)
@@ -61,6 +67,26 @@ function FineMarginReportScreen({ onClose }: { onClose: () => void }): React.JSX
     }, 3000)
   }, [])
 
+  const setPreset = (preset: DatePreset) => {
+    setActivePreset(preset)
+    const now = dayjs()
+    if (preset === 'TODAY') {
+      const d = now.format('YYYY-MM-DD')
+      setFromDate(d)
+      setToDate(d)
+    } else if (preset === 'THIS_MONTH') {
+      setFromDate(now.startOf('month').format('YYYY-MM-DD'))
+      setToDate(now.endOf('month').format('YYYY-MM-DD'))
+    } else if (preset === 'THIS_FY') {
+      const currentYear = now.month() >= 3 ? now.year() : now.year() - 1
+      setFromDate(`${currentYear}-04-01`)
+      setToDate(`${currentYear + 1}-03-31`)
+    } else {
+      setFromDate('')
+      setToDate('')
+    }
+  }
+
   const loadReport = useCallback(async (): Promise<void> => {
     if (fromDate && toDate && fromDate > toDate) {
       showAlert('warning', 'From date cannot be after to date.')
@@ -74,7 +100,6 @@ function FineMarginReportScreen({ onClose }: { onClose: () => void }): React.JSX
         toDate: toDate || undefined
       })
       setRows(result.rows || [])
-      setSummary(result.summary || emptySummary)
     } catch (error) {
       showAlert('error', getFriendlyErrorMessage(error))
     } finally {
@@ -83,19 +108,8 @@ function FineMarginReportScreen({ onClose }: { onClose: () => void }): React.JSX
   }, [fromDate, toDate, showAlert])
 
   useEffect(() => {
-    const loadTimer = window.setTimeout(() => {
-      void loadReport()
-    }, 0)
-
-    return () => {
-      window.clearTimeout(loadTimer)
-
-      if (alertTimerRef.current) {
-        window.clearTimeout(alertTimerRef.current)
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+    void loadReport()
+  }, [loadReport])
 
   const filteredRows = useMemo(() => {
     const keyword = searchText.trim().toLowerCase()
@@ -104,9 +118,10 @@ function FineMarginReportScreen({ onClose }: { onClose: () => void }): React.JSX
       const metalMatch = metalFilter === 'All' || row.metalType === metalFilter
       const keywordMatch =
         !keyword ||
-        row.billNo.toLowerCase().includes(keyword) ||
-        row.accountName.toLowerCase().includes(keyword) ||
-        row.itemName.toLowerCase().includes(keyword)
+        (row.billNo || '').toLowerCase().includes(keyword) ||
+        (row.accountName || '').toLowerCase().includes(keyword) ||
+        (row.itemName || '').toLowerCase().includes(keyword) ||
+        (row.billDate || '').toLowerCase().includes(keyword)
 
       return metalMatch && keywordMatch
     })
@@ -125,203 +140,384 @@ function FineMarginReportScreen({ onClose }: { onClose: () => void }): React.JSX
     )
   }, [filteredRows])
 
-  return (
-    <div className="fine-report-screen">
-      <div className="fine-report-window">
-        <div className="form-title-bar no-print">
-          <span>Fine Margin</span>
+  const handleExportCsv = () => {
+    if (filteredRows.length === 0) {
+      showAlert('warning', 'No margin records to export.')
+      return
+    }
+    const headers = [
+      'Sr',
+      'Date',
+      'Bill No',
+      'Account Name',
+      'Item Name',
+      'Metal',
+      'Net Weight (g)',
+      'Fine (g)',
+      'Majuri (INR)',
+      'Wastage Margin (g)'
+    ]
+    const escapeCsv = (val: any) => `"${String(val ?? '').replace(/"/g, '""')}"`
+    const csvRows = [
+      ...filteredRows.map((r, index) => [
+        index + 1,
+        escapeCsv(formatDate(r.billDate)),
+        escapeCsv(r.billNo),
+        escapeCsv(r.accountName),
+        escapeCsv(r.itemName),
+        escapeCsv(r.metalType),
+        formatWeight(r.netWeight),
+        formatWeight(r.fine),
+        formatAmount(r.majuri),
+        formatWeight(r.wastageFineValue)
+      ]),
+      [
+        'Total',
+        '',
+        '',
+        '',
+        '',
+        '',
+        formatWeight(totals.netWeight),
+        formatWeight(totals.fine),
+        formatAmount(totals.majuri),
+        formatWeight(totals.wastageFineValue)
+      ]
+    ]
 
-          <button className="module-close-btn" type="button" onClick={onClose}>
-            &times;
-          </button>
+    const csvContent = '\uFEFF' + [headers.join(','), ...csvRows.map((r) => r.join(','))].join('\r\n')
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `fine_margin_${new Date().toISOString().slice(0, 10)}.csv`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+    showAlert('success', 'Exported Fine Margin CSV successfully.')
+  }
+
+  const presets: { id: DatePreset; label: string }[] = [
+    { id: 'TODAY', label: 'Today' },
+    { id: 'THIS_MONTH', label: 'This Month' },
+    { id: 'THIS_FY', label: 'This FY' },
+    { id: 'ALL_TIME', label: 'All Time' }
+  ]
+
+  return (
+    <div className="flex flex-col h-full bg-slate-100 font-sans text-slate-800 select-none overflow-hidden">
+      {/* Header Bar */}
+      <header className="h-13 px-4 border-b border-slate-200/90 bg-white flex items-center justify-between shadow-2xs shrink-0 z-10 no-print">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-700 text-base shadow-2xs font-bold">
+            <FiPercent className="w-4 h-4" />
+          </div>
+          <div>
+            <h1 className="font-bold text-sm text-slate-900 tracking-tight flex items-center gap-2">
+              <span>Fine Margin Analysis</span>
+              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200 font-mono">
+                {filteredRows.length} Items
+              </span>
+            </h1>
+            <p className="text-[11px] text-slate-500 font-medium leading-none mt-0.5">
+              Item-level wastage margin and fine profit calculation across sale transactions
+            </p>
+          </div>
         </div>
 
-        <div className="fine-report-body">
-          <div className="no-print">
-            <AppAlert
-              type={alertType}
-              message={alertMessage}
-              onClose={() => setAlertMessage('')}
-            />
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => void loadReport()}
+            disabled={loading}
+            className="h-8 px-3 bg-white hover:bg-amber-50 text-slate-700 hover:text-amber-900 border border-slate-300 hover:border-amber-300 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer disabled:opacity-50"
+          >
+            <FiRefreshCw className={`w-3.5 h-3.5 text-amber-600 ${loading ? 'animate-spin' : ''}`} />
+            <span>{loading ? 'Loading...' : 'Refresh'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleExportCsv}
+            disabled={loading || filteredRows.length === 0}
+            className="h-8 px-3.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs border border-amber-600 cursor-pointer disabled:opacity-50"
+          >
+            <FiDownload className="w-3.5 h-3.5" />
+            <span>Export CSV</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => window.print()}
+            disabled={filteredRows.length === 0}
+            className="h-8 px-3 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer disabled:opacity-50"
+          >
+            <FiPrinter className="w-3.5 h-3.5 text-slate-600" />
+            <span>Print</span>
+          </button>
+
+          <div className="h-4 w-px bg-slate-200 mx-1" />
+
+          <button
+            type="button"
+            onClick={onClose}
+            title="Close"
+            className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer text-sm font-bold"
+          >
+            <FiX className="w-4 h-4" />
+          </button>
+        </div>
+      </header>
+
+      {/* Main Workspace */}
+      <div className="flex-1 flex flex-col p-3 gap-2.5 overflow-hidden">
+        {alertMessage && (
+          <div className="shrink-0 no-print">
+            <AppAlert type={alertType} message={alertMessage} onClose={() => setAlertMessage('')} />
           </div>
+        )}
 
-          <div className="fine-report-toolbar no-print">
-            <div className="form-field">
-              <label htmlFor="fine-margin-from-date">From Date</label>
-              <input
-                id="fine-margin-from-date"
-                type="date"
-                value={fromDate}
-                onChange={(event) => setFromDate(event.target.value)}
-              />
-            </div>
-
-            <div className="form-field">
-              <label htmlFor="fine-margin-to-date">To Date</label>
-              <input
-                id="fine-margin-to-date"
-                type="date"
-                value={toDate}
-                onChange={(event) => setToDate(event.target.value)}
-              />
-            </div>
-
-            <div className="form-field">
-              <label htmlFor="fine-margin-metal-filter">Metal</label>
+        {/* Filter Controls Toolbar */}
+        <div className="bg-white px-3 py-2 rounded-xl border border-slate-200/90 shadow-2xs flex flex-wrap items-center justify-between gap-2.5 text-xs shrink-0 no-print">
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Metal Filter */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-slate-700 font-bold flex items-center gap-1">
+                <FiFilter className="w-3.5 h-3.5 text-amber-600" /> Metal:
+              </span>
               <select
-                id="fine-margin-metal-filter"
+                className="h-8 px-2.5 text-xs bg-slate-50 border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-bold shadow-2xs"
                 value={metalFilter}
-                onChange={(event) => setMetalFilter(event.target.value)}
+                onChange={(e) => setMetalFilter(e.target.value)}
               >
-                <option>All</option>
-                <option>Gold</option>
-                <option>Silver</option>
+                <option value="All">All Metals</option>
+                <option value="Gold">Gold</option>
+                <option value="Silver">Silver</option>
               </select>
             </div>
 
-            <div className="list-search">
-              <label htmlFor="fine-margin-search">Search</label>
+            {/* Date Range */}
+            <div className="flex items-center gap-2">
+              <span className="text-slate-600 font-semibold flex items-center gap-1">
+                <FiCalendar className="w-3.5 h-3.5 text-amber-600" /> Period:
+              </span>
               <input
-                id="fine-margin-search"
-                value={searchText}
-                onChange={(event) => setSearchText(event.target.value)}
-                placeholder="Search bill no, customer, item"
+                type="date"
+                value={fromDate}
+                onChange={(e) => {
+                  setActivePreset('ALL_TIME')
+                  setFromDate(e.target.value)
+                }}
+                className="h-8 px-2 text-xs bg-slate-50 border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-medium"
               />
+              <span className="text-slate-400 font-bold">to</span>
+              <input
+                type="date"
+                value={toDate}
+                onChange={(e) => {
+                  setActivePreset('ALL_TIME')
+                  setToDate(e.target.value)
+                }}
+                className="h-8 px-2 text-xs bg-slate-50 border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-medium"
+              />
+            </div>
 
-              {searchText && (
+            {/* Date Presets */}
+            <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200/80">
+              {presets.map((p) => (
                 <button
-                  className="search-clear-btn"
+                  key={p.id}
                   type="button"
-                  onClick={() => setSearchText('')}
+                  onClick={() => setPreset(p.id)}
+                  className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer border ${
+                    activePreset === p.id
+                      ? 'bg-amber-500 text-white font-bold border-amber-600 shadow-2xs'
+                      : 'text-slate-700 hover:text-amber-900 hover:bg-amber-50/70 border-transparent font-medium'
+                  }`}
                 >
-                  &times;
+                  {p.label}
                 </button>
-              )}
-            </div>
-
-            <button
-              className="btn-new"
-              type="button"
-              onClick={() => void loadReport()}
-              disabled={loading}
-            >
-              {loading ? 'Loading...' : 'Show'}
-            </button>
-
-            <button className="btn-save" type="button" onClick={() => window.print()}>
-              Print
-            </button>
-
-            <div className="record-summary">
-              Records: <strong>{rows.length}</strong> | Showing:{' '}
-              <strong>{filteredRows.length}</strong>
+              ))}
             </div>
           </div>
 
-          <div className="fine-report-print-title">
-            <h2>Fine Margin</h2>
-            <p>
-              From {fromDate ? formatDate(fromDate) : 'Beginning'} To{' '}
-              {toDate ? formatDate(toDate) : 'Today'}
-              {searchText ? ` | Search Filter: ${searchText}` : ''}
-            </p>
+          <div className="relative w-64">
+            <FiSearch className="absolute left-2.5 top-2.5 w-3.5 h-3.5 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search bill, party, item..."
+              className="w-full h-8 pl-8 pr-7 text-xs bg-slate-50 border border-slate-300 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 shadow-2xs font-medium"
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+            />
+            {searchText && (
+              <button
+                type="button"
+                className="absolute right-2 top-2 text-slate-400 hover:text-slate-600 text-xs font-bold"
+                onClick={() => setSearchText('')}
+              >
+                &times;
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* KPI Summary Cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 shrink-0">
+          <div className="p-3.5 rounded-xl border border-slate-200/90 bg-white shadow-2xs flex items-center justify-between">
+            <div>
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
+                Total Net Wt
+              </span>
+              <strong className="text-base font-extrabold font-mono text-slate-900 block mt-0.5">
+                {formatWeight(totals.netWeight)}g
+              </strong>
+            </div>
+            <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center border border-slate-200">
+              <FiLayers className="w-4 h-4" />
+            </div>
           </div>
 
-          <div className="fine-report-summary fine-margin-summary">
+          <div className="p-3.5 rounded-xl border border-amber-200/80 bg-amber-50/30 shadow-2xs flex items-center justify-between">
             <div>
-              <span>Net Weight</span>
-              <strong>{formatWeight(totals.netWeight)}</strong>
+              <span className="text-[11px] font-bold text-amber-800 uppercase tracking-wider block">
+                Total Fine Sold
+              </span>
+              <strong className="text-base font-extrabold font-mono text-amber-900 block mt-0.5">
+                {formatWeight(totals.fine)}g
+              </strong>
             </div>
-            <div>
-              <span>Total Fine</span>
-              <strong>{formatWeight(totals.fine)}</strong>
-            </div>
-            <div>
-              <span>Total Majuri</span>
-              <strong>{formatAmount(totals.majuri)}</strong>
-            </div>
-            <div className="closing">
-              <span>Wastage Fine (Margin)</span>
-              <strong>{formatWeight(totals.wastageFineValue)}</strong>
+            <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center border border-amber-200">
+              <FiAward className="w-4 h-4" />
             </div>
           </div>
 
-          <div className="table-panel fine-margin-table-panel">
-            <table>
-              <thead>
+          <div className="p-3.5 rounded-xl border border-blue-200/80 bg-blue-50/30 shadow-2xs flex items-center justify-between">
+            <div>
+              <span className="text-[11px] font-bold text-blue-800 uppercase tracking-wider block">
+                Total Majuri
+              </span>
+              <strong className="text-base font-extrabold font-mono text-blue-900 block mt-0.5">
+                ₹{formatAmount(totals.majuri)}
+              </strong>
+            </div>
+            <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center border border-blue-200">
+              <FiDollarSign className="w-4 h-4" />
+            </div>
+          </div>
+
+          <div className="p-3.5 rounded-xl border border-emerald-200/80 bg-emerald-50/30 shadow-2xs flex items-center justify-between">
+            <div>
+              <span className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider block">
+                Wastage Margin Fine
+              </span>
+              <strong className="text-base font-extrabold font-mono text-emerald-800 block mt-0.5">
+                {formatWeight(totals.wastageFineValue)}g
+              </strong>
+            </div>
+            <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center border border-emerald-200">
+              <FiPercent className="w-4 h-4" />
+            </div>
+          </div>
+        </div>
+
+        {/* Data Table */}
+        <div className="flex-1 overflow-auto border border-slate-200/90 rounded-xl bg-white shadow-2xs flex flex-col">
+          <table className="w-full text-xs text-left border-collapse">
+            <thead className="bg-slate-100 text-slate-700 uppercase text-[11px] font-bold tracking-wider sticky top-0 z-10 border-b border-slate-200">
+              <tr>
+                <th className="py-2.5 px-3 w-10 text-center">#</th>
+                <th className="py-2.5 px-3 w-22">Date</th>
+                <th className="py-2.5 px-3">Bill No</th>
+                <th className="py-2.5 px-3">Customer Account</th>
+                <th className="py-2.5 px-3">Item Name</th>
+                <th className="py-2.5 px-3">Metal</th>
+                <th className="py-2.5 px-3 text-right">Net Wt (g)</th>
+                <th className="py-2.5 px-3 text-right">Fine (g)</th>
+                <th className="py-2.5 px-3 text-right">Majuri (₹)</th>
+                <th className="py-2.5 px-3 text-right text-emerald-800 font-bold">Wastage Margin (g)</th>
+              </tr>
+            </thead>
+
+            <tbody className="divide-y divide-slate-100 font-medium">
+              {loading ? (
                 <tr>
-                  <th>Sr</th>
-                  <th>Date</th>
-                  <th>Bill No</th>
-                  <th>Customer</th>
-                  <th>Item</th>
-                  <th>Metal</th>
-                  <th>Net Wt</th>
-                  <th>Tunch</th>
-                  <th>Wastage</th>
-                  <th>Hishob</th>
-                  <th>Fine</th>
-                  <th>Majuri</th>
-                  <th>Wastage Fine (Margin)</th>
+                  <td colSpan={10} className="py-12 text-center text-slate-400 font-medium">
+                    <FiRefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-amber-500" />
+                    Loading fine margin analysis...
+                  </td>
                 </tr>
-              </thead>
-
-              <tbody>
-                {loading ? (
-                  <tr>
-                    <td colSpan={13} className="empty-row">
-                      Loading fine margin report...
+              ) : filteredRows.length === 0 ? (
+                <tr>
+                  <td colSpan={10} className="py-12 text-center">
+                    <div className="flex flex-col items-center justify-center">
+                      <div className="w-12 h-12 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 mb-2">
+                        <FiInbox className="w-6 h-6" />
+                      </div>
+                      <span className="font-bold text-sm text-slate-800 mb-0.5">No Margin Records Found</span>
+                      <p className="text-xs text-slate-500 max-w-sm">
+                        {searchText || metalFilter !== 'All'
+                          ? 'No items matching your search criteria.'
+                          : 'No sales records found in this period.'}
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                filteredRows.map((r, index) => (
+                  <tr key={r.id || index} className="hover:bg-amber-50/40 text-slate-700 font-medium transition-colors">
+                    <td className="py-2 px-3 text-center text-slate-400 font-mono text-[11px]">{index + 1}</td>
+                    <td className="py-2 px-3 font-mono text-[11px] text-slate-800">{formatDate(r.billDate)}</td>
+                    <td className="py-2 px-3 font-mono font-bold text-slate-900">{r.billNo}</td>
+                    <td className="py-2 px-3 font-bold text-slate-900">{r.accountName}</td>
+                    <td className="py-2 px-3 font-semibold text-slate-800">{r.itemName}</td>
+                    <td className="py-2 px-3 text-slate-600">{r.metalType}</td>
+                    <td className="py-2 px-3 text-right font-mono font-bold text-slate-900">
+                      {formatWeight(r.netWeight)}
+                    </td>
+                    <td className="py-2 px-3 text-right font-mono font-bold text-amber-800">
+                      {formatWeight(r.fine)}
+                    </td>
+                    <td className="py-2 px-3 text-right font-mono font-bold text-blue-700">
+                      ₹{formatAmount(r.majuri)}
+                    </td>
+                    <td className="py-2 px-3 text-right font-mono font-bold text-emerald-700">
+                      +{formatWeight(r.wastageFineValue)}
                     </td>
                   </tr>
-                ) : filteredRows.length === 0 ? (
-                  <tr>
-                    <td colSpan={13} className="empty-row">
-                      {searchText
-                        ? 'No matching sale item found.'
-                        : 'No sale item found for selected range.'}
-                    </td>
-                  </tr>
-                ) : (
-                  filteredRows.map((row, index) => (
-                    <tr key={row.id}>
-                      <td>{index + 1}</td>
-                      <td>{formatDate(row.billDate)}</td>
-                      <td>{row.billNo}</td>
-                      <td>{row.accountName}</td>
-                      <td>{row.itemName}</td>
-                      <td>{row.metalType}</td>
-                      <td>{formatWeight(row.netWeight)}</td>
-                      <td>{formatWeight(row.tunch)}</td>
-                      <td>{formatWeight(row.wastage)}</td>
-                      <td>{formatWeight(row.hishob)}</td>
-                      <td>{formatWeight(row.fine)}</td>
-                      <td>{formatAmount(row.majuri)}</td>
-                      <td>{formatWeight(row.wastageFineValue)}</td>
-                    </tr>
-                  ))
-                )}
+                ))
+              )}
+            </tbody>
 
-                {!loading && filteredRows.length > 0 && (
-                  <tr className="fine-report-total-row">
-                    <td colSpan={6}>Total</td>
-                    <td>{formatWeight(totals.netWeight)}</td>
-                    <td>-</td>
-                    <td>-</td>
-                    <td>-</td>
-                    <td>{formatWeight(totals.fine)}</td>
-                    <td>{formatAmount(totals.majuri)}</td>
-                    <td>{formatWeight(totals.wastageFineValue)}</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+            {filteredRows.length > 0 && (
+              <tfoot className="bg-slate-100 font-bold border-t-2 border-slate-300 text-slate-900 sticky bottom-0 z-10 shadow-inner">
+                <tr>
+                  <td colSpan={6} className="py-2.5 px-3 text-right text-xs uppercase tracking-wider">
+                    Total:
+                  </td>
+                  <td className="py-2.5 px-3 text-right font-mono font-black text-slate-900">
+                    {formatWeight(totals.netWeight)}
+                  </td>
+                  <td className="py-2.5 px-3 text-right font-mono font-black text-amber-900">
+                    {formatWeight(totals.fine)}
+                  </td>
+                  <td className="py-2.5 px-3 text-right font-mono font-black text-blue-900">
+                    ₹{formatAmount(totals.majuri)}
+                  </td>
+                  <td className="py-2.5 px-3 text-right font-mono font-black text-emerald-800">
+                    +{formatWeight(totals.wastageFineValue)}
+                  </td>
+                </tr>
+              </tfoot>
+            )}
+          </table>
+        </div>
 
-          <div className="screen-help-text no-print">
-            Fine Margin surfaces the wastage-driven margin on every sale item line. Hishob = Tunch
-            + Wastage, Fine = Net Weight x Hishob %. Wastage Fine (Margin) = Net Weight x Wastage %
-            and represents the wholesaler&apos;s markup over raw metal purity.
-          </div>
+        {/* Footer info note */}
+        <div className="px-4 py-2 bg-white rounded-lg border border-slate-200/90 text-[11px] text-slate-500 flex items-center justify-between shrink-0 no-print shadow-2xs">
+          <span>* Wastage Margin is calculated from the difference between billed hishob and pure fine content.</span>
+          <span className="font-semibold text-slate-600">Jewelry ERP System</span>
         </div>
       </div>
     </div>

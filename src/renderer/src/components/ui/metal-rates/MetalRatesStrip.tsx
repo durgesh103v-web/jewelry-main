@@ -32,14 +32,25 @@ export const MetalRatesStrip: React.FC<MetalRatesStripProps> = ({
       if (window.api?.goldRates?.list) {
         const list = await window.api.goldRates.list()
         if (Array.isArray(list) && list.length > 0) {
-          const mapped: MetalRateItem[] = list.map((r: any) => ({
-            metal: r.metalType || 'Gold',
-            purity: r.purityName || (r.metalType === 'Silver' ? '999' : '22K'),
-            rate: Number(r.rate || r.ratePerGram || 0),
-            change: Number(r.change || 0),
-            changePercent: r.changePercent || ''
-          }))
-          setRates(mapped)
+          // Deduplicate rates by metal and normalized purity
+          const seen = new Set<string>()
+          const uniqueRates: MetalRateItem[] = []
+          for (const r of list) {
+            const metal = r.metalType || 'Gold'
+            const rawPurity = r.purityName || (metal === 'Silver' ? '999' : '22K')
+            const normKey = `${metal.toLowerCase()}_${rawPurity.toLowerCase().replace(/karat/i, 'k').replace(/\s+/g, '')}`
+            if (!seen.has(normKey)) {
+              seen.add(normKey)
+              uniqueRates.push({
+                metal,
+                purity: rawPurity,
+                rate: Number(r.rate || r.ratePerGram || 0),
+                change: Number(r.change || 0),
+                changePercent: r.changePercent || ''
+              })
+            }
+          }
+          setRates(uniqueRates)
           setLastUpdated(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))
         }
       }
@@ -58,33 +69,31 @@ export const MetalRatesStrip: React.FC<MetalRatesStripProps> = ({
 
   return (
     <div
-      className={`metal-rates-strip flex items-center justify-between gap-3 bg-amber-50/70 border border-amber-200/80 rounded-xl px-4 py-2 ${className}`.trim()}
-      style={{
-        background: 'linear-gradient(90deg, #fffbeb 0%, #fef3c7 50%, #fffbeb 100%)',
-        border: '1px solid #fde68a'
-      }}
+      className={`metal-rates-strip flex items-center justify-between gap-3 bg-white border border-slate-200/90 rounded-xl px-4 py-2 shadow-2xs ${className}`.trim()}
     >
-      <div className="flex items-center gap-2 text-amber-800 font-bold text-xs shrink-0">
-        <svg className="w-4 h-4 text-amber-600 animate-pulse" fill="currentColor" viewBox="0 0 20 20">
-          <circle cx="10" cy="10" r="8" fill="#f59e0b" fillOpacity="0.25" />
-          <circle cx="10" cy="10" r="4" fill="#d97706" />
-        </svg>
-        <span>LIVE SHOWROOM RATES</span>
-        <span className="text-[10px] font-normal text-amber-700 bg-amber-200/60 px-1.5 py-0.5 rounded">
+      <div className="flex items-center gap-2 text-slate-700 font-bold text-xs shrink-0">
+        <span className="relative flex h-2 w-2">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+        </span>
+        <span className="tracking-wide text-slate-800 uppercase font-bold text-[11px]">
+          Live Showroom Rates
+        </span>
+        <span className="text-[10px] font-medium text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
           {lastUpdated}
         </span>
       </div>
 
-      <div className="flex items-center gap-3 overflow-x-auto py-0.5">
+      <div className="flex items-center gap-2 overflow-x-auto py-0.5">
         {rates.map((item, idx) => {
           const isUp = (item.change ?? 0) >= 0
           return (
             <div
               key={`${item.metal}-${item.purity}-${idx}`}
-              className="flex items-center gap-2 bg-white/90 border border-amber-200/90 rounded-lg px-2.5 py-1 text-xs shadow-xs"
+              className="flex items-center gap-1.5 bg-slate-50 border border-slate-200/80 rounded-lg px-2.5 py-1 text-xs shadow-2xs whitespace-nowrap font-sans"
             >
-              <span className="font-semibold text-slate-700">{item.metal} {item.purity}:</span>
-              <span className="font-mono font-bold text-slate-900">
+              <span className="font-medium text-slate-600">{item.metal} {item.purity}:</span>
+              <span className="tabular-nums font-bold text-slate-900">
                 ₹{item.rate.toLocaleString('en-IN')}/g
               </span>
               {item.changePercent && (
@@ -105,7 +114,7 @@ export const MetalRatesStrip: React.FC<MetalRatesStripProps> = ({
         <button
           type="button"
           onClick={onOpenSettings}
-          className="text-xs font-semibold text-amber-800 bg-amber-100 hover:bg-amber-200 border border-amber-300 rounded-full px-3 py-1 transition-colors shrink-0"
+          className="text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-lg px-3 py-1 transition-colors shrink-0 cursor-pointer"
         >
           Update Rates
         </button>

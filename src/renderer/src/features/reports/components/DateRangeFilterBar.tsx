@@ -1,5 +1,8 @@
-import React from 'react'
+import React, { useState } from 'react'
 import dayjs from 'dayjs'
+import { FiSearch, FiDownload, FiPrinter, FiRefreshCw, FiCalendar } from 'react-icons/fi'
+
+export type DatePreset = 'TODAY' | 'YESTERDAY' | 'THIS_WEEK' | 'THIS_MONTH' | 'LAST_MONTH' | 'THIS_FY' | 'CUSTOM'
 
 interface DateRangeFilterBarProps {
   startDate: string
@@ -9,6 +12,7 @@ interface DateRangeFilterBarProps {
   onSearchChange: (search: string) => void
   onExportCsv?: () => void
   onPrint?: () => void
+  onRefresh?: () => void
   isLoading?: boolean
 }
 
@@ -20,9 +24,13 @@ export const DateRangeFilterBar: React.FC<DateRangeFilterBarProps> = ({
   onSearchChange,
   onExportCsv,
   onPrint,
+  onRefresh,
   isLoading = false
 }) => {
-  const setPreset = (preset: 'TODAY' | 'YESTERDAY' | 'THIS_WEEK' | 'THIS_MONTH' | 'LAST_MONTH' | 'THIS_FY') => {
+  const [activePreset, setActivePreset] = useState<DatePreset | null>('THIS_MONTH')
+
+  const setPreset = (preset: DatePreset) => {
+    setActivePreset(preset)
     const today = dayjs()
     if (preset === 'TODAY') {
       const d = today.format('YYYY-MM-DD')
@@ -38,7 +46,6 @@ export const DateRangeFilterBar: React.FC<DateRangeFilterBarProps> = ({
       const lastMonth = today.subtract(1, 'month')
       onDateChange(lastMonth.startOf('month').format('YYYY-MM-DD'), lastMonth.endOf('month').format('YYYY-MM-DD'))
     } else if (preset === 'THIS_FY') {
-      // Indian Financial Year: April 1 to March 31
       const currentYear = today.month() >= 3 ? today.year() : today.year() - 1
       const fyStart = `${currentYear}-04-01`
       const fyEnd = `${currentYear + 1}-03-31`
@@ -46,101 +53,122 @@ export const DateRangeFilterBar: React.FC<DateRangeFilterBarProps> = ({
     }
   }
 
+  const handleCustomDateChange = (start: string, end: string) => {
+    setActivePreset('CUSTOM')
+    onDateChange(start, end)
+  }
+
+  const presets: { id: DatePreset; label: string }[] = [
+    { id: 'TODAY', label: 'Today' },
+    { id: 'YESTERDAY', label: 'Yesterday' },
+    { id: 'THIS_WEEK', label: 'This Week' },
+    { id: 'THIS_MONTH', label: 'This Month' },
+    { id: 'THIS_FY', label: 'This FY' }
+  ]
+
   return (
-    <div className="bg-card p-3 rounded-xl border border-border shadow-sm flex flex-wrap items-center justify-between gap-3 text-xs">
+    <div className="bg-white px-3 py-2 rounded-xl border border-slate-200/90 shadow-2xs flex flex-wrap items-center justify-between gap-2.5 text-xs shrink-0">
       {/* Date Presets */}
-      <div className="flex items-center gap-1.5 bg-muted/50 p-1 rounded-lg border border-border/50">
-        <button
-          type="button"
-          onClick={() => setPreset('TODAY')}
-          className="px-2.5 py-1 rounded hover:bg-background transition-colors font-medium text-foreground"
-        >
-          Today
-        </button>
-        <button
-          type="button"
-          onClick={() => setPreset('YESTERDAY')}
-          className="px-2.5 py-1 rounded hover:bg-background transition-colors font-medium text-foreground"
-        >
-          Yesterday
-        </button>
-        <button
-          type="button"
-          onClick={() => setPreset('THIS_WEEK')}
-          className="px-2.5 py-1 rounded hover:bg-background transition-colors font-medium text-foreground"
-        >
-          This Week
-        </button>
-        <button
-          type="button"
-          onClick={() => setPreset('THIS_MONTH')}
-          className="px-2.5 py-1 rounded hover:bg-background transition-colors font-medium text-foreground"
-        >
-          This Month
-        </button>
-        <button
-          type="button"
-          onClick={() => setPreset('THIS_FY')}
-          className="px-2.5 py-1 rounded hover:bg-background transition-colors font-medium text-foreground"
-        >
-          This FY
-        </button>
+      <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200/80">
+        {presets.map((p) => {
+          const isSelected = activePreset === p.id
+          return (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => setPreset(p.id)}
+              className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer border ${
+                isSelected
+                  ? 'bg-amber-500 text-white font-bold border-amber-600 shadow-2xs'
+                  : 'text-slate-700 hover:text-amber-900 hover:bg-amber-50/70 border-transparent font-medium'
+              }`}
+            >
+              {p.label}
+            </button>
+          )
+        })}
       </div>
 
       {/* Date Pickers */}
       <div className="flex items-center gap-2">
-        <span className="text-muted-foreground font-medium">From:</span>
+        <span className="text-slate-600 font-semibold flex items-center gap-1">
+          <FiCalendar className="w-3.5 h-3.5 text-amber-600" />
+          From:
+        </span>
         <input
           type="date"
           value={startDate}
-          onChange={(e) => onDateChange(e.target.value, endDate)}
-          className="h-8 px-2.5 text-xs bg-background border border-input rounded-lg focus:ring-1 focus:ring-primary font-mono"
+          onChange={(e) => handleCustomDateChange(e.target.value, endDate)}
+          className="h-8 px-2.5 text-xs bg-white border border-slate-200 rounded-lg text-slate-800 focus:ring-1 focus:ring-amber-500 font-semibold shadow-2xs"
         />
-        <span className="text-muted-foreground font-medium">To:</span>
+        <span className="text-slate-600 font-semibold">To:</span>
         <input
           type="date"
           value={endDate}
-          onChange={(e) => onDateChange(startDate, e.target.value)}
-          className="h-8 px-2.5 text-xs bg-background border border-input rounded-lg focus:ring-1 focus:ring-primary font-mono"
+          onChange={(e) => handleCustomDateChange(startDate, e.target.value)}
+          className="h-8 px-2.5 text-xs bg-white border border-slate-200 rounded-lg text-slate-800 focus:ring-1 focus:ring-amber-500 font-semibold shadow-2xs"
         />
       </div>
 
       {/* Search Input */}
-      <div className="relative min-w-[200px] flex-1 max-w-xs">
+      <div className="relative min-w-[220px] flex-1 max-w-sm">
+        <FiSearch className="absolute left-2.5 top-2.5 w-3.5 h-3.5 text-slate-400" />
         <input
           type="text"
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
           placeholder="Filter by party, bill no..."
-          className="w-full h-8 pl-8 pr-3 text-xs bg-background border border-input rounded-lg focus:ring-1 focus:ring-primary"
+          className="w-full h-8 pl-8 pr-3 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 focus:bg-white focus:ring-1 focus:ring-amber-500 focus:border-amber-500 transition-colors shadow-2xs font-medium"
         />
-        <div className="absolute left-2.5 top-2 text-muted-foreground">🔍</div>
       </div>
 
       {/* Action Buttons */}
       <div className="flex items-center gap-2">
+        {onRefresh && (
+          <button
+            type="button"
+            onClick={onRefresh}
+            title="Refresh Data"
+            disabled={isLoading}
+            className="h-8 px-3 bg-white hover:bg-amber-50 text-slate-700 hover:text-amber-900 border border-slate-300 hover:border-amber-300 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer disabled:opacity-50 active:scale-95"
+          >
+            <FiRefreshCw className={`w-3.5 h-3.5 text-amber-600 ${isLoading ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">{isLoading ? 'Fetching...' : 'Refresh'}</span>
+          </button>
+        )}
+
         {onExportCsv && (
           <button
             type="button"
             onClick={onExportCsv}
-            className="h-8 px-3 bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors border border-border"
+            disabled={isLoading}
+            className="h-8 px-3.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 active:from-amber-700 active:to-amber-800 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs active:scale-95 border border-amber-600 cursor-pointer disabled:opacity-50"
           >
-            <span>📥</span>
+            <FiDownload className="w-3.5 h-3.5" />
             <span>Export CSV</span>
           </button>
         )}
+
         {onPrint && (
           <button
             type="button"
             onClick={onPrint}
-            className="h-8 px-3 bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors border border-border"
+            disabled={isLoading}
+            className="h-8 px-3 bg-white hover:bg-amber-50 text-slate-700 hover:text-amber-900 border border-slate-300 hover:border-amber-300 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer disabled:opacity-50 active:scale-95"
           >
-            <span>🖨️</span>
+            <FiPrinter className="w-3.5 h-3.5 text-slate-600" />
             <span>Print</span>
           </button>
         )}
-        {isLoading && <span className="text-xs text-muted-foreground animate-pulse font-mono">Loading...</span>}
+
+        {isLoading && (
+          <span className="text-xs text-amber-600 animate-pulse font-medium flex items-center gap-1">
+            <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping" />
+            Loading...
+          </span>
+        )}
       </div>
     </div>
   )
 }
+
