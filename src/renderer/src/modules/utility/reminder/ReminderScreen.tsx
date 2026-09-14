@@ -6,7 +6,6 @@ import {
   FiDollarSign,
   FiDownload,
   FiFilter,
-  FiInbox,
   FiPhone,
   FiPrinter,
   FiRefreshCw,
@@ -14,6 +13,7 @@ import {
   FiTag,
   FiX
 } from 'react-icons/fi'
+import { DataTable, type Column } from '@components/ui'
 import AppAlert from '../../../components/ui/AppAlert'
 import { getFriendlyErrorMessage } from '../../../utils/getFriendlyErrorMessage'
 
@@ -186,6 +186,111 @@ function ReminderScreen({ onClose }: { onClose: () => void }): React.JSX.Element
     URL.revokeObjectURL(url)
     showAlert('success', 'Exported Reminders list successfully.')
   }
+
+  const columns: Column<ReminderRecord>[] = useMemo(
+    () => [
+      {
+        key: 'sr',
+        header: 'Sr No',
+        align: 'center',
+        width: '40px',
+        render: (_, index) => <span className="text-slate-400 font-mono text-[11px]">{index + 1}</span>
+      },
+      {
+        key: 'type',
+        header: 'Type',
+        width: '85px',
+        render: (r) => (
+          <span
+            className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border whitespace-nowrap ${
+              r.type === 'Sale'
+                ? 'bg-amber-50 text-amber-800 border-amber-200'
+                : 'bg-indigo-50 text-indigo-800 border-indigo-200'
+            }`}
+          >
+            {r.type}
+          </span>
+        )
+      },
+      {
+        key: 'billNo',
+        header: 'Bill No',
+        render: (r) => <span className="font-mono font-bold text-slate-900">{r.billNo}</span>
+      },
+      {
+        key: 'billDate',
+        header: 'Bill Date',
+        render: (r) => <span className="font-mono text-[11px] text-slate-600">{formatDate(r.billDate)}</span>
+      },
+      {
+        key: 'accountName',
+        header: 'Account Name',
+        render: (r) => <span className="font-bold text-slate-900">{r.accountName}</span>
+      },
+      {
+        key: 'mobileNumber',
+        header: 'Phone',
+        render: (r) =>
+          r.mobileNumber ? (
+            <span className="inline-flex items-center gap-1 font-mono text-[11px] text-slate-600">
+              <FiPhone className="w-3 h-3 text-slate-400" />
+              {r.mobileNumber}
+            </span>
+          ) : (
+            <span className="text-slate-400">-</span>
+          )
+      },
+      {
+        key: 'reminderDate',
+        header: 'Reminder Date',
+        render: (r) => <span className="font-mono font-bold text-slate-900">{formatDate(r.reminderDate)}</span>
+      },
+      {
+        key: 'status',
+        header: 'Urgency Status',
+        align: 'center',
+        render: (r) => (
+          <span
+            className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border whitespace-nowrap ${
+              r.isOverdue
+                ? 'bg-rose-50 text-rose-700 border-rose-200 font-extrabold animate-pulse'
+                : r.daysUntil === 0
+                ? 'bg-amber-50 text-amber-800 border-amber-300 font-bold'
+                : 'bg-slate-100 text-slate-700 border-slate-200'
+            }`}
+          >
+            {daysLabel(r)}
+          </span>
+        )
+      },
+      {
+        key: 'metalType',
+        header: 'Metal',
+        render: (r) => <span className="text-slate-600">{r.metalType}</span>
+      },
+      {
+        key: 'fineAmount',
+        header: 'Fine Due (g)',
+        align: 'right',
+        render: (r) => (
+          <span className="font-mono font-bold text-amber-900">
+            {r.fineAmount ? `${formatNumber(r.fineAmount)}g` : '-'}
+          </span>
+        )
+      },
+      {
+        key: 'majuriAmount',
+        header: 'Majuri Due (₹)',
+        align: 'right',
+        render: (r) => (
+          <span className="font-mono font-bold text-blue-900">
+            {r.majuriAmount ? `₹${formatAmount(r.majuriAmount)}` : '-'}
+          </span>
+        )
+      }
+    ],
+    []
+  )
 
   return (
     <div className="flex flex-col h-full bg-slate-100 font-sans text-slate-800 select-none overflow-hidden">
@@ -383,131 +488,42 @@ function ReminderScreen({ onClose }: { onClose: () => void }): React.JSX.Element
           </div>
         </div>
 
-        {/* Reminders Data Table */}
-        <div className="flex-1 overflow-auto border border-slate-200/90 rounded-xl bg-white shadow-2xs flex flex-col">
-          <table className="w-full text-xs text-left border-collapse">
-            <thead className="bg-slate-100 text-slate-700 uppercase text-[11px] font-bold tracking-wider sticky top-0 z-10 border-b border-slate-200">
-              <tr>
-                <th className="py-2.5 px-3 w-10 text-center">#</th>
-                <th className="py-2.5 px-3">Type</th>
-                <th className="py-2.5 px-3">Bill No</th>
-                <th className="py-2.5 px-3">Bill Date</th>
-                <th className="py-2.5 px-3">Account Name</th>
-                <th className="py-2.5 px-3">Phone</th>
-                <th className="py-2.5 px-3">Reminder Date</th>
-                <th className="py-2.5 px-3 text-center">Urgency Status</th>
-                <th className="py-2.5 px-3">Metal</th>
-                <th className="py-2.5 px-3 text-right">Fine Due (g)</th>
-                <th className="py-2.5 px-3 text-right">Majuri Due (₹)</th>
-              </tr>
-            </thead>
+        {/* Reminders DataTable Container */}
+        <div className="flex-1 overflow-hidden border border-slate-200/90 rounded-xl bg-white shadow-2xs flex flex-col">
+          <DataTable<ReminderRecord>
+            columns={columns}
+            data={filteredReminders}
+            keyExtractor={(r, idx) => `${r.type}-${r.id}-${idx}`}
+            loading={loading}
+            loadingMessage="Loading reminders..."
+            emptyTitle="No Pending Reminders"
+            emptyMessage={
+              searchText || typeFilter !== 'ALL' || urgencyFilter !== 'ALL'
+                ? 'No matching reminders for your selected filters.'
+                : 'Set a reminder date on a Sale or Approval memo to track it here.'
+            }
+          />
 
-            <tbody className="divide-y divide-slate-100 font-medium">
-              {loading ? (
-                <tr>
-                  <td colSpan={11} className="py-12 text-center text-slate-400 font-medium">
-                    <FiRefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-amber-500" />
-                    Loading reminders...
-                  </td>
-                </tr>
-              ) : filteredReminders.length === 0 ? (
-                <tr>
-                  <td colSpan={11} className="py-12 text-center">
-                    <div className="flex flex-col items-center justify-center">
-                      <div className="w-12 h-12 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 mb-2">
-                        <FiInbox className="w-6 h-6" />
-                      </div>
-                      <span className="font-bold text-sm text-slate-800 mb-0.5">No Pending Reminders</span>
-                      <p className="text-xs text-slate-500 max-w-sm">
-                        {searchText || typeFilter !== 'ALL' || urgencyFilter !== 'ALL'
-                          ? 'No matching reminders for your selected filters.'
-                          : 'Set a reminder date on a Sale or Approval memo to track it here.'}
-                      </p>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                filteredReminders.map((r, index) => {
-                  const isOverdue = r.isOverdue
-                  const isDueToday = r.daysUntil === 0
-                  return (
-                    <tr
-                      key={`${r.type}-${r.id}-${index}`}
-                      className={`hover:bg-amber-50/40 text-slate-700 font-medium transition-colors ${
-                        isOverdue ? 'bg-rose-50/20' : ''
-                      }`}
-                    >
-                      <td className="py-2 px-3 text-center text-slate-400 font-mono text-[11px]">{index + 1}</td>
-                      <td className="py-2 px-3">
-                        <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border whitespace-nowrap ${
-                            r.type === 'Sale'
-                              ? 'bg-amber-50 text-amber-800 border-amber-200'
-                              : 'bg-indigo-50 text-indigo-800 border-indigo-200'
-                          }`}
-                        >
-                          {r.type}
-                        </span>
-                      </td>
-                      <td className="py-2 px-3 font-mono font-bold text-slate-900">{r.billNo}</td>
-                      <td className="py-2 px-3 font-mono text-[11px] text-slate-600">{formatDate(r.billDate)}</td>
-                      <td className="py-2 px-3 font-bold text-slate-900">{r.accountName}</td>
-                      <td className="py-2 px-3 font-mono text-[11px] text-slate-600">
-                        {r.mobileNumber ? (
-                          <span className="flex items-center gap-1">
-                            <FiPhone className="w-3 h-3 text-slate-400" />
-                            {r.mobileNumber}
-                          </span>
-                        ) : (
-                          '-'
-                        )}
-                      </td>
-                      <td className="py-2 px-3 font-mono font-bold text-slate-900">{formatDate(r.reminderDate)}</td>
-                      <td className="py-2 px-3 text-center">
-                        <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border whitespace-nowrap ${
-                            isOverdue
-                              ? 'bg-rose-50 text-rose-700 border-rose-200 font-extrabold animate-pulse'
-                              : isDueToday
-                              ? 'bg-amber-50 text-amber-800 border-amber-300 font-bold'
-                              : 'bg-slate-100 text-slate-700 border-slate-200'
-                          }`}
-                        >
-                          {daysLabel(r)}
-                        </span>
-                      </td>
-                      <td className="py-2 px-3 text-slate-600">{r.metalType}</td>
-                      <td className="py-2 px-3 text-right font-mono font-bold text-amber-900 bg-amber-50/20">
-                        {r.fineAmount ? `${formatNumber(r.fineAmount)}g` : '-'}
-                      </td>
-                      <td className="py-2 px-3 text-right font-mono font-bold text-blue-900 bg-blue-50/20">
-                        {r.majuriAmount ? `₹${formatAmount(r.majuriAmount)}` : '-'}
-                      </td>
-                    </tr>
-                  )
-                })
-              )}
-            </tbody>
-
-            {filteredReminders.length > 0 && (
-              <tfoot className="bg-slate-100 font-bold border-t-2 border-slate-300 text-slate-900 sticky bottom-0 z-10 shadow-inner">
-                <tr>
-                  <td colSpan={7} className="py-2.5 px-3 text-right text-xs uppercase tracking-wider">
-                    Total:
-                  </td>
-                  <td colSpan={2} className="py-2.5 px-3 text-center text-xs text-rose-700 font-bold">
-                    {totals.overdueCount} Overdue / {totals.dueTodayCount} Due Today
-                  </td>
-                  <td className="py-2.5 px-3 text-right font-mono font-black text-amber-900 bg-amber-100/50">
-                    {formatNumber(totals.fineDue)}g
-                  </td>
-                  <td className="py-2.5 px-3 text-right font-mono font-black text-blue-900 bg-blue-100/50">
-                    ₹{formatAmount(totals.majuriDue)}
-                  </td>
-                </tr>
-              </tfoot>
-            )}
-          </table>
+          {filteredReminders.length > 0 && (
+            <div className="bg-slate-100 border-t-2 border-slate-300 px-4 py-2.5 flex items-center justify-between text-xs font-bold shrink-0 no-print">
+              <div className="text-slate-600 uppercase tracking-wider">
+                Total: <span className="text-slate-900">{filteredReminders.length} Reminders</span>
+              </div>
+              <div className="flex items-center gap-6">
+                <div className="text-rose-700">
+                  <span>{totals.overdueCount} Overdue</span> / <span className="text-amber-800">{totals.dueTodayCount} Due Today</span>
+                </div>
+                <div className="font-mono">
+                  <span className="text-slate-500 mr-1.5 uppercase tracking-wide">Fine:</span>
+                  <span className="text-amber-900 font-black">{formatNumber(totals.fineDue)}g</span>
+                </div>
+                <div className="font-mono">
+                  <span className="text-slate-500 mr-1.5 uppercase tracking-wide">Majuri:</span>
+                  <span className="text-blue-900 font-black">₹{formatAmount(totals.majuriDue)}</span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
