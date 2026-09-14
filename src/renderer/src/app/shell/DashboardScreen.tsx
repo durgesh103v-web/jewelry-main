@@ -5,7 +5,6 @@ import {
   FiArrowRight,
   FiArrowUpRight,
   FiBell,
-  FiBookOpen,
   FiCalendar,
   FiCheckSquare,
   FiClipboard,
@@ -628,15 +627,7 @@ export function DashboardScreen({
           <span className="text-[11px] font-bold text-slate-700 group-hover:text-cyan-900">Stock Ledger</span>
         </button>
 
-        <button
-          type="button"
-          onClick={() => openQuickScreen('dar-rojmel', 'Dar Rojmel Report', 'reports')}
-          className="h-14 bg-white hover:bg-emerald-50/50 rounded-xl border border-slate-200/90 hover:border-emerald-300 p-2 flex flex-col items-center justify-center gap-1 transition-all shadow-2xs hover:shadow-xs cursor-pointer group"
-          title="Daily Day Book & Dar Rojmel"
-        >
-          <FiBookOpen className="w-4.5 h-4.5 text-emerald-600 group-hover:scale-110 transition-transform" />
-          <span className="text-[11px] font-bold text-slate-700 group-hover:text-emerald-900">Day Book</span>
-        </button>
+       
 
         <button
           type="button"

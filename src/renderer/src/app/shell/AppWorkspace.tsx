@@ -9,6 +9,7 @@ export interface AppWorkspaceProps {
   setActiveTabId: (id: string) => void
   onCloseTab: (id: string) => void
   onNavigate: (id: string, label: string, module: AppMenuChild['module'] | 'home') => void
+  onGoBack?: () => void
   visibleScreenIds: Set<string>
 }
 
@@ -17,6 +18,7 @@ export function AppWorkspace({
   activeTabId,
   onCloseTab,
   onNavigate,
+  onGoBack,
   visibleScreenIds
 }: AppWorkspaceProps): React.JSX.Element {
   const safeTabs =
@@ -53,6 +55,7 @@ export function AppWorkspace({
                 activeTab={tab}
                 onCloseTab={onCloseTab}
                 onNavigate={onNavigate}
+                onGoBack={onGoBack}
                 visibleScreenIds={visibleScreenIds}
               />
             </div>

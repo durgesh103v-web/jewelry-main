@@ -10,17 +10,20 @@ export interface ScreenRendererProps {
   activeTab: WorkspaceTab
   onCloseTab: (tabId: string) => void
   onNavigate: (id: string, label: string, module: AppMenuChild['module'] | 'home') => void
+  onGoBack?: () => void
   visibleScreenIds: Set<string>
 }
 
 function ModulePlaceholder({
   tab,
   onClose,
-  onNavigate
+  onNavigate,
+  onGoBack
 }: {
   tab: WorkspaceTab
   onClose: () => void
   onNavigate: (id: string, label: string, module: AppMenuChild['module'] | 'home') => void
+  onGoBack?: () => void
 }): React.JSX.Element {
   return (
     <div className="w-full h-full min-h-[480px] flex-1 flex flex-col items-center justify-center p-6 select-none bg-[var(--color-background-app,#f8fafc)]">
@@ -62,12 +65,12 @@ function ModulePlaceholder({
         <div className="flex items-center gap-3">
           <button
             type="button"
-            onClick={() => onNavigate('dashboard', 'Dashboard', 'home')}
+            onClick={onGoBack || (() => onNavigate('dashboard', 'Dashboard', 'home'))}
             className="inline-flex items-center gap-2 h-9 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 !text-white text-xs font-bold shadow-2xs transition-all cursor-pointer"
             style={{ color: '#ffffff' }}
           >
             <FiArrowLeft size={14} />
-            <span>Go to Dashboard</span>
+            <span>Go Back</span>
           </button>
 
           <button
@@ -87,6 +90,7 @@ export function ScreenRenderer({
   activeTab,
   onCloseTab,
   onNavigate,
+  onGoBack,
   visibleScreenIds
 }: ScreenRendererProps): React.JSX.Element {
   if (activeTab.id === 'dashboard') {
@@ -101,6 +105,7 @@ export function ScreenRenderer({
         tab={activeTab}
         onClose={() => onCloseTab(activeTab.id)}
         onNavigate={onNavigate}
+        onGoBack={onGoBack}
       />
     )
   }
@@ -122,6 +127,8 @@ export function ScreenRenderer({
       <Component
         {...defaultProps}
         onClose={() => onCloseTab(activeTab.id)}
+        onBack={onGoBack || (() => onCloseTab(activeTab.id))}
+        onGoBack={onGoBack}
         onNavigate={onNavigate}
       />
     </Suspense>

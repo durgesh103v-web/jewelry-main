@@ -36,6 +36,7 @@ export function AppShell({ session, onLogout }: AppShellProps): React.JSX.Elemen
 
   const [tabs, setTabs] = useState<WorkspaceTab[]>([dashboardTab])
   const [activeTabId, setActiveTabId] = useState('dashboard')
+  const [historyStack, setHistoryStack] = useState<string[]>(['dashboard'])
   const [topFirmName, setTopFirmName] = useState('Shree Jewellery')
   const [lastBackupLabel, setLastBackupLabel] = useState('-')
   const [capturingScreenshot, setCapturingScreenshot] = useState(false)
@@ -96,9 +97,36 @@ export function AppShell({ session, onLogout }: AppShellProps): React.JSX.Elemen
       })
 
       setActiveTabId(screen.id)
+      setHistoryStack((prev) => (prev[prev.length - 1] === screen.id ? prev : [...prev, screen.id]))
     },
     [visibleScreenIds]
   )
+
+  const handleGoBack = useCallback((): void => {
+    setHistoryStack((prev) => {
+      if (prev.length <= 1) {
+        setActiveTabId('dashboard')
+        return ['dashboard']
+      }
+      const nextStack = [...prev]
+      nextStack.pop() // pop active screen
+      const previousScreenId = nextStack[nextStack.length - 1] || 'dashboard'
+      setActiveTabId(previousScreenId)
+      return nextStack
+    })
+  }, [])
+
+  // Global Alt + ArrowLeft navigation hotkey
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent): void => {
+      if (e.altKey && e.key === 'ArrowLeft') {
+        e.preventDefault()
+        handleGoBack()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [handleGoBack])
 
   const closeTab = useCallback(
     (tabId: string): void => {
@@ -111,6 +139,7 @@ export function AppShell({ session, onLogout }: AppShellProps): React.JSX.Elemen
           const closedTabIndex = currentTabs.findIndex((tab) => tab.id === tabId)
           const nextActiveTab = filteredTabs[closedTabIndex - 1] ?? filteredTabs[0] ?? dashboardTab
           setActiveTabId(nextActiveTab.id)
+          setHistoryStack((prev) => (prev[prev.length - 1] === nextActiveTab.id ? prev : [...prev, nextActiveTab.id]))
         }
 
         return filteredTabs
@@ -118,6 +147,24 @@ export function AppShell({ session, onLogout }: AppShellProps): React.JSX.Elemen
     },
     [activeTabId]
   )
+
+  const closeOtherTabs = useCallback(
+    (keepId: string): void => {
+      setTabs((currentTabs) => {
+        const kept = currentTabs.filter((tab) => tab.id === 'dashboard' || tab.id === keepId)
+        setActiveTabId(keepId)
+        setHistoryStack(['dashboard', keepId])
+        return kept
+      })
+    },
+    []
+  )
+
+  const closeAllTabs = useCallback((): void => {
+    setTabs([dashboardTab])
+    setActiveTabId('dashboard')
+    setHistoryStack(['dashboard'])
+  }, [])
 
   const openQuickScreen = useCallback(
     (id: string, label: string, module: AppMenuChild['module'] | 'home'): void => {
@@ -144,6 +191,8 @@ export function AppShell({ session, onLogout }: AppShellProps): React.JSX.Elemen
       <AppTopNavbar
         activeScreenId={activeTabId}
         onNavigate={openQuickScreen}
+        onGoBack={handleGoBack}
+        canGoBack={activeTabId !== 'dashboard' || historyStack.length > 1}
         visibleScreenIds={visibleScreenIds}
         firmName={topFirmName}
         lastBackupLabel={lastBackupLabel}
@@ -168,9 +217,13 @@ export function AppShell({ session, onLogout }: AppShellProps): React.JSX.Elemen
         <AppWorkspace
           tabs={tabs}
           activeTabId={activeTabId}
-          setActiveTabId={setActiveTabId}
+          setActiveTabId={(id) => {
+            setActiveTabId(id)
+            setHistoryStack((prev) => (prev[prev.length - 1] === id ? prev : [...prev, id]))
+          }}
           onCloseTab={closeTab}
           onNavigate={openQuickScreen}
+          onGoBack={handleGoBack}
           visibleScreenIds={visibleScreenIds}
         />
       </div>
@@ -179,8 +232,13 @@ export function AppShell({ session, onLogout }: AppShellProps): React.JSX.Elemen
       <AppFooterTaskbar
         tabs={tabs}
         activeTabId={activeTabId}
-        setActiveTabId={setActiveTabId}
+        setActiveTabId={(id) => {
+          setActiveTabId(id)
+          setHistoryStack((prev) => (prev[prev.length - 1] === id ? prev : [...prev, id]))
+        }}
         onCloseTab={closeTab}
+        onCloseOtherTabs={closeOtherTabs}
+        onCloseAllTabs={closeAllTabs}
         firmName={topFirmName}
       />
     </div>
