@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import {
   FiAlertTriangle,
   FiArrowRight,
+  FiAward,
   FiBell,
   FiBriefcase,
   FiCalendar,
@@ -83,6 +84,16 @@ const SETTINGS_CATALOG: SettingsItem[] = [
   },
 
   // Security & Data Protection
+  {
+    id: 'license-info',
+    label: 'License & Subscription',
+    description: 'View commercial license status, bound computer ID, expiry dates, and feature entitlements.',
+    category: 'SECURITY',
+    module: 'utility',
+    icon: <FiAward className="w-5 h-5 text-amber-700" />,
+    iconBg: 'bg-amber-100 border-amber-200',
+    badge: 'Offline Ready'
+  },
   {
     id: 'change-password',
     label: 'Change Password',

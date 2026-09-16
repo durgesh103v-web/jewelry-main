@@ -19,8 +19,10 @@
     "build:win": "npm run build && electron-builder --win",
     "build:mac": "electron-vite build && electron-builder --mac",
     "build:linux": "electron-vite build && electron-builder --linux",
-    "db:seed:demo": "node scripts/runSeed.js"
+    "db:seed:demo": "node scripts/runSeed.js",
+    "license:generate": "node scripts/generateProductKey.js"
   },
+
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.2",
     "@electron-toolkit/utils": "^4.0.0",

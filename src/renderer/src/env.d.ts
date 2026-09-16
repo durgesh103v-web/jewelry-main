@@ -39,6 +39,55 @@ type ResetPasswordPayload = {
   newPassword: string
 }
 
+type LicenseFeature =
+  | 'FEATURE_SALES'
+  | 'FEATURE_PURCHASE'
+  | 'FEATURE_INVENTORY'
+  | 'FEATURE_ACCOUNTING'
+  | 'FEATURE_REPORTS'
+  | 'FEATURE_GST'
+  | 'FEATURE_BARCODE'
+  | 'FEATURE_JOB_WORK'
+  | 'FEATURE_APPROVALS'
+  | 'FEATURE_ORDERS'
+  | 'FEATURE_ADVANCED_REPORTS'
+  | 'FEATURE_CONSIGNMENT'
+  | 'FEATURE_MANUFACTURING'
+  | 'FEATURE_TAGGING_RFID'
+
+type LicenseStatus = 'ACTIVE' | 'EXPIRED' | 'SUSPENDED' | 'INVALID' | 'UNLICENSED'
+
+type LicenseInfo = {
+  licenseId: string
+  product: 'JEWELLERY_ERP'
+  edition: 'BASIC' | 'PROFESSIONAL' | 'ENTERPRISE'
+  status: LicenseStatus
+  machineId: string
+  customerName?: string
+  firmName?: string
+  activatedAt: string
+  expiresAt: string | null
+  features: LicenseFeature[]
+  isExpired: boolean
+  daysRemaining: number | null
+}
+
+type LicenseStatusResult = {
+  status: LicenseStatus
+  isLicensed: boolean
+  license: LicenseInfo | null
+  machineId: string
+  message?: string
+}
+
+type LicenseActivationResult = {
+  success: boolean
+  status: LicenseStatus
+  license?: LicenseInfo
+  message: string
+}
+
+
 
 type AccountGroupPayload = {
   groupName: string
@@ -1970,6 +2019,16 @@ interface Window {
       changePassword: (payload: ChangePasswordPayload) => Promise<{ success: boolean }>
       resetPassword: (payload: ResetPasswordPayload) => Promise<{ success: boolean }>
     }
+
+    license: {
+      getStatus: () => Promise<LicenseStatusResult>
+      activate: (payload: { productKey: string }) => Promise<LicenseActivationResult>
+      getInfo: () => Promise<LicenseInfo | null>
+      isFeatureLicensed: (feature: LicenseFeature) => Promise<boolean>
+      getMachineId: () => Promise<string>
+      deactivate: () => Promise<{ success: boolean }>
+    }
+
 
 
     accountGroups: {

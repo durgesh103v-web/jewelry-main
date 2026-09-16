@@ -3,36 +3,63 @@ import { FiAward, FiShield } from 'react-icons/fi'
 import App from '../../App'
 import LoginScreen from './LoginScreen'
 import RegisterScreen from './RegisterScreen'
+import ActivationScreen from '../licensing/ActivationScreen'
 import { authStyles as s } from './authStyles'
 
-type Phase = 'loading' | 'register' | 'login' | 'ready'
+type Phase = 'loading' | 'activate' | 'register' | 'login' | 'ready'
 
-// Top-level gate: decides whether to show first-run Register, the Login form,
-// or the full application. A fresh app launch always requires a login (the main
-// process holds no session until auth:login succeeds).
+// Top-level gate: manages commercial license activation, first-run user setup,
+// authentication gate, and full application launch.
 function AuthGate(): React.JSX.Element {
   const [phase, setPhase] = useState<Phase>('loading')
   const [knownUsername, setKnownUsername] = useState<string | null>(null)
   const [session, setSession] = useState<AuthSession | null>(null)
+  const [licenseMessage, setLicenseMessage] = useState<string>('')
 
   useEffect(() => {
     let cancelled = false
 
-    window.api.auth
-      .getState()
-      .then((state) => {
+    async function initializeSystem(): Promise<void> {
+      try {
+        // Step 1: Validate offline-first commercial license (Model A)
+        const licenseStatus = await window.api.license.getStatus()
         if (cancelled) return
-        setKnownUsername(state.username)
-        setPhase(state.registered ? 'login' : 'register')
-      })
-      .catch(() => {
+
+        if (!licenseStatus.isLicensed || licenseStatus.status !== 'ACTIVE') {
+          setLicenseMessage(licenseStatus.message || 'Initial product activation required.')
+          setPhase('activate')
+          return
+        }
+
+        // Step 2: Validate local user registration state
+        const authState = await window.api.auth.getState()
+        if (cancelled) return
+
+        setKnownUsername(authState.username)
+        setPhase(authState.registered ? 'login' : 'register')
+      } catch {
         if (!cancelled) setPhase('login')
-      })
+      }
+    }
+
+    void initializeSystem()
 
     return () => {
       cancelled = true
     }
   }, [])
+
+  const handleActivated = (): void => {
+    window.api.auth
+      .getState()
+      .then((state) => {
+        setKnownUsername(state.username)
+        setPhase(state.registered ? 'login' : 'register')
+      })
+      .catch(() => {
+        setPhase('register')
+      })
+  }
 
   const handleAuthenticated = (nextSession: AuthSession): void => {
     setSession(nextSession)
@@ -60,7 +87,7 @@ function AuthGate(): React.JSX.Element {
             Jewellery ERP
           </h2>
           <p style={{ margin: '8px 0 0', fontSize: '13px', color: '#94a3b8' }}>
-            Initializing local database engine...
+            Validating hardware license and initializing database...
           </p>
           <div style={{ ...s.badge, marginTop: '16px' }}>
             <FiShield size={12} />
@@ -69,6 +96,10 @@ function AuthGate(): React.JSX.Element {
         </div>
       </div>
     )
+  }
+
+  if (phase === 'activate') {
+    return <ActivationScreen onActivated={handleActivated} initialMessage={licenseMessage} />
   }
 
   if (phase === 'register') {

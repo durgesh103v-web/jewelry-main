@@ -37,6 +37,7 @@ import { registerReminderIpc } from './ipc/reminder.ipc'
 import { registerWhatsAppIpc } from './ipc/whatsapp.ipc'
 import { registerScreenshotIpc } from './ipc/screenshot.ipc'
 import { registerAuthIpc } from './ipc/auth.ipc'
+import { registerLicenseIpc } from './ipc/license.ipc'
 import { registerCategoryIpc } from './ipc/category.ipc'
 import { registerPurityIpc } from './ipc/purity.ipc'
 import { registerInventoryIpc } from './ipc/inventory.ipc'
@@ -144,6 +145,7 @@ app.whenReady().then(() => {
   })
 
   registerAuthIpc()
+  registerLicenseIpc()
   registerAccountGroupIpc()
   registerAccountIpc()
   registerItemGroupIpc()

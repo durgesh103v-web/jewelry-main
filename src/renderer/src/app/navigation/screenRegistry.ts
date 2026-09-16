@@ -45,6 +45,7 @@ import ReminderScreen from '../../modules/utility/reminder/ReminderScreen'
 import WhatsAppScreen from '../../modules/utility/whatsapp/WhatsAppScreen'
 import ScreenshotScreen from '../../modules/utility/screenshot/ScreenshotScreen'
 import SettingsScreen from '../../modules/utility/settings/SettingsScreen'
+import LicenseInformationScreen from '../../modules/licensing/LicenseInformationScreen'
 
 // React.lazy imports for heavy transaction & report screens
 const SaleScreen = lazy(() => import('../../modules/transaction/sale/SaleScreen'))
@@ -188,5 +189,7 @@ export const screenRegistry: Record<string, ScreenMapValue> = {
   reminder: { component: ReminderScreen },
   whatsapp: { component: WhatsAppScreen },
   screenshot: { component: ScreenshotScreen },
-  settings: { component: SettingsScreen }
+  settings: { component: SettingsScreen },
+  'license-info': { component: LicenseInformationScreen }
 }
+
