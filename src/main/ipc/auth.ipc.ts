@@ -21,4 +21,9 @@ export function registerAuthIpc(): void {
   ipcMain.handle('auth:change-password', (_event, payload) => {
     return authService.changePassword(payload)
   })
+
+  ipcMain.handle('auth:reset-password', (_event, payload) => {
+    return authService.resetPassword(payload)
+  })
 }
+

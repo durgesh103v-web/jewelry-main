@@ -33,6 +33,13 @@ type ChangePasswordPayload = {
   newPassword: string
 }
 
+type ResetPasswordPayload = {
+  username: string
+  recoveryCode: string
+  newPassword: string
+}
+
+
 type AccountGroupPayload = {
   groupName: string
   groupType: string
@@ -1961,7 +1968,9 @@ interface Window {
       login: (payload: LoginPayload) => Promise<AuthSession>
       logout: () => Promise<{ success: boolean }>
       changePassword: (payload: ChangePasswordPayload) => Promise<{ success: boolean }>
+      resetPassword: (payload: ResetPasswordPayload) => Promise<{ success: boolean }>
     }
+
 
     accountGroups: {
       list: () => Promise<AccountGroupRecord[]>

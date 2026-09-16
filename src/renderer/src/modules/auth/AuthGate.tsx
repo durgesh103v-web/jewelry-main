@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { FiAward, FiShield } from 'react-icons/fi'
 import App from '../../App'
 import LoginScreen from './LoginScreen'
 import RegisterScreen from './RegisterScreen'
@@ -49,8 +50,22 @@ function AuthGate(): React.JSX.Element {
   if (phase === 'loading') {
     return (
       <div style={s.screen}>
-        <div style={{ color: '#33415c', fontFamily: "'Segoe UI', Tahoma, sans-serif" }}>
-          Loading...
+        <div style={s.glowOrb1} />
+        <div style={s.glowOrb2} />
+        <div style={{ textAlign: 'center', color: '#ffffff', zIndex: 1 }}>
+          <div style={{ ...s.logoRing, width: '64px', height: '64px', fontSize: '28px', marginBottom: '16px' }}>
+            <FiAward />
+          </div>
+          <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 700, color: '#f8fafc' }}>
+            Jewellery ERP
+          </h2>
+          <p style={{ margin: '8px 0 0', fontSize: '13px', color: '#94a3b8' }}>
+            Initializing local database engine...
+          </p>
+          <div style={{ ...s.badge, marginTop: '16px' }}>
+            <FiShield size={12} />
+            <span>ENCRYPTED LOCAL STORAGE</span>
+          </div>
         </div>
       </div>
     )

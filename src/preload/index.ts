@@ -34,6 +34,13 @@ type ChangePasswordPayload = {
   newPassword: string
 }
 
+type ResetPasswordPayload = {
+  username: string
+  recoveryCode: string
+  newPassword: string
+}
+
+
 type AccountGroupPayload = {
   groupName: string
   groupType: string
@@ -1864,8 +1871,12 @@ const api = {
     logout: (): Promise<{ success: boolean }> => ipcRenderer.invoke('auth:logout'),
 
     changePassword: (payload: ChangePasswordPayload): Promise<{ success: boolean }> =>
-      ipcRenderer.invoke('auth:change-password', payload)
+      ipcRenderer.invoke('auth:change-password', payload),
+
+    resetPassword: (payload: ResetPasswordPayload): Promise<{ success: boolean }> =>
+      ipcRenderer.invoke('auth:reset-password', payload)
   },
+
 
   accountGroups: {
     list: () => ipcRenderer.invoke('account-groups:list'),
