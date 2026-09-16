@@ -69,16 +69,17 @@ function assertItemExists(itemId: string): void {
 
 function getNextOrderNo(): string {
   const db = getDatabase()
-  const rows = db
-    .prepare(`SELECT order_no FROM order_payal ORDER BY created_at DESC`)
-    .all() as { order_no: string }[]
+  const row = db
+    .prepare(
+      `
+      SELECT MAX(CAST(SUBSTR(order_no, 4) AS INTEGER)) AS max_num
+      FROM order_payal
+      WHERE order_no LIKE 'OP-%'
+    `
+    )
+    .get() as { max_num: number | null } | undefined
 
-  const maxNumber = rows.reduce((max, row) => {
-    const clean = String(row.order_no || '').replace('OP-', '')
-    const parsed = Number(clean)
-    return Number.isFinite(parsed) ? Math.max(max, parsed) : max
-  }, 0)
-
+  const maxNumber = Number(row?.max_num ?? 0)
   return `OP-${String(maxNumber + 1).padStart(4, '0')}`
 }
 

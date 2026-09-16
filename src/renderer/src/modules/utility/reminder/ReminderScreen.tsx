@@ -16,29 +16,15 @@ import {
 import { DataTable, type Column } from '@components/ui'
 import AppAlert from '../../../components/ui/AppAlert'
 import { getFriendlyErrorMessage } from '../../../utils/getFriendlyErrorMessage'
+import { formatDate, formatAmount, formatNumber } from '../../../utils/formatters'
 
 type AlertType = 'success' | 'error' | 'warning'
 
-function formatNumber(value: number): string {
-  return Number(value || 0).toLocaleString('en-IN', {
-    minimumFractionDigits: 3,
-    maximumFractionDigits: 3
-  })
-}
 
-function formatAmount(value: number): string {
-  return Number(value || 0).toLocaleString('en-IN', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  })
-}
 
-function formatDate(value: string): string {
-  if (!value) return '-'
-  const [year, month, day] = value.split('-')
-  if (!year || !month || !day) return value
-  return `${day}/${month}/${year}`
-}
+
+
+
 
 function daysLabel(reminder: ReminderRecord): string {
   if (reminder.daysUntil === 0) return 'Due Today'

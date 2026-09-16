@@ -13,6 +13,7 @@ import {
 } from 'react-icons/fi'
 import AppAlert from '../../../components/ui/AppAlert'
 import { getFriendlyErrorMessage } from '../../../utils/getFriendlyErrorMessage'
+import { formatDate } from '../../../utils/formatters'
 
 type AlertType = 'success' | 'error' | 'warning'
 
@@ -60,12 +61,6 @@ function getLedgerTypeClass(sourceType: string): string {
   }
 }
 
-function formatDate(value: string): string {
-  if (!value) return '-'
-  const [year, month, day] = value.split('-')
-  if (!year || !month || !day) return value
-  return `${day}/${month}/${year}`
-}
 
 function StockLedgerScreen({ onClose }: { onClose: () => void }): React.JSX.Element {
   const [items, setItems] = useState<Item[]>([])

@@ -21,6 +21,7 @@ import type {
 } from '../../shared/types/salesInvoice'
 import type { CustomerOrderRecord } from '../../shared/types/customerOrder'
 import { JewelleryStockItemRepository } from '../database/repositories/JewelleryStockItemRepository'
+import { ReturnRepository } from '../database/repositories/ReturnRepository'
 import { consignmentService } from './consignment.service'
 import { roundNumber } from '../../shared/jewelleryFormula'
 
@@ -34,6 +35,7 @@ const exchangeRepository = new MetalExchangeRepository()
 const accountLedgerRepository = new AccountLedgerRepository()
 const transactionRepository = new TransactionRepository()
 const stockItemRepository = new JewelleryStockItemRepository()
+const returnRepository = new ReturnRepository()
 
 const invoiceItemSchema = z.object({
   itemId: z.string().trim().min(1, 'Item is required'),
@@ -459,6 +461,14 @@ export const salesInvoiceService = {
     const invoice = this.getById(id)
     if (invoice.status === 'CANCELLED') {
       throw new ValidationError('Invoice is already cancelled')
+    }
+
+    const activeReturns = returnRepository.findBySalesInvoice(id)
+    if (activeReturns.length > 0) {
+      const returnNumbers = activeReturns.map((r) => r.returnNumber).join(', ')
+      throw new ValidationError(
+        `Cannot cancel sales invoice ${invoice.invoiceNumber} because active return transaction(s) (${returnNumbers}) exist against it. Cancel or delete the return(s) first.`
+      )
     }
 
     transactionRepository.executeAtomic(() => {

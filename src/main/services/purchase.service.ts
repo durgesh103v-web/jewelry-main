@@ -248,6 +248,14 @@ export const purchaseService = {
       0
     )
 
+    if (data.metalType !== 'Gold' && data.metalType !== 'Silver') {
+      if (itemFineTotal > 0 || paymentFineNaveTotal > 0) {
+        throw new Error(
+          `Fine weight is only supported for Gold and Silver transactions. "${data.metalType}" transactions cannot carry fine weight.`
+        )
+      }
+    }
+
     const closingGoldFine =
       data.metalType === 'Gold'
         ? roundNumber(oldBalance.goldFine - itemFineTotal + paymentFineNaveTotal)
@@ -601,6 +609,24 @@ export const purchaseService = {
 
     if (!purchase) {
       throw new Error('Purchase not found')
+    }
+
+    const activeReturns = db
+      .prepare(
+        `
+        SELECT return_no
+        FROM purchase_return_headers
+        WHERE against_purchase_id = ?
+        AND deleted_at IS NULL
+      `
+      )
+      .all(id) as Array<{ return_no: string }>
+
+    if (activeReturns.length > 0) {
+      const returnNos = activeReturns.map((r) => r.return_no).join(', ')
+      throw new Error(
+        `Cannot cancel purchase ${purchase.purchase_no} because active purchase return(s) exist against it: ${returnNos}. Please cancel the return(s) first.`
+      )
     }
 
     const transaction = db.transaction(() => {

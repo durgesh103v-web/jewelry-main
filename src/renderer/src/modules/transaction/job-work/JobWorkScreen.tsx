@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent }
 import AppAlert from '../../../components/ui/AppAlert'
 import AppConfirmDialog from '../../../components/ui/AppConfirmDialog'
 import { getFriendlyErrorMessage } from '../../../utils/getFriendlyErrorMessage'
+import { formatDate, formatCurrency, formatWeight, toNumber, isValidAmountInput, getTodayDate } from '../../../utils/formatters'
 import {
   calculateHishob,
   calculateFine,
@@ -37,13 +38,6 @@ type Item = {
   active: boolean
 }
 
-function getTodayDate(): string {
-  const date = new Date()
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
 
 function addDays(dateStr: string, days: number): string {
   const d = new Date(dateStr || getTodayDate())
@@ -55,33 +49,10 @@ function addDays(dateStr: string, days: number): string {
   return `${year}-${month}-${day}`
 }
 
-function toNumber(value: string | number): number {
-  if (value === '') return 0
-  const numberValue = Number(value)
-  return Number.isFinite(numberValue) ? numberValue : 0
-}
 
-function isValidAmountInput(value: string): boolean {
-  return /^-?\d*\.?\d*$/.test(value)
-}
 
-function formatWeight(value: number | string | undefined | null): string {
-  return Number(value || 0).toFixed(3)
-}
 
-function formatCurrency(value: number | string | undefined | null): string {
-  return Number(value || 0).toLocaleString('en-IN', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  })
-}
 
-function formatDate(value?: string | null): string {
-  if (!value) return '-'
-  const [year, month, day] = value.split('-')
-  if (!year || !month || !day) return value
-  return `${day}/${month}/${year}`
-}
 
 function getDaysRemaining(dueDateStr?: string | null): { text: string; isOverdue: boolean; isToday: boolean } {
   if (!dueDateStr) return { text: '-', isOverdue: false, isToday: false }

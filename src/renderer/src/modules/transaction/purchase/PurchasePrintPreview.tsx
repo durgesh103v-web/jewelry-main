@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react'
+import { formatDate, formatNumber } from '../../../utils/formatters'
 
 const defaultPrinterSetting: PrinterSettingPayload = {
   paperSize: 'A4',
@@ -16,20 +17,9 @@ const defaultPrinterSetting: PrinterSettingPayload = {
   autoPrintAfterSave: false
 }
 
-function formatNumber(value: number): string {
-  return Number(value || 0)
-    .toFixed(3)
-    .replace(/\.?0+$/, '')
-}
 
-function formatDate(value: string): string {
-  if (!value) return ''
 
-  const [year, month, day] = value.split('-')
-  if (!year || !month || !day) return value
 
-  return `${day}/${month}/${year}`
-}
 
 function PurchasePrintPreview({
   purchase,

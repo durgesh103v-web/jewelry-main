@@ -88,27 +88,18 @@ function getNextVoucherNo(voucherType: CashVoucherType): string {
   const db = getDatabase()
   const prefix = voucherType === 'RECEIPT' ? 'CR' : 'CP'
 
-  const rows = db
+  const row = db
     .prepare(
       `
-      SELECT voucher_no
+      SELECT MAX(CAST(SUBSTR(voucher_no, LENGTH(?) + 2) AS INTEGER)) AS max_num
       FROM cash_vouchers
       WHERE voucher_type = ?
-      ORDER BY created_at DESC
+      AND voucher_no LIKE ?
     `
     )
-    .all(voucherType) as { voucher_no: string }[]
+    .get(prefix, voucherType, `${prefix}-%`) as { max_num: number | null } | undefined
 
-  const maxNumber = rows.reduce((max, row) => {
-    const cleanVoucherNo = String(row.voucher_no || '').trim()
-    const numberPart = cleanVoucherNo.startsWith(`${prefix}-`)
-      ? cleanVoucherNo.replace(`${prefix}-`, '')
-      : '0'
-    const parsed = Number(numberPart)
-
-    return Number.isFinite(parsed) ? Math.max(max, parsed) : max
-  }, 0)
-
+  const maxNumber = Number(row?.max_num ?? 0)
   return `${prefix}-${String(maxNumber + 1).padStart(4, '0')}`
 }
 

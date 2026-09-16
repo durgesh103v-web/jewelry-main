@@ -28,16 +28,17 @@ export type TransferPayload = z.infer<typeof transferSchema>
 
 function getNextTransferNo(): string {
   const db = getDatabase()
-  const rows = db
-    .prepare(`SELECT transfer_no FROM transfers ORDER BY created_at DESC`)
-    .all() as { transfer_no: string }[]
+  const row = db
+    .prepare(
+      `
+      SELECT MAX(CAST(SUBSTR(transfer_no, 4) AS INTEGER)) AS max_num
+      FROM transfers
+      WHERE transfer_no LIKE 'TR-%'
+    `
+    )
+    .get() as { max_num: number | null } | undefined
 
-  const maxNumber = rows.reduce((max, row) => {
-    const clean = String(row.transfer_no || '').replace('TR-', '')
-    const parsed = Number(clean)
-    return Number.isFinite(parsed) ? Math.max(max, parsed) : max
-  }, 0)
-
+  const maxNumber = Number(row?.max_num ?? 0)
   return `TR-${String(maxNumber + 1).padStart(4, '0')}`
 }
 

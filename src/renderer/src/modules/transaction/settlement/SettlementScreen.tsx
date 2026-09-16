@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent }
 import AppAlert from '../../../components/ui/AppAlert'
 import AppConfirmDialog from '../../../components/ui/AppConfirmDialog'
 import { getFriendlyErrorMessage } from '../../../utils/getFriendlyErrorMessage'
+import { formatDate, formatAmount, formatWeight } from '../../../utils/formatters'
 
 type AlertType = 'success' | 'error' | 'warning'
 
@@ -33,25 +34,8 @@ function createInitialForm(): SettlementForm {
   }
 }
 
-function formatWeight(value: number): string {
-  if (!value) return '-'
-  return Number(value || 0).toFixed(3)
-}
 
-function formatAmount(value: number): string {
-  if (!value) return '-'
-  return Number(value || 0).toLocaleString('en-IN', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  })
-}
 
-function formatDate(value: string): string {
-  if (!value) return '-'
-  const [year, month, day] = value.split('-')
-  if (!year || !month || !day) return value
-  return `${day}/${month}/${year}`
-}
 
 const COMMON_NARRATIONS = [
   'Account balance write-off / discount round-off',

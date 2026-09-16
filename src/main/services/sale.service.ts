@@ -13,8 +13,10 @@ import {
 import { saleNumberService } from './saleNumber.service'
 import { inventoryMovementService } from './inventoryMovement.service'
 import { AccountLedgerRepository } from '../database/repositories/AccountLedgerRepository'
+import { StockLedgerRepository } from '../database/repositories/StockLedgerRepository'
 
 const accountLedgerRepository = new AccountLedgerRepository()
+const stockLedgerRepository = new StockLedgerRepository()
 
 const saleItemLineSchema = z.object({
   lineType: z.string().trim().optional().default('NAVE'),
@@ -36,7 +38,12 @@ const saleItemLineSchema = z.object({
 
 const salePaymentLineSchema = z.object({
   type: z.string().trim().optional().default(''),
-  jamaNave: z.enum(['JAMA', 'NAVE']).optional().default('JAMA'),
+  jamaNave: z
+    .literal('JAMA', {
+      message: "Sale payment lines only support 'JAMA' (receipts)"
+    })
+    .optional()
+    .default('JAMA'),
   details: z.string().trim().optional().default(''),
   pcs: z.coerce.number().default(0),
   weight: z.coerce.number().default(0),
@@ -190,7 +197,7 @@ export const saleService = {
         id: uuidv4(),
         lineNo: index + 1,
         type: line.type || '',
-        jamaNave: line.jamaNave || 'JAMA',
+        jamaNave: 'JAMA' as const,
         details: line.details || '',
         pcs: line.pcs,
         weight: line.weight,
@@ -211,10 +218,10 @@ export const saleService = {
     // header, account_ledger, and closing balances never store floating-point
     // noise: fine to 3 decimals, currency (majuri/cash/bank/anamat) to whole units.
     //
-    // Every sale payment line is a JAMA (amount received) in this app - the Sale
-    // screen only ever produces JAMA lines. All lines are therefore summed with
-    // no jama/nave filtering, which guarantees no entered payment is silently
-    // dropped from the totals or the account ledger.
+    // Sale payment lines represent receipts from the customer and are strictly JAMA.
+    // The schema enforces jamaNave: 'JAMA' (rejecting NAVE), preventing any NAVE
+    // payment lines from being saved and corrupting balances. We also filter on JAMA
+    // when aggregating as defense in depth.
     const itemFineTotal = roundNumber(
       preparedItemLines.reduce((total, line) => total + line.fine, 0)
     )
@@ -223,20 +230,36 @@ export const saleService = {
       0
     )
     const paymentFineJamaTotal = roundNumber(
-      preparedPaymentLines.reduce((total, line) => total + line.fine, 0)
+      preparedPaymentLines
+        .filter((line) => line.jamaNave === 'JAMA')
+        .reduce((total, line) => total + line.fine, 0)
     )
     const paymentCashJamaTotal = roundNumber(
-      preparedPaymentLines.reduce((total, line) => total + line.cash, 0),
+      preparedPaymentLines
+        .filter((line) => line.jamaNave === 'JAMA')
+        .reduce((total, line) => total + line.cash, 0),
       0
     )
     const paymentBankJamaTotal = roundNumber(
-      preparedPaymentLines.reduce((total, line) => total + line.bank, 0),
+      preparedPaymentLines
+        .filter((line) => line.jamaNave === 'JAMA')
+        .reduce((total, line) => total + line.bank, 0),
       0
     )
     const paymentAnamatJamaTotal = roundNumber(
-      preparedPaymentLines.reduce((total, line) => total + line.anamat, 0),
+      preparedPaymentLines
+        .filter((line) => line.jamaNave === 'JAMA')
+        .reduce((total, line) => total + line.anamat, 0),
       0
     )
+
+    if (data.metalType !== 'Gold' && data.metalType !== 'Silver') {
+      if (itemFineTotal > 0 || paymentFineJamaTotal > 0) {
+        throw new Error(
+          `Fine weight is only supported for Gold and Silver transactions. "${data.metalType}" transactions cannot carry fine weight.`
+        )
+      }
+    }
 
     const closingGoldFine =
       data.metalType === 'Gold'
@@ -249,6 +272,29 @@ export const saleService = {
     const closingCash = roundNumber(oldBalance.cash + itemMajuriTotal - paymentCashJamaTotal, 0)
     const closingBank = roundNumber(oldBalance.bank - paymentBankJamaTotal, 0)
     const closingAnamat = roundNumber(oldBalance.anamat - paymentAnamatJamaTotal, 0)
+
+    // Verify sufficient stock exists for all items being sold
+    const itemDemandMap = new Map<string, { pcs: number; grossWeight: number; itemName: string }>()
+    for (const line of preparedItemLines) {
+      const current = itemDemandMap.get(line.itemId) || { pcs: 0, grossWeight: 0, itemName: line.item.item_name }
+      current.pcs += line.pcs
+      current.grossWeight += line.grossWeight
+      itemDemandMap.set(line.itemId, current)
+    }
+
+    for (const [itemId, demand] of itemDemandMap.entries()) {
+      const stock = stockLedgerRepository.getItemBalance(itemId)
+      if (demand.pcs > 0 && stock.totalPcs < demand.pcs) {
+        throw new Error(
+          `Insufficient stock for "${demand.itemName}". Required: ${demand.pcs} pcs, Available: ${stock.totalPcs} pcs.`
+        )
+      }
+      if (demand.grossWeight > 0 && roundNumber(stock.totalGrossWeight + 0.001, 3) < demand.grossWeight) {
+        throw new Error(
+          `Insufficient stock for "${demand.itemName}". Required: ${demand.grossWeight}g, Available: ${stock.totalGrossWeight}g.`
+        )
+      }
+    }
 
     const transaction = db.transaction(() => {
       db.prepare(
@@ -524,6 +570,24 @@ export const saleService = {
 
     if (!sale) {
       throw new Error('Sale not found')
+    }
+
+    const activeReturns = db
+      .prepare(
+        `
+        SELECT return_no
+        FROM sale_return_headers
+        WHERE against_sale_id = ?
+        AND deleted_at IS NULL
+      `
+      )
+      .all(id) as Array<{ return_no: string }>
+
+    if (activeReturns.length > 0) {
+      const returnNos = activeReturns.map((r) => r.return_no).join(', ')
+      throw new Error(
+        `Cannot cancel sale ${sale.sale_no} because active sale return(s) exist against it: ${returnNos}. Please cancel the return(s) first.`
+      )
     }
 
     const transaction = db.transaction(() => {

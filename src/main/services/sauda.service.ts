@@ -65,16 +65,17 @@ function assertAccountExists(accountId: string): void {
 
 function getNextSaudaNo(): string {
   const db = getDatabase()
-  const rows = db
-    .prepare(`SELECT sauda_no FROM sauda_entries ORDER BY created_at DESC`)
-    .all() as { sauda_no: string }[]
+  const row = db
+    .prepare(
+      `
+      SELECT MAX(CAST(SUBSTR(sauda_no, 4) AS INTEGER)) AS max_num
+      FROM sauda_entries
+      WHERE sauda_no LIKE 'SD-%'
+    `
+    )
+    .get() as { max_num: number | null } | undefined
 
-  const maxNumber = rows.reduce((max, row) => {
-    const clean = String(row.sauda_no || '').replace('SD-', '')
-    const parsed = Number(clean)
-    return Number.isFinite(parsed) ? Math.max(max, parsed) : max
-  }, 0)
-
+  const maxNumber = Number(row?.max_num ?? 0)
   return `SD-${String(maxNumber + 1).padStart(4, '0')}`
 }
 

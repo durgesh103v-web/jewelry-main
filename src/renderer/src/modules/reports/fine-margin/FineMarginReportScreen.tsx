@@ -16,6 +16,7 @@ import {
 } from 'react-icons/fi'
 import AppAlert from '../../../components/ui/AppAlert'
 import { getFriendlyErrorMessage } from '../../../utils/getFriendlyErrorMessage'
+import { formatDate, formatAmount } from '../../../utils/formatters'
 
 type AlertType = 'success' | 'error' | 'warning'
 type DatePreset = 'TODAY' | 'THIS_MONTH' | 'THIS_FY' | 'ALL_TIME'
@@ -27,19 +28,7 @@ function formatWeight(value: number): string {
   })
 }
 
-function formatAmount(value: number): string {
-  return Number(value || 0).toLocaleString('en-IN', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  })
-}
 
-function formatDate(value: string): string {
-  if (!value) return ''
-  const [year, month, day] = value.split('-')
-  if (!year || !month || !day) return value
-  return `${day}/${month}/${year}`
-}
 
 function FineMarginReportScreen({ onClose }: { onClose: () => void }): React.JSX.Element {
   const [fromDate, setFromDate] = useState('')

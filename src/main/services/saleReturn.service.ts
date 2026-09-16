@@ -241,6 +241,139 @@ function resolveAgainstSaleId(againstSaleId: string): string | null {
   return sale.id
 }
 
+function validateAgainstSale(
+  againstSaleId: string,
+  accountId: string,
+  metalType: string,
+  preparedItemLines: Array<{ itemId: string; item: ItemMetaRow; pcs: number; grossWeight: number; fine: number }>,
+  currentSaleReturnId?: string
+): void {
+  const db = getDatabase()
+
+  const sale = db
+    .prepare(
+      `
+      SELECT id, sale_no, account_id, metal_type
+      FROM sale_headers
+      WHERE id = ?
+      AND deleted_at IS NULL
+    `
+    )
+    .get(againstSaleId) as (SaleRow & { account_id: string; metal_type: string }) | undefined
+
+  if (!sale) {
+    throw new Error('The selected original sale was not found')
+  }
+
+  if (sale.account_id !== accountId) {
+    throw new Error(`The selected original sale ${sale.sale_no} does not belong to the selected account`)
+  }
+
+  if (sale.metal_type !== metalType) {
+    throw new Error(
+      `The selected original sale ${sale.sale_no} has metal type ${sale.metal_type}, which does not match return metal type ${metalType}`
+    )
+  }
+
+  const soldLines = db
+    .prepare(
+      `
+      SELECT
+        item_id,
+        item_name_snapshot,
+        SUM(pcs) AS sold_pcs,
+        SUM(gross_weight) AS sold_gross_weight,
+        SUM(fine) AS sold_fine
+      FROM sale_item_lines
+      WHERE sale_id = ?
+      GROUP BY item_id
+    `
+    )
+    .all(againstSaleId) as Array<{
+    item_id: string
+    item_name_snapshot: string
+    sold_pcs: number
+    sold_gross_weight: number
+    sold_fine: number
+  }>
+
+  const soldMap = new Map(soldLines.map((s) => [s.item_id, s]))
+
+  const returnedLines = db
+    .prepare(
+      `
+      SELECT
+        sril.item_id,
+        SUM(sril.pcs) AS returned_pcs,
+        SUM(sril.gross_weight) AS returned_gross_weight,
+        SUM(sril.fine) AS returned_fine
+      FROM sale_return_item_lines sril
+      INNER JOIN sale_return_headers srh ON srh.id = sril.sale_return_id
+      WHERE srh.against_sale_id = ?
+      AND srh.deleted_at IS NULL
+      AND (? IS NULL OR srh.id != ?)
+      GROUP BY sril.item_id
+    `
+    )
+    .all(againstSaleId, currentSaleReturnId ?? null, currentSaleReturnId ?? null) as Array<{
+    item_id: string
+    returned_pcs: number
+    returned_gross_weight: number
+    returned_fine: number
+  }>
+
+  const returnedMap = new Map(returnedLines.map((r) => [r.item_id, r]))
+
+  const returnDemandMap = new Map<string, { pcs: number; grossWeight: number; fine: number; itemName: string }>()
+  for (const line of preparedItemLines) {
+    const current = returnDemandMap.get(line.itemId) || {
+      pcs: 0,
+      grossWeight: 0,
+      fine: 0,
+      itemName: line.item.item_name
+    }
+    current.pcs += line.pcs
+    current.grossWeight += line.grossWeight
+    current.fine += line.fine
+    returnDemandMap.set(line.itemId, current)
+  }
+
+  for (const [itemId, demand] of returnDemandMap.entries()) {
+    const sold = soldMap.get(itemId)
+    if (!sold) {
+      throw new Error(
+        `Item "${demand.itemName}" was not found in original sale ${sale.sale_no}.`
+      )
+    }
+
+    const alreadyReturned = returnedMap.get(itemId) || { returned_pcs: 0, returned_gross_weight: 0, returned_fine: 0 }
+    const returnablePcs = Math.max(0, sold.sold_pcs - alreadyReturned.returned_pcs)
+    const returnableGrossWeight = Math.max(
+      0,
+      roundNumber(sold.sold_gross_weight - alreadyReturned.returned_gross_weight, 3)
+    )
+    const returnableFine = Math.max(0, roundNumber(sold.sold_fine - alreadyReturned.returned_fine, 3))
+
+    if (demand.pcs > returnablePcs) {
+      throw new Error(
+        `Cannot return ${demand.pcs} pcs for "${demand.itemName}" against sale ${sale.sale_no}. Available to return: ${returnablePcs} pcs (Sold: ${sold.sold_pcs}, Previously returned: ${alreadyReturned.returned_pcs}).`
+      )
+    }
+
+    if (demand.grossWeight > roundNumber(returnableGrossWeight + 0.001, 3)) {
+      throw new Error(
+        `Cannot return ${demand.grossWeight}g for "${demand.itemName}" against sale ${sale.sale_no}. Available to return: ${returnableGrossWeight}g (Sold: ${sold.sold_gross_weight}g, Previously returned: ${alreadyReturned.returned_gross_weight}g).`
+      )
+    }
+
+    if (demand.fine > roundNumber(returnableFine + 0.001, 3)) {
+      throw new Error(
+        `Cannot return ${demand.fine}g fine for "${demand.itemName}" against sale ${sale.sale_no}. Available to return: ${returnableFine}g fine (Sold: ${sold.sold_fine}g, Previously returned: ${alreadyReturned.returned_fine}g).`
+      )
+    }
+  }
+}
+
 export const saleReturnService = {
   getNextSaleReturnNo() {
     return saleReturnNumberService.getNextSaleReturnNo()
@@ -265,6 +398,10 @@ export const saleReturnService = {
 
     const preparedItemLines = prepareItemLines(data.itemLines)
 
+    if (againstSaleId) {
+      validateAgainstSale(againstSaleId, data.accountId, data.metalType, preparedItemLines)
+    }
+
     const itemFineTotal = roundNumber(
       preparedItemLines.reduce((total, line) => total + line.fine, 0)
     )
@@ -272,6 +409,12 @@ export const saleReturnService = {
       preparedItemLines.reduce((total, line) => total + line.majuri, 0),
       0
     )
+
+    if (data.metalType !== 'Gold' && data.metalType !== 'Silver' && itemFineTotal > 0) {
+      throw new Error(
+        `Fine weight is only supported for Gold and Silver returns. "${data.metalType}" returns cannot carry fine weight.`
+      )
+    }
 
     // Sale Return is the mirror image of a Sale: a Sale posts fine_nave/
     // cash_nave (which add to the running balance the customer owes). A
@@ -472,6 +615,10 @@ export const saleReturnService = {
 
     const preparedItemLines = prepareItemLines(data.itemLines)
 
+    if (againstSaleId) {
+      validateAgainstSale(againstSaleId, data.accountId, data.metalType, preparedItemLines, id)
+    }
+
     const itemFineTotal = roundNumber(
       preparedItemLines.reduce((total, line) => total + line.fine, 0)
     )
@@ -479,6 +626,12 @@ export const saleReturnService = {
       preparedItemLines.reduce((total, line) => total + line.majuri, 0),
       0
     )
+
+    if (data.metalType !== 'Gold' && data.metalType !== 'Silver' && itemFineTotal > 0) {
+      throw new Error(
+        `Fine weight is only supported for Gold and Silver returns. "${data.metalType}" returns cannot carry fine weight.`
+      )
+    }
 
     const transaction = db.transaction(() => {
       inventoryMovementService.revertMovement('SALE_RETURN', id)

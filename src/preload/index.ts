@@ -166,7 +166,7 @@ type SaleItemLinePayload = {
 
 type SalePaymentLinePayload = {
   type: string
-  jamaNave: 'JAMA' | 'NAVE'
+  jamaNave: 'JAMA'
   details: string
   pcs: number
   weight: number

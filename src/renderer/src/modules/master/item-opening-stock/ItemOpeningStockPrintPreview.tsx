@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { formatDate } from '../../../utils/printFormat'
+import { formatNumber } from '../../../utils/formatters'
 
 const defaultPrinterSetting: PrinterSettingPayload = {
   paperSize: 'A4',
@@ -36,11 +37,7 @@ type PrintableOpeningStockRecord = {
   majuri: number
 }
 
-function formatNumber(value: number): string {
-  return Number(value || 0)
-    .toFixed(3)
-    .replace(/\.?0+$/, '')
-}
+
 
 function ItemOpeningStockPrintPreview({
   records,

@@ -14,6 +14,7 @@ import AppAlert from '../../../components/ui/AppAlert'
 import AppConfirmDialog from '../../../components/ui/AppConfirmDialog'
 import { getFriendlyErrorMessage } from '../../../utils/getFriendlyErrorMessage'
 import SalePrintPreview, { type SavedSaleRecord } from '../sale/SalePrintPreview'
+import { formatDate, formatAmount, formatNumber } from '../../../utils/formatters'
 
 type AlertType = 'success' | 'error' | 'warning'
 
@@ -33,26 +34,8 @@ type SaleRegisterRecord = {
   mobile_number: string
 }
 
-function formatNumber(value: number): string {
-  return Number(value || 0).toLocaleString('en-IN', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 3
-  })
-}
 
-function formatAmount(value: number): string {
-  return Number(value || 0).toLocaleString('en-IN', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  })
-}
 
-function formatDate(value: string): string {
-  if (!value) return ''
-  const [year, month, day] = value.split('-')
-  if (!year || !month || !day) return value
-  return `${day}/${month}/${year}`
-}
 
 function SaleRegisterScreen({ onClose }: { onClose: () => void }): React.JSX.Element {
   const [sales, setSales] = useState<SaleRegisterRecord[]>([])

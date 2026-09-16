@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import dayjs from 'dayjs'
+import { formatAmount } from '../../../utils/formatters'
 import {
   FiRefreshCw,
   FiDownload,
@@ -28,12 +29,6 @@ type TaxTab =
   | 'PURCHASE_TAX_REGISTER'
   | 'MASTERS'
 
-function formatAmount(value: number | undefined | null): string {
-  return Number(value || 0).toLocaleString('en-IN', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  })
-}
 
 export const TaxComplianceHubScreen: React.FC<TaxComplianceHubScreenProps> = ({
   onClose,

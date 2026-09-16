@@ -16,6 +16,7 @@ import AppAlert from '../../../components/ui/AppAlert'
 import { ConfirmDialog } from '../../../components/ui'
 import ItemOpeningStockPrintPreview from './ItemOpeningStockPrintPreview'
 import { getFriendlyErrorMessage } from '../../../utils/getFriendlyErrorMessage'
+import { toNumber } from '../../../utils/formatters'
 import {
   calculateFine,
   calculateHishob,
@@ -164,11 +165,6 @@ const initialForm = {
   active: true
 }
 
-function toNumber(value: string | number): number {
-  if (value === '') return 0
-  const num = Number(value)
-  return Number.isFinite(num) ? num : 0
-}
 
 function renderMetalBadge(metal: string): React.JSX.Element {
   const normalized = (metal || '').toLowerCase()

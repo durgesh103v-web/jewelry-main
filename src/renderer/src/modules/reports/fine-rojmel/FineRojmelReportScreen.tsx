@@ -12,6 +12,7 @@ import {
 } from 'react-icons/fi'
 import AppAlert from '../../../components/ui/AppAlert'
 import { getFriendlyErrorMessage } from '../../../utils/getFriendlyErrorMessage'
+import { formatDate } from '../../../utils/formatters'
 
 type AlertType = 'success' | 'error' | 'warning'
 type DatePreset = 'TODAY' | 'YESTERDAY' | 'THIS_WEEK' | 'THIS_MONTH' | 'THIS_FY'
@@ -36,12 +37,6 @@ function formatFine(value: number): string {
   })
 }
 
-function formatDate(value: string): string {
-  if (!value) return ''
-  const [year, month, day] = value.split('-')
-  if (!year || !month || !day) return value
-  return `${day}/${month}/${year}`
-}
 
 function FineRojmelReportScreen({ onClose }: { onClose: () => void }): React.JSX.Element {
   const [fromDate, setFromDate] = useState(dayjs().startOf('month').format('YYYY-MM-DD'))

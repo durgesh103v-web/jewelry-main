@@ -21,6 +21,7 @@ import AppAlert from '../../../components/ui/AppAlert'
 import AppConfirmDialog from '../../../components/ui/AppConfirmDialog'
 import { getFriendlyErrorMessage } from '../../../utils/getFriendlyErrorMessage'
 import { calculateSaleItemTotals, type LabourRateType } from '../../../utils/jewelleryFormula'
+import { formatDate, formatNumber, toNumber, isValidAmountInput, getTodayDate, getLabourRateType } from '../../../utils/formatters'
 
 type AlertType = 'success' | 'error' | 'warning'
 type MetalType = 'Gold' | 'Silver' | 'Diamond' | 'Other'
@@ -105,41 +106,11 @@ const initialItemForm = {
   labourRateType: 'Kg' as LabourRateType
 }
 
-function getTodayDate(): string {
-  const date = new Date()
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
 
-function toNumber(value: string | number): number {
-  if (value === '') return 0
-  const numberValue = Number(value)
-  return Number.isFinite(numberValue) ? numberValue : 0
-}
 
-function isValidAmountInput(value: string): boolean {
-  return /^-?\d*\.?\d*$/.test(value)
-}
 
-function formatNumber(value: number): string {
-  return Number(value || 0)
-    .toFixed(3)
-    .replace(/\.?0+$/, '')
-}
 
-function formatDate(value: string): string {
-  if (!value) return ''
-  const [year, month, day] = value.split('-')
-  if (!year || !month || !day) return value
-  return `${day}/${month}/${year}`
-}
 
-function getLabourRateType(value: string): LabourRateType {
-  if (value === 'Gm' || value === 'Pcs') return value
-  return 'Kg'
-}
 
 function getStatusLabel(status: ApprovalStatus): string {
   if (status === 'pending') return 'Pending'

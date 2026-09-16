@@ -85,6 +85,33 @@ function getSingleUser(): SingleUserRow | undefined {
     .get() as SingleUserRow | undefined
 }
 
+let failedLoginAttempts = 0
+let lockoutUntil = 0
+const MAX_FAILED_ATTEMPTS = 5
+const LOCKOUT_DURATION_MS = 5 * 60 * 1000 // 5 minutes
+
+function checkLockout(): void {
+  const now = Date.now()
+  if (lockoutUntil > now) {
+    const remainingSeconds = Math.ceil((lockoutUntil - now) / 1000)
+    throw new Error(`Too many failed login attempts. Account locked. Please try again in ${remainingSeconds} seconds.`)
+  }
+}
+
+function recordFailedAttempt(): void {
+  failedLoginAttempts += 1
+  if (failedLoginAttempts >= MAX_FAILED_ATTEMPTS) {
+    lockoutUntil = Date.now() + LOCKOUT_DURATION_MS
+    failedLoginAttempts = 0
+    throw new Error('Too many failed login attempts. Account locked for 5 minutes.')
+  }
+}
+
+function recordSuccessfulAttempt(): void {
+  failedLoginAttempts = 0
+  lockoutUntil = 0
+}
+
 export const authService = {
   getState() {
     const user = getSingleUser()
@@ -137,17 +164,23 @@ export const authService = {
   },
 
   login(payload: unknown): AuthSession {
+    checkLockout()
+
     const data = loginSchema.parse(payload)
 
     const user = getSingleUser()
 
     if (!user || user.username.toLowerCase() !== data.username.toLowerCase()) {
+      recordFailedAttempt()
       throw new Error('Invalid username or password')
     }
 
     if (!verifyPassword(data.password, user.password_hash)) {
+      recordFailedAttempt()
       throw new Error('Invalid username or password')
     }
+
+    recordSuccessfulAttempt()
 
     let businessType = getBusinessType()
     if (!businessType) {

@@ -21,30 +21,13 @@ import AppAlert from '../../../components/ui/AppAlert'
 import AppConfirmDialog from '../../../components/ui/AppConfirmDialog'
 import { getFriendlyErrorMessage } from '../../../utils/getFriendlyErrorMessage'
 import PurchasePrintPreview from '../purchase/PurchasePrintPreview'
+import { formatDate, formatAmount, formatNumber } from '../../../utils/formatters'
 
 type AlertType = 'success' | 'error' | 'warning'
 type DatePreset = 'TODAY' | 'THIS_MONTH' | 'THIS_FY' | 'ALL_TIME'
 
-function formatNumber(value: number): string {
-  return Number(value || 0).toLocaleString('en-IN', {
-    minimumFractionDigits: 3,
-    maximumFractionDigits: 3
-  })
-}
 
-function formatAmount(value: number): string {
-  return Number(value || 0).toLocaleString('en-IN', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  })
-}
 
-function formatDate(value: string): string {
-  if (!value) return ''
-  const [year, month, day] = value.split('-')
-  if (!year || !month || !day) return value
-  return `${day}/${month}/${year}`
-}
 
 function PurchaseRegisterScreen({ onClose }: { onClose: () => void }): React.JSX.Element {
   const [records, setRecords] = useState<PurchaseRegisterRecord[]>([])

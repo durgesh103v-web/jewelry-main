@@ -16,6 +16,7 @@ import {
 } from 'react-icons/fi'
 import AppAlert from '../../../components/ui/AppAlert'
 import { getFriendlyErrorMessage } from '../../../utils/getFriendlyErrorMessage'
+import { formatNumber } from '../../../utils/formatters'
 
 type AlertType = 'success' | 'error' | 'warning'
 
@@ -41,12 +42,6 @@ type LabelEntry = {
   barcodeFormat: string
 }
 
-function formatNumber(value: number): string {
-  return Number(value || 0).toLocaleString('en-IN', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 3
-  })
-}
 
 function resolveBarcodeFormat(barcodeType: string): string {
   if (barcodeType === 'EAN13') return 'EAN13'

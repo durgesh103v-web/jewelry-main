@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { getFriendlyErrorMessage } from '../../../utils/getFriendlyErrorMessage'
+import { toNumber } from '../../../utils/formatters'
 import { useAlert, useConfirmModal } from '@renderer/hooks'
 import type { ItemFormValues, ItemGroupOption, ItemStampOption, ItemDesignOption } from '../components/ItemForm'
 import type { ItemRecord } from '../components/ItemTable'
@@ -30,12 +31,6 @@ const initialForm: ItemFormValues = {
   defaultLabourRate: '',
   labourRateType: 'Gm',
   active: true
-}
-
-function toNumber(value: string | number): number {
-  if (value === '') return 0
-  const numberValue = Number(value)
-  return Number.isFinite(numberValue) ? numberValue : 0
 }
 
 export function useItemMaster() {

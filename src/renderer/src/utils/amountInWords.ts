@@ -44,11 +44,14 @@ function convertBelowThousand(num: number): string {
 }
 
 export function amountInWords(amount: number): string {
-  let num = Math.floor(Number(amount || 0))
+  const rawNum = Math.floor(Number(amount || 0))
 
-  if (num === 0) {
+  if (rawNum === 0) {
     return 'Zero Rupees Only'
   }
+
+  const isNegative = rawNum < 0
+  let num = Math.abs(rawNum)
 
   const crore = Math.floor(num / 10000000)
   num %= 10000000
@@ -66,5 +69,6 @@ export function amountInWords(amount: number): string {
   if (thousand) parts.push(`${convertBelowThousand(thousand)} Thousand`)
   if (num) parts.push(convertBelowThousand(num))
 
-  return `${parts.join(' ')} Rupees Only`
+  const prefix = isNegative ? 'Minus ' : ''
+  return `${prefix}${parts.join(' ')} Rupees Only`
 }

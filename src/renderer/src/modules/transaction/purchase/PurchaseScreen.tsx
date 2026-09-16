@@ -3,6 +3,7 @@ import AppAlert from '../../../components/ui/AppAlert'
 import AppConfirmDialog from '../../../components/ui/AppConfirmDialog'
 import PurchasePrintPreview from './PurchasePrintPreview'
 import { getFriendlyErrorMessage } from '../../../utils/getFriendlyErrorMessage'
+import { formatNumber, formatDate, toNumber, isValidAmountInput, getTodayDate, getLabourRateType } from '../../../utils/formatters'
 import {
   calculateFine,
   calculateHishob,
@@ -95,41 +96,7 @@ const initialPaymentForm = {
   bank: ''
 }
 
-function getTodayDate(): string {
-  const date = new Date()
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
 
-function toNumber(value: string | number): number {
-  if (value === '') return 0
-  const numberValue = Number(value)
-  return Number.isFinite(numberValue) ? numberValue : 0
-}
-
-function isValidAmountInput(value: string): boolean {
-  return /^-?\d*\.?\d*$/.test(value)
-}
-
-function formatNumber(value: number): string {
-  return Number(value || 0)
-    .toFixed(3)
-    .replace(/\.?0+$/, '')
-}
-
-function formatDate(value: string): string {
-  if (!value) return ''
-  const [year, month, day] = value.split('-')
-  if (!year || !month || !day) return value
-  return `${day}/${month}/${year}`
-}
-
-function getLabourRateType(value: string): LabourRateType {
-  if (value === 'Gm' || value === 'Pcs') return value
-  return 'Kg'
-}
 
 function PurchaseScreen({ onClose }: { onClose: () => void }): React.JSX.Element {
   const [purchaseNo, setPurchaseNo] = useState('')

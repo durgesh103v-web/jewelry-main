@@ -7,7 +7,8 @@ import {
   SupplierRepository,
   AccountLedgerRepository,
   TransactionRepository,
-  ItemRepository
+  ItemRepository,
+  ReturnRepository
 } from '../database/repositories'
 import { pricingService } from './pricing.service'
 import { inventoryMovementService } from './inventoryMovement.service'
@@ -26,6 +27,7 @@ const supplierRepository = new SupplierRepository()
 const accountLedgerRepository = new AccountLedgerRepository()
 const transactionRepository = new TransactionRepository()
 const itemRepository = new ItemRepository()
+const returnRepository = new ReturnRepository()
 
 const purchaseItemSchema = z.object({
   itemId: z.string().trim().min(1, 'Item ID is required'),
@@ -389,6 +391,15 @@ export const purchaseInvoiceService = {
       throw new BusinessRuleError(`Purchase invoice ${invoice.invoiceNumber} is already cancelled`)
     }
 
+    // Check for active returns against this purchase invoice
+    const activeReturns = returnRepository.findByPurchaseInvoice(id)
+    if (activeReturns.length > 0) {
+      const returnNumbers = activeReturns.map((r) => r.returnNumber).join(', ')
+      throw new BusinessRuleError(
+        `Cannot cancel purchase invoice ${invoice.invoiceNumber} because active return transaction(s) (${returnNumbers}) exist against it. Cancel or delete the return(s) first.`
+      )
+    }
+
     return transactionRepository.executeAtomic(() => {
       // 1. Update Status
       purchaseInvoiceRepository.updateStatus(id, 'CANCELLED')
@@ -419,6 +430,14 @@ export const purchaseInvoiceService = {
     if (invoice.status === 'COMPLETED') {
       throw new BusinessRuleError(
         `Cannot delete completed purchase invoice ${invoice.invoiceNumber}. Cancel it first.`
+      )
+    }
+
+    const activeReturns = returnRepository.findByPurchaseInvoice(id)
+    if (activeReturns.length > 0) {
+      const returnNumbers = activeReturns.map((r) => r.returnNumber).join(', ')
+      throw new BusinessRuleError(
+        `Cannot delete purchase invoice ${invoice.invoiceNumber} because active return transaction(s) (${returnNumbers}) exist against it. Cancel or delete the return(s) first.`
       )
     }
 

@@ -12,6 +12,7 @@ import {
 } from 'react-icons/fi'
 import AppAlert from '../../../components/ui/AppAlert'
 import { getFriendlyErrorMessage } from '../../../utils/getFriendlyErrorMessage'
+import { toNumber, isValidAmountInput } from '../../../utils/formatters'
 
 type AlertType = 'success' | 'error' | 'warning'
 type PaperSize = 'A4' | '80MM' | '58MM'
@@ -50,15 +51,9 @@ const initialForm: PrinterSettingForm = {
   autoPrintAfterSave: false
 }
 
-function toNumber(value: string | number): number {
-  if (value === '') return 0
-  const numberValue = Number(value)
-  return Number.isFinite(numberValue) ? numberValue : 0
-}
 
-function isValidAmountInput(value: string): boolean {
-  return /^\d*\.?\d*$/.test(value)
-}
+
+
 
 function isValidIntegerInput(value: string): boolean {
   return /^\d*$/.test(value)

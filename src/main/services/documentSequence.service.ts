@@ -53,19 +53,6 @@ function getSaleBillPrefix(): string {
   return prefix ? prefix.toUpperCase() : 'SL'
 }
 
-function extractSequenceNumber(documentNo: string, prefix: string): number {
-  const clean = String(documentNo || '').trim()
-  const expectedPrefix = `${prefix}-`
-
-  if (!clean.startsWith(expectedPrefix)) {
-    return 0
-  }
-
-  const numberPart = clean.replace(expectedPrefix, '')
-  const parsed = Number(numberPart)
-  return Number.isFinite(parsed) ? parsed : 0
-}
-
 export const documentSequenceService = {
   getNextNumber(type: DocumentType): string {
     const db = getDatabase()
@@ -88,20 +75,18 @@ export const documentSequenceService = {
     let maxNumber = 0
     for (const src of sources) {
       try {
-        const rows = db
+        const row = db
           .prepare(
             `
-            SELECT ${src.column} AS doc_no
+            SELECT MAX(CAST(SUBSTR(${src.column}, LENGTH(?) + 2) AS INTEGER)) AS max_num
             FROM ${src.table}
             WHERE ${src.column} LIKE ?
           `
           )
-          .all(`${prefix}-%`) as { doc_no: string }[]
+          .get(prefix, `${prefix}-%`) as { max_num: number | null } | undefined
 
-        for (const row of rows) {
-          const num = extractSequenceNumber(row.doc_no, prefix)
-          if (num > maxNumber) maxNumber = num
-        }
+        const num = Number(row?.max_num ?? 0)
+        if (num > maxNumber) maxNumber = num
       } catch {
         // Table or column may not exist in legacy schema; ignore
       }

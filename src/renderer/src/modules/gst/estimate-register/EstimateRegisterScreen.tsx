@@ -15,28 +15,12 @@ import {
 import AppConfirmDialog from '../../../components/ui/AppConfirmDialog'
 import { getFriendlyErrorMessage } from '../../../utils/getFriendlyErrorMessage'
 import EstimatePrintPreview from '../retail-sale-estimate/EstimatePrintPreview'
+import { formatDate, formatAmount, formatNumber } from '../../../utils/formatters'
 
 type AlertType = 'success' | 'error' | 'warning'
 
-function formatNumber(value: number): string {
-  return Number(value || 0)
-    .toFixed(3)
-    .replace(/\.?0+$/, '')
-}
 
-function formatAmount(value: number): string {
-  return Number(value || 0).toLocaleString('en-IN', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  })
-}
 
-function formatDate(value: string): string {
-  if (!value) return ''
-  const [year, month, day] = value.split('-')
-  if (!year || !month || !day) return value
-  return `${day}/${month}/${year}`
-}
 
 function getStatusLabel(status: EstimateStatus): string {
   if (status === 'OPEN') return 'Open'

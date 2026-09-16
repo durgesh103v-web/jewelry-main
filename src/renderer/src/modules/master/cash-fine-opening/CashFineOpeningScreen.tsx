@@ -17,6 +17,7 @@ import {
 import AppAlert from '../../../components/ui/AppAlert'
 import { ConfirmDialog } from '../../../components/ui'
 import { getFriendlyErrorMessage } from '../../../utils/getFriendlyErrorMessage'
+import { toNumber, isValidAmountInput } from '../../../utils/formatters'
 
 type AlertType = 'success' | 'error' | 'warning'
 type MetalType = 'Gold' | 'Silver' | 'Platinum' | 'Diamond'
@@ -78,15 +79,7 @@ const initialSummaryForm = {
   openingPettyCash: ''
 }
 
-function toNumber(value: string | number | undefined): number {
-  if (value === undefined || value === null || value === '') return 0
-  const numberValue = Number(value)
-  return Number.isFinite(numberValue) ? numberValue : 0
-}
 
-function isValidAmountInput(value: string): boolean {
-  return /^-?\d*\.?\d*$/.test(value)
-}
 
 function roundNumber(value: number, decimals = 3): number {
   const factor = Math.pow(10, decimals)

@@ -63,16 +63,17 @@ function mapRow(row: SettlementRow) {
 
 function getNextSettlementNo(): string {
   const db = getDatabase()
-  const rows = db
-    .prepare(`SELECT settlement_no FROM settlements ORDER BY created_at DESC`)
-    .all() as { settlement_no: string }[]
+  const row = db
+    .prepare(
+      `
+      SELECT MAX(CAST(SUBSTR(settlement_no, 4) AS INTEGER)) AS max_num
+      FROM settlements
+      WHERE settlement_no LIKE 'ST-%'
+    `
+    )
+    .get() as { max_num: number | null } | undefined
 
-  const maxNumber = rows.reduce((max, row) => {
-    const clean = String(row.settlement_no || '').replace('ST-', '')
-    const parsed = Number(clean)
-    return Number.isFinite(parsed) ? Math.max(max, parsed) : max
-  }, 0)
-
+  const maxNumber = Number(row?.max_num ?? 0)
   return `ST-${String(maxNumber + 1).padStart(4, '0')}`
 }
 
