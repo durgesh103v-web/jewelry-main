@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import React, { useState, type FormEvent } from 'react'
 import {
   FiUser,
   FiLock,
@@ -11,10 +11,11 @@ import {
   FiShoppingBag,
   FiLayers,
   FiShield,
-  FiUserPlus
+  FiUserPlus,
+  FiAward,
+  FiHardDrive
 } from 'react-icons/fi'
 import { getFriendlyErrorMessage } from '../../utils/getFriendlyErrorMessage'
-import { authStyles as s } from './authStyles'
 
 type Props = {
   onRegistered: (session: AuthSession) => void
@@ -28,20 +29,20 @@ const BUSINESS_TYPES: Array<{
 }> = [
   {
     value: 'WHOLESALE',
-    title: 'Wholesale ERP',
-    hint: 'Fine, Tunch, Hishob, Metal Ledgers, Sauda & Approvals',
+    title: 'Wholesale & Bullion',
+    hint: 'Pure Metal Hishob, Karigar Loss, Tunch, Sauda & Approvals',
     icon: FiShoppingBag
   },
   {
     value: 'RETAIL',
-    title: 'Retail Billing',
-    hint: 'GST Retail Invoicing, Barcode Estimates, Stock & Reports',
+    title: 'Retail Showroom',
+    hint: 'GST Invoicing, Barcode Estimates, Stock Vault & Daily Sales',
     icon: FiLayers
   }
 ]
 
 function calculatePasswordStrength(pass: string): { score: number; label: string; color: string } {
-  if (!pass) return { score: 0, label: '', color: '#e2e8f0' }
+  if (!pass) return { score: 0, label: '', color: '#334155' }
   let score = 0
   if (pass.length >= 4) score += 25
   if (pass.length >= 8) score += 25
@@ -107,220 +108,313 @@ function RegisterScreen({ onRegistered }: Props): React.JSX.Element {
   }
 
   return (
-    <div style={s.screen}>
-      <div style={s.glowOrb1} />
-      <div style={s.glowOrb2} />
+    <div className="min-h-screen w-full flex bg-slate-950 text-slate-100 font-sans select-none overflow-hidden">
+      {/* LEFT COLUMN: Luxury Showcase Hero Panel */}
+      <div className="hidden lg:flex lg:w-6/12 relative flex-col justify-between p-12 overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950/90 border-r border-amber-500/20">
+        {/* Ambient Gold & Sapphire Lighting Blooms */}
+        <div className="absolute -top-32 -left-32 w-96 h-96 bg-amber-500/15 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-1/2 -right-32 w-96 h-96 bg-indigo-500/15 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-32 left-1/4 w-96 h-96 bg-amber-600/10 rounded-full blur-3xl pointer-events-none" />
 
-      <div style={{ ...s.card, maxWidth: '500px' }}>
-        <div style={s.header}>
-          <div style={s.logoRing}>
-            <FiShield />
-          </div>
-          <h1 style={s.headerTitle}>Initial Setup & Setup Admin</h1>
-          <p style={s.headerSub}>Initialize your Jewellery ERP database on this workstation</p>
-          <div style={s.badge}>
-            <FiCheckCircle size={12} />
-            <span>ONE-TIME MASTER CONFIGURATION</span>
+        {/* Top Branding Section */}
+        <div className="relative z-10">
+          <div className="flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-300 via-amber-500 to-amber-700 p-0.5 shadow-lg shadow-amber-500/20">
+              <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center text-amber-400 text-2xl font-bold">
+                <FiAward />
+              </div>
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl font-black tracking-wider text-white uppercase">
+                  Jewellery ERP
+                </h1>
+                <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 tracking-wider">
+                  Initial Setup
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 font-medium tracking-wide">
+                Initialize Your Showroom Master Database
+              </p>
+            </div>
           </div>
         </div>
 
-        <form style={s.body} onSubmit={handleSubmit} noValidate>
+        {/* Center Value Proposition & Feature Highlights */}
+        <div className="relative z-10 my-auto py-8 space-y-8 max-w-lg">
+          <div>
+            <span className="text-xs font-bold uppercase tracking-widest text-amber-400">
+              Master Node Setup
+            </span>
+            <h2 className="text-3xl font-black text-white tracking-tight mt-1 leading-tight">
+              Create Your Administrator Account & Firm Profile.
+            </h2>
+            <p className="text-sm text-slate-400 mt-2 leading-relaxed font-normal">
+              This one-time setup provisions your offline encrypted SQLite database, sets up your master karigar books, and assigns your hardware key.
+            </p>
+          </div>
+
+          {/* 3 Luxury Setup Highlights */}
+          <div className="space-y-4">
+            <div className="flex items-start gap-4 p-4 rounded-2xl bg-white/[0.03] border border-white/10 backdrop-blur-md">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shrink-0 mt-0.5">
+                <FiHome className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-white leading-snug">
+                  Personalized Showroom Invoicing
+                </h4>
+                <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">
+                  Your firm name, GSTIN, and address will be printed cleanly on all customer tax invoices and thermal tags.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-4 p-4 rounded-2xl bg-white/[0.03] border border-white/10 backdrop-blur-md">
+              <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0 mt-0.5">
+                <FiShield className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-white leading-snug">
+                  Master Recovery Key Generation
+                </h4>
+                <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">
+                  A high-entropy disaster recovery key will be generated so you never lose access to your records.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-4 p-4 rounded-2xl bg-white/[0.03] border border-white/10 backdrop-blur-md">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0 mt-0.5">
+                <FiHardDrive className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-white leading-snug">
+                  Zero Cloud Telemetry
+                </h4>
+                <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">
+                  All accounting data stays 100% private and encrypted on your local hard drive.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Status Footer */}
+        <div className="relative z-10 flex items-center justify-between text-xs text-slate-500 pt-6 border-t border-white/10">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="font-semibold text-slate-400">Master Setup Mode</span>
+          </div>
+          <span className="font-mono text-slate-500">v1.0.0 Production</span>
+        </div>
+      </div>
+
+      {/* RIGHT COLUMN: Registration Form Panel */}
+      <div className="w-full lg:w-6/12 flex items-center justify-center p-6 sm:p-10 relative bg-slate-900/60 backdrop-blur-2xl overflow-y-auto max-h-screen">
+        <div className="w-full max-w-lg space-y-5 my-auto py-6">
+          {/* Form Header */}
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <h2 className="text-2xl font-bold text-white tracking-tight">
+                Create Admin Account
+              </h2>
+              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                Setup Step 1 of 1
+              </span>
+            </div>
+            <p className="text-xs text-slate-400">
+              Configure your showroom profile and master administrator credentials
+            </p>
+          </div>
+
+          {/* Error Message */}
           {error && (
-            <div style={s.error} role="alert">
-              <FiAlertCircle size={18} style={{ flexShrink: 0 }} />
-              <span>{error}</span>
+            <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-start gap-2.5 animate-fadeIn">
+              <FiAlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+              <span className="leading-relaxed">{error}</span>
             </div>
           )}
 
-          <div style={s.field}>
-            <label style={s.label} htmlFor="reg-firm">
-              <FiHome size={14} color="#d97706" />
-              <span>Shop / Firm Name</span>
-            </label>
-            <div style={s.inputWrapper}>
-              <div style={s.inputIcon}>
-                <FiHome />
-              </div>
-              <input
-                id="reg-firm"
-                style={s.input}
-                value={firmName}
-                onChange={(e) => setFirmName(e.target.value)}
-                autoFocus
-                placeholder="e.g. Shree Mahalaxmi Jewellers"
-                disabled={submitting}
-              />
-            </div>
-          </div>
-
-          <div style={s.field}>
-            <label style={s.label} htmlFor="reg-username">
-              <FiUser size={14} color="#d97706" />
-              <span>Admin Username</span>
-            </label>
-            <div style={s.inputWrapper}>
-              <div style={s.inputIcon}>
-                <FiUser />
-              </div>
-              <input
-                id="reg-username"
-                style={s.input}
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="e.g. admin or owner name"
-                autoComplete="username"
-                disabled={submitting}
-              />
-            </div>
-          </div>
-
-          <div style={s.field}>
-            <div style={s.labelRow}>
-              <label style={s.label} htmlFor="reg-password">
-                <FiLock size={14} color="#d97706" />
-                <span>Master Password</span>
+          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+            {/* Shop / Firm Name */}
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider" htmlFor="reg-firm">
+                Shop / Firm Name
               </label>
-              {password && (
-                <span style={{ fontSize: '11px', fontWeight: 600, color: strength.color }}>
-                  {strength.label}
-                </span>
-              )}
-            </div>
-            <div style={s.inputWrapper}>
-              <div style={s.inputIcon}>
-                <FiLock />
-              </div>
-              <input
-                id="reg-password"
-                type={showPassword ? 'text' : 'password'}
-                style={{ ...s.input, ...s.inputPassword }}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="At least 4 characters"
-                autoComplete="new-password"
-                disabled={submitting}
-              />
-              <button
-                type="button"
-                style={s.eyeButton}
-                onClick={() => setShowPassword(!showPassword)}
-                title={showPassword ? 'Hide password' : 'Show password'}
-                tabIndex={-1}
-              >
-                {showPassword ? <FiEyeOff /> : <FiEye />}
-              </button>
-            </div>
-            {password.length > 0 && (
-              <div style={s.strengthBarContainer}>
-                <div
-                  style={{
-                    ...s.strengthBar,
-                    width: `${strength.score}%`,
-                    backgroundColor: strength.color
-                  }}
+              <div className="relative flex items-center">
+                <FiHome className="absolute left-3.5 text-amber-400/80 w-4 h-4 pointer-events-none" />
+                <input
+                  id="reg-firm"
+                  type="text"
+                  value={firmName}
+                  onChange={(e) => setFirmName(e.target.value)}
+                  autoFocus
+                  placeholder="e.g. Royal Diamond & Gold Jewels"
+                  disabled={submitting}
+                  className="w-full pl-10 pr-4 py-2.5 bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 focus:border-amber-400 focus:bg-slate-800 rounded-xl text-sm text-white placeholder-slate-500 outline-none transition-all shadow-inner focus:ring-2 focus:ring-amber-500/20"
                 />
               </div>
-            )}
-          </div>
+            </div>
 
-          <div style={s.field}>
-            <div style={s.labelRow}>
-              <label style={s.label} htmlFor="reg-confirm">
-                <FiLock size={14} color="#d97706" />
-                <span>Confirm Password</span>
+            {/* Business Type Selector */}
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider">
+                Primary Business Focus
               </label>
-              {passwordsMatch && (
-                <span style={{ fontSize: '11px', fontWeight: 600, color: '#10b981', display: 'flex', alignItems: 'center', gap: '3px' }}>
-                  <FiCheck size={12} /> Passwords match
-                </span>
-              )}
-              {passwordsMismatch && (
-                <span style={{ fontSize: '11px', fontWeight: 600, color: '#ef4444' }}>
-                  Passwords do not match
-                </span>
-              )}
-            </div>
-            <div style={s.inputWrapper}>
-              <div style={s.inputIcon}>
-                <FiLock />
-              </div>
-              <input
-                id="reg-confirm"
-                type={showConfirmPassword ? 'text' : 'password'}
-                style={{
-                  ...s.input,
-                  ...s.inputPassword,
-                  borderColor: passwordsMatch ? '#10b981' : passwordsMismatch ? '#ef4444' : '#cbd5e1'
-                }}
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Re-enter password"
-                autoComplete="new-password"
-                disabled={submitting}
-              />
-              <button
-                type="button"
-                style={s.eyeButton}
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                title={showConfirmPassword ? 'Hide password' : 'Show password'}
-                tabIndex={-1}
-              >
-                {showConfirmPassword ? <FiEyeOff /> : <FiEye />}
-              </button>
-            </div>
-          </div>
-
-          <div style={s.field}>
-            <label style={s.label}>
-              <FiLayers size={14} color="#d97706" />
-              <span>Primary Business Type</span>
-            </label>
-            <div style={s.typeRow}>
-              {BUSINESS_TYPES.map((option) => {
-                const active = businessType === option.value
-                const Icon = option.icon
-                return (
-                  <div
-                    key={option.value}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => setBusinessType(option.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') setBusinessType(option.value)
-                    }}
-                    style={{
-                      ...s.typeOption,
-                      ...(active ? s.typeOptionActive : {})
-                    }}
-                  >
-                    <div style={{ ...s.typeTitle, ...(active ? s.typeTitleActive : {}) }}>
-                      <Icon size={16} />
-                      <span>{option.title}</span>
+              <div className="grid grid-cols-2 gap-3">
+                {BUSINESS_TYPES.map((type) => {
+                  const Icon = type.icon
+                  const isSelected = businessType === type.value
+                  return (
+                    <div
+                      key={type.value}
+                      onClick={() => setBusinessType(type.value)}
+                      className={`p-3.5 rounded-xl border transition-all cursor-pointer flex flex-col justify-between ${
+                        isSelected
+                          ? 'bg-amber-500/15 border-amber-400 text-white shadow-lg shadow-amber-500/10'
+                          : 'bg-slate-800/60 border-slate-700/70 hover:border-slate-600 text-slate-300'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1.5">
+                        <Icon className={`w-4 h-4 ${isSelected ? 'text-amber-400' : 'text-slate-400'}`} />
+                        {isSelected && <FiCheckCircle className="w-4 h-4 text-amber-400" />}
+                      </div>
+                      <div>
+                        <div className={`text-xs font-bold ${isSelected ? 'text-amber-300' : 'text-white'}`}>
+                          {type.title}
+                        </div>
+                        <p className="text-[10px] text-slate-400 mt-0.5 leading-snug">
+                          {type.hint}
+                        </p>
+                      </div>
                     </div>
-                    <p style={s.typeHint}>{option.hint}</p>
-                  </div>
-                )
-              })}
+                  )
+                })}
+              </div>
             </div>
-          </div>
 
-          <button
-            type="submit"
-            disabled={submitting}
-            style={{
-              ...s.button,
-              ...(submitting ? s.buttonDisabled : {})
-            }}
-          >
-            <FiUserPlus size={16} />
-            <span>{submitting ? 'Creating System & User...' : 'Initialize & Create Account'}</span>
-          </button>
+            {/* Username */}
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider" htmlFor="reg-username">
+                Master Admin Username
+              </label>
+              <div className="relative flex items-center">
+                <FiUser className="absolute left-3.5 text-amber-400/80 w-4 h-4 pointer-events-none" />
+                <input
+                  id="reg-username"
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="e.g. admin"
+                  autoComplete="username"
+                  disabled={submitting}
+                  className="w-full pl-10 pr-4 py-2.5 bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 focus:border-amber-400 focus:bg-slate-800 rounded-xl text-sm text-white placeholder-slate-500 outline-none transition-all shadow-inner focus:ring-2 focus:ring-amber-500/20"
+                />
+              </div>
+            </div>
 
-          <div style={s.securityBadge}>
-            <FiShield size={13} color="#10b981" />
-            <span>This account and business mode are securely locked to this installation.</span>
+            {/* Password & Strength */}
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider" htmlFor="reg-password">
+                Password
+              </label>
+              <div className="relative flex items-center">
+                <FiLock className="absolute left-3.5 text-amber-400/80 w-4 h-4 pointer-events-none" />
+                <input
+                  id="reg-password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter a secure password"
+                  autoComplete="new-password"
+                  disabled={submitting}
+                  className="w-full pl-10 pr-11 py-2.5 bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 focus:border-amber-400 focus:bg-slate-800 rounded-xl text-sm text-white placeholder-slate-500 outline-none transition-all shadow-inner focus:ring-2 focus:ring-amber-500/20"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 text-slate-400 hover:text-slate-200 p-1 cursor-pointer"
+                  tabIndex={-1}
+                >
+                  {showPassword ? <FiEyeOff className="w-4 h-4" /> : <FiEye className="w-4 h-4" />}
+                </button>
+              </div>
+
+              {password.length > 0 && (
+                <div className="space-y-1 pt-1">
+                  <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-300"
+                      style={{
+                        width: `${strength.score}%`,
+                        backgroundColor: strength.color
+                      }}
+                    />
+                  </div>
+                  <div className="flex justify-between text-[11px] text-slate-400">
+                    <span>Password Strength:</span>
+                    <span className="font-bold" style={{ color: strength.color }}>{strength.label}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Confirm Password */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider" htmlFor="reg-confirm">
+                  Confirm Password
+                </label>
+                {passwordsMatch && (
+                  <span className="text-[11px] font-bold text-emerald-400 flex items-center gap-1">
+                    <FiCheck className="w-3 h-3" /> Passwords match
+                  </span>
+                )}
+                {passwordsMismatch && (
+                  <span className="text-[11px] font-bold text-rose-400">Mismatch</span>
+                )}
+              </div>
+              <div className="relative flex items-center">
+                <FiLock className="absolute left-3.5 text-amber-400/80 w-4 h-4 pointer-events-none" />
+                <input
+                  id="reg-confirm"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Re-enter password"
+                  autoComplete="new-password"
+                  disabled={submitting}
+                  className="w-full pl-10 pr-11 py-2.5 bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 focus:border-amber-400 focus:bg-slate-800 rounded-xl text-sm text-white placeholder-slate-500 outline-none transition-all shadow-inner focus:ring-2 focus:ring-amber-500/20"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 text-slate-400 hover:text-slate-200 p-1 cursor-pointer"
+                  tabIndex={-1}
+                >
+                  {showConfirmPassword ? <FiEyeOff className="w-4 h-4" /> : <FiEye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            {/* Register Submit Button */}
+            <button
+              type="submit"
+              disabled={submitting}
+              className="w-full py-3.5 px-4 rounded-xl font-bold text-sm bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-300 hover:via-amber-400 hover:to-amber-500 text-slate-950 shadow-lg shadow-amber-500/25 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed transform active:scale-[0.99] mt-3"
+            >
+              <FiUserPlus className="w-4 h-4 font-bold" />
+              <span>{submitting ? 'Initializing Master Database...' : 'Complete Master Setup & Enter ERP'}</span>
+            </button>
+          </form>
+
+          {/* Security Notice */}
+          <div className="pt-3 border-t border-slate-800/80 flex items-center justify-center gap-2 text-xs text-slate-500 font-medium">
+            <FiShield className="w-4 h-4 text-emerald-500" />
+            <span>Air-Gapped Offline Protection • Local SQLite Storage</span>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   )

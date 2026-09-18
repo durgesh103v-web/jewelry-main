@@ -85,8 +85,8 @@ function createWindow(): void {
     minHeight: 650,
     show: false,
     autoHideMenuBar: true,
-    title: 'Jewellery ERP',
-    ...(process.platform === 'linux' ? { icon } : {}),
+    title: 'Jewellery ERP - Enterprise Management & Billing Suite',
+    icon: icon,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false,
