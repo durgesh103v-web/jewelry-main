@@ -302,9 +302,10 @@ app.get('/health', (req, res) => {
 async function seedDefaultKeysIfEmpty() {
   try {
     const count = await License.countDocuments()
-    if (count === 0) {
-      console.log('🌱 Database is empty. Seeding initial test product keys...')
+    if (count < 20) {
+      console.log('🌱 Seeding 20 commercial product keys into MongoDB...')
       const demoKeys = [
+        // --- ENTERPRISE (7 Keys) ---
         {
           productKey: 'JERP-ENT-8N3V-19YB-QM4Z',
           edition: 'ENTERPRISE',
@@ -313,6 +314,50 @@ async function seedDefaultKeysIfEmpty() {
           status: 'AVAILABLE'
         },
         {
+          productKey: 'JERP-ENT-9K2M-44PX-LW7B',
+          edition: 'ENTERPRISE',
+          customerName: 'Kalyan Heritage Jewellers',
+          firmName: 'Kalyan Heritage Store #1',
+          status: 'AVAILABLE'
+        },
+        {
+          productKey: 'JERP-ENT-7V5L-88YT-NB9Q',
+          edition: 'ENTERPRISE',
+          customerName: 'Malabar Elite Jewels',
+          firmName: 'Malabar Luxury Outlet',
+          status: 'AVAILABLE'
+        },
+        {
+          productKey: 'JERP-ENT-3X9W-12KA-PT6D',
+          edition: 'ENTERPRISE',
+          customerName: 'Tanishq Diamond Boutique',
+          firmName: 'Tanishq Boutique Grand Central',
+          status: 'AVAILABLE'
+        },
+        {
+          productKey: 'JERP-ENT-6B4R-99MN-CV2X',
+          edition: 'ENTERPRISE',
+          customerName: 'Joyalukkas Premium Gold',
+          firmName: 'Joyalukkas Mall Branch',
+          status: 'AVAILABLE'
+        },
+        {
+          productKey: 'JERP-ENT-2M8T-71VF-KL5W',
+          edition: 'ENTERPRISE',
+          customerName: 'Tribhovandas Bhimji Zaveri Partner',
+          firmName: 'TBZ Zaveri Bazaar Store',
+          status: 'AVAILABLE'
+        },
+        {
+          productKey: 'JERP-ENT-5Y3P-80XQ-JH4M',
+          edition: 'ENTERPRISE',
+          customerName: 'Senco Gold & Diamonds Franchise',
+          firmName: 'Senco South Hub',
+          status: 'AVAILABLE'
+        },
+
+        // --- PROFESSIONAL (8 Keys) ---
+        {
           productKey: 'JERP-PRO-7K4M-92XA-PL8Q',
           edition: 'PROFESSIONAL',
           customerName: 'Tanishq Authorized Partner',
@@ -320,15 +365,97 @@ async function seedDefaultKeysIfEmpty() {
           status: 'AVAILABLE'
         },
         {
+          productKey: 'JERP-PRO-5M1N-88LK-QW4E',
+          edition: 'PROFESSIONAL',
+          customerName: 'Shree Krishna Jewellers',
+          firmName: 'Shree Krishna Main Market',
+          status: 'AVAILABLE'
+        },
+        {
+          productKey: 'JERP-PRO-4T8B-23ZD-VN9R',
+          edition: 'PROFESSIONAL',
+          customerName: 'Radha Rani Ornaments',
+          firmName: 'Radha Rani Jewellery House',
+          status: 'AVAILABLE'
+        },
+        {
+          productKey: 'JERP-PRO-9C3X-77KA-PL2M',
+          edition: 'PROFESSIONAL',
+          customerName: 'Laxmi Narayan Jewellers',
+          firmName: 'Laxmi Narayan Gold Palace',
+          status: 'AVAILABLE'
+        },
+        {
+          productKey: 'JERP-PRO-1W7V-66TH-GB5Y',
+          edition: 'PROFESSIONAL',
+          customerName: 'Balaji Gold & Silver Arts',
+          firmName: 'Balaji Jewellery Works',
+          status: 'AVAILABLE'
+        },
+        {
+          productKey: 'JERP-PRO-8R2Q-14UF-MN6T',
+          edition: 'PROFESSIONAL',
+          customerName: 'Mahalaxmi Gems & Jewels',
+          firmName: 'Mahalaxmi Gems Central',
+          status: 'AVAILABLE'
+        },
+        {
+          productKey: 'JERP-PRO-6D9L-35KP-AZ8W',
+          edition: 'PROFESSIONAL',
+          customerName: 'Shree Sai Ornaments',
+          firmName: 'Shree Sai Jewellery Corner',
+          status: 'AVAILABLE'
+        },
+        {
+          productKey: 'JERP-PRO-3H5P-90YR-TV4B',
+          edition: 'PROFESSIONAL',
+          customerName: 'Swarna Mahal Jewellers',
+          firmName: 'Swarna Mahal City Center',
+          status: 'AVAILABLE'
+        },
+
+        // --- BASIC (5 Keys) ---
+        {
           productKey: 'JERP-BAS-4K1L-90ZA-PT2W',
           edition: 'BASIC',
           customerName: 'Shree Ganesh Jewellers',
           firmName: 'Shree Ganesh Store',
           status: 'AVAILABLE'
+        },
+        {
+          productKey: 'JERP-BAS-2V6M-31LK-JH8R',
+          edition: 'BASIC',
+          customerName: 'Ambika Silver Palace',
+          firmName: 'Ambika Silver Shop',
+          status: 'AVAILABLE'
+        },
+        {
+          productKey: 'JERP-BAS-8T4Q-75WN-CB1Y',
+          edition: 'BASIC',
+          customerName: 'Navratna Jewellers',
+          firmName: 'Navratna Jewellery Stall',
+          status: 'AVAILABLE'
+        },
+        {
+          productKey: 'JERP-BAS-5P9X-18VD-KL3M',
+          edition: 'BASIC',
+          customerName: 'Om Jewellers Counter #2',
+          firmName: 'Om Jewellery Point',
+          status: 'AVAILABLE'
+        },
+        {
+          productKey: 'JERP-BAS-7N2L-64HF-AZ9Q',
+          edition: 'BASIC',
+          customerName: 'Vardhaman Jewellers',
+          firmName: 'Vardhaman Jewellery Corner',
+          status: 'AVAILABLE'
         }
       ]
-      await License.insertMany(demoKeys)
-      console.log('✅ Default product keys seeded successfully into MongoDB!')
+
+      for (const keyObj of demoKeys) {
+        await License.findOneAndUpdate({ productKey: keyObj.productKey }, keyObj, { upsert: true })
+      }
+      console.log('✅ 20 Default product keys seeded successfully into MongoDB!')
     }
   } catch (e) {
     console.error('Seeding warning:', e.message)

@@ -1,6 +1,73 @@
-node_modules
-dist
-out
+# Dependencies
+node_modules/
+package-lock.json.bak
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Production & Build outputs
+dist/
+out/
+build/
+release/
+*.tsbuildinfo
+
+# Environment & Secrets (NEVER COMMIT PRODUCTION KEYS/SECRETS)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+license-server/.env
+
+# Local Databases & Backups
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+*.bak
+backups/
+
+# License & Security Local Files
+license.dat
+*.pem
+*.key
+!license-server/.env.example
+
+# OS Generated Files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+[Dd]esktop.ini
+
+# IDE & Editor files
+.idea/
+*.sublime-workspace
+*.sublime-project
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Logs & Caches
+*.log
+logs/
 .eslintcache
-*.log*
+.stylelintcache
+.prettiercache
+stale_check_marker.txt
+
+# Temp Archives
+docs.zip
+scratch/
+temp/
+tmp/

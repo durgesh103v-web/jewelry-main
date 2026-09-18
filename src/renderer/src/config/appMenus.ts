@@ -131,7 +131,8 @@ export const appMenus: AppMenu[] = [
       { id: 'printer-setting', label: 'Printer Setting', module: 'utility' },
       { id: 'change-password', label: 'Change Password', module: 'utility' },
       { id: 'financial-year', label: 'Financial Year', module: 'utility' },
-      { id: 'settings', label: 'Settings', module: 'utility' }
+      { id: 'settings', label: 'Settings', module: 'utility' },
+      { id: 'license-info', label: 'License & Subscription', module: 'utility' }
     ]
   }
 ]
@@ -163,5 +164,7 @@ export function getVisibleScreenIds(type: BusinessTypeValue): Set<string> {
       ids.add(child.id)
     }
   }
+  ids.add('license-info')
   return ids
 }
+

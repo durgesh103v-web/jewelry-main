@@ -21,13 +21,41 @@ export function formatDate(value: string | Date | null | undefined): string {
   const strValue = String(value).trim()
   if (!strValue) return '-'
 
+  // Handle ISO formatted timestamp strings (e.g. 2026-09-16T17:37:26.533Z)
+  if (strValue.includes('T') || strValue.includes('Z')) {
+    const parsed = new Date(strValue)
+    if (!isNaN(parsed.getTime())) {
+      const day = String(parsed.getDate()).padStart(2, '0')
+      const month = String(parsed.getMonth() + 1).padStart(2, '0')
+      const year = parsed.getFullYear()
+      return `${day}/${month}/${year}`
+    }
+  }
+
   const [datePart] = strValue.split(' ')
-  const [year, month, day] = datePart.split('-')
+  const parts = datePart.split('-')
+  if (parts.length === 3) {
+    const [year, month, day] = parts
+    return `${day.padStart(2, '0')}/${month.padStart(2, '0')}/${year}`
+  }
 
-  if (!year || !month || !day) return strValue
-
-  return `${day.padStart(2, '0')}/${month.padStart(2, '0')}/${year}`
+  return strValue
 }
+
+/**
+ * Formats a date into a human-friendly readable string, e.g. "16 Sep 2026"
+ */
+export function formatDatePretty(value: string | Date | null | undefined): string {
+  if (!value) return '-'
+  const d = value instanceof Date ? value : new Date(value)
+  if (isNaN(d.getTime())) return String(value)
+  return d.toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric'
+  })
+}
+
 
 /**
  * Safely parses any value to a finite number. Returns 0 if invalid or empty.
