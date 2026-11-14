@@ -11,9 +11,7 @@ import {
   FiShoppingBag,
   FiLayers,
   FiShield,
-  FiUserPlus,
-  FiAward,
-  FiHardDrive
+  FiUserPlus
 } from 'react-icons/fi'
 import { getFriendlyErrorMessage } from '../../utils/getFriendlyErrorMessage'
 
@@ -41,8 +39,14 @@ const BUSINESS_TYPES: Array<{
   }
 ]
 
+const inputClass =
+  'w-full h-12 pl-11 pr-11 rounded-xl border border-slate-200 bg-slate-50/70 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-200 hover:border-slate-300 focus:border-amber-500 focus:bg-white focus:ring-4 focus:ring-amber-500/10 disabled:cursor-not-allowed disabled:opacity-60'
+
+const labelClass =
+  'mb-2 block text-[13px] font-semibold text-slate-700'
+
 function calculatePasswordStrength(pass: string): { score: number; label: string; color: string } {
-  if (!pass) return { score: 0, label: '', color: '#334155' }
+  if (!pass) return { score: 0, label: '', color: '#94a3b8' }
   let score = 0
   if (pass.length >= 4) score += 25
   if (pass.length >= 8) score += 25
@@ -108,142 +112,43 @@ function RegisterScreen({ onRegistered }: Props): React.JSX.Element {
   }
 
   return (
-    <div className="min-h-screen w-full flex bg-slate-950 text-slate-100 font-sans select-none overflow-hidden">
-      {/* LEFT COLUMN: Luxury Showcase Hero Panel */}
-      <div className="hidden lg:flex lg:w-6/12 relative flex-col justify-between p-12 overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950/90 border-r border-amber-500/20">
-        {/* Ambient Gold & Sapphire Lighting Blooms */}
-        <div className="absolute -top-32 -left-32 w-96 h-96 bg-amber-500/15 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute top-1/2 -right-32 w-96 h-96 bg-indigo-500/15 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-32 left-1/4 w-96 h-96 bg-amber-600/10 rounded-full blur-3xl pointer-events-none" />
-
-        {/* Top Branding Section */}
-        <div className="relative z-10">
-          <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-300 via-amber-500 to-amber-700 p-0.5 shadow-lg shadow-amber-500/20">
-              <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center text-amber-400 text-2xl font-bold">
-                <FiAward />
-              </div>
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl font-black tracking-wider text-white uppercase">
-                  Jewellery ERP
-                </h1>
-                <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 tracking-wider">
-                  Initial Setup
-                </span>
-              </div>
-              <p className="text-xs text-slate-400 font-medium tracking-wide">
-                Initialize Your Showroom Master Database
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Center Value Proposition & Feature Highlights */}
-        <div className="relative z-10 my-auto py-8 space-y-8 max-w-lg">
-          <div>
-            <span className="text-xs font-bold uppercase tracking-widest text-amber-400">
-              Master Node Setup
-            </span>
-            <h2 className="text-3xl font-black text-white tracking-tight mt-1 leading-tight">
-              Create Your Administrator Account & Firm Profile.
-            </h2>
-            <p className="text-sm text-slate-400 mt-2 leading-relaxed font-normal">
-              This one-time setup provisions your offline encrypted SQLite database, sets up your master karigar books, and assigns your hardware key.
-            </p>
-          </div>
-
-          {/* 3 Luxury Setup Highlights */}
-          <div className="space-y-4">
-            <div className="flex items-start gap-4 p-4 rounded-2xl bg-white/[0.03] border border-white/10 backdrop-blur-md">
-              <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shrink-0 mt-0.5">
-                <FiHome className="w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="text-sm font-bold text-white leading-snug">
-                  Personalized Showroom Invoicing
-                </h4>
-                <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">
-                  Your firm name, GSTIN, and address will be printed cleanly on all customer tax invoices and thermal tags.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-4 p-4 rounded-2xl bg-white/[0.03] border border-white/10 backdrop-blur-md">
-              <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0 mt-0.5">
-                <FiShield className="w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="text-sm font-bold text-white leading-snug">
-                  Master Recovery Key Generation
-                </h4>
-                <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">
-                  A high-entropy disaster recovery key will be generated so you never lose access to your records.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-4 p-4 rounded-2xl bg-white/[0.03] border border-white/10 backdrop-blur-md">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0 mt-0.5">
-                <FiHardDrive className="w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="text-sm font-bold text-white leading-snug">
-                  Zero Cloud Telemetry
-                </h4>
-                <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">
-                  All accounting data stays 100% private and encrypted on your local hard drive.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom Status Footer */}
-        <div className="relative z-10 flex items-center justify-between text-xs text-slate-500 pt-6 border-t border-white/10">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="font-semibold text-slate-400">Master Setup Mode</span>
-          </div>
-          <span className="font-mono text-slate-500">v1.0.0 Production</span>
-        </div>
+    <main className="relative flex min-h-screen w-full items-center justify-center overflow-y-auto bg-[#f8f8f6] px-4 py-8 font-sans text-slate-900 selection:bg-amber-100 selection:text-amber-900">
+      {/* Background decoration */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -left-40 -top-40 h-96 w-96 rounded-full bg-amber-100/40 blur-3xl" />
+        <div className="absolute -bottom-40 -right-40 h-96 w-96 rounded-full bg-orange-100/30 blur-3xl" />
       </div>
 
-      {/* RIGHT COLUMN: Registration Form Panel */}
-      <div className="w-full lg:w-6/12 flex items-center justify-center p-6 sm:p-10 relative bg-slate-900/60 backdrop-blur-2xl overflow-y-auto max-h-screen">
-        <div className="w-full max-w-lg space-y-5 my-auto py-6">
-          {/* Form Header */}
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <h2 className="text-2xl font-bold text-white tracking-tight">
-                Create Admin Account
-              </h2>
-              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30">
-                Setup Step 1 of 1
-              </span>
-            </div>
-            <p className="text-xs text-slate-400">
-              Configure your showroom profile and master administrator credentials
-            </p>
+      {/* Main Register Container */}
+      <div className="relative z-10 w-full max-w-[480px]">
+        {/* Register Card */}
+        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_45px_rgba(15,23,42,0.07)] sm:p-9">
+          {/* Form Heading */}
+          <div className="mb-7 text-center">
+            <h2 className="text-xl font-bold tracking-tight text-slate-900">
+              Create Admin Account
+            </h2>
           </div>
 
           {/* Error Message */}
           {error && (
-            <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-start gap-2.5 animate-fadeIn">
-              <FiAlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+            <div
+              role="alert"
+              className="mb-5 flex items-start gap-3 rounded-xl border border-rose-200 bg-rose-50 p-3.5 text-sm text-rose-700"
+            >
+              <FiAlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-500" />
               <span className="leading-relaxed">{error}</span>
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4" noValidate>
             {/* Shop / Firm Name */}
-            <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider" htmlFor="reg-firm">
+            <div>
+              <label className={labelClass} htmlFor="reg-firm">
                 Shop / Firm Name
               </label>
-              <div className="relative flex items-center">
-                <FiHome className="absolute left-3.5 text-amber-400/80 w-4 h-4 pointer-events-none" />
+              <div className="relative">
+                <FiHome className="pointer-events-none absolute left-3.5 top-1/2 h-[17px] w-[17px] -translate-y-1/2 text-slate-400" />
                 <input
                   id="reg-firm"
                   type="text"
@@ -252,14 +157,14 @@ function RegisterScreen({ onRegistered }: Props): React.JSX.Element {
                   autoFocus
                   placeholder="e.g. Royal Diamond & Gold Jewels"
                   disabled={submitting}
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 focus:border-amber-400 focus:bg-slate-800 rounded-xl text-sm text-white placeholder-slate-500 outline-none transition-all shadow-inner focus:ring-2 focus:ring-amber-500/20"
+                  className={inputClass}
                 />
               </div>
             </div>
 
             {/* Business Type Selector */}
-            <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider">
+            <div>
+              <label className={labelClass}>
                 Primary Business Focus
               </label>
               <div className="grid grid-cols-2 gap-3">
@@ -272,19 +177,19 @@ function RegisterScreen({ onRegistered }: Props): React.JSX.Element {
                       onClick={() => setBusinessType(type.value)}
                       className={`p-3.5 rounded-xl border transition-all cursor-pointer flex flex-col justify-between ${
                         isSelected
-                          ? 'bg-amber-500/15 border-amber-400 text-white shadow-lg shadow-amber-500/10'
-                          : 'bg-slate-800/60 border-slate-700/70 hover:border-slate-600 text-slate-300'
+                          ? 'bg-amber-50/80 border-amber-500 text-slate-900 shadow-sm ring-2 ring-amber-500/10'
+                          : 'bg-slate-50/70 border-slate-200 hover:border-slate-300 text-slate-700'
                       }`}
                     >
                       <div className="flex items-center justify-between mb-1.5">
-                        <Icon className={`w-4 h-4 ${isSelected ? 'text-amber-400' : 'text-slate-400'}`} />
-                        {isSelected && <FiCheckCircle className="w-4 h-4 text-amber-400" />}
+                        <Icon className={`w-4 h-4 ${isSelected ? 'text-amber-600' : 'text-slate-400'}`} />
+                        {isSelected && <FiCheckCircle className="w-4 h-4 text-amber-600" />}
                       </div>
                       <div>
-                        <div className={`text-xs font-bold ${isSelected ? 'text-amber-300' : 'text-white'}`}>
+                        <div className={`text-xs font-bold ${isSelected ? 'text-amber-800' : 'text-slate-900'}`}>
                           {type.title}
                         </div>
-                        <p className="text-[10px] text-slate-400 mt-0.5 leading-snug">
+                        <p className="text-[10px] text-slate-500 mt-0.5 leading-snug">
                           {type.hint}
                         </p>
                       </div>
@@ -295,12 +200,12 @@ function RegisterScreen({ onRegistered }: Props): React.JSX.Element {
             </div>
 
             {/* Username */}
-            <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider" htmlFor="reg-username">
+            <div>
+              <label className={labelClass} htmlFor="reg-username">
                 Master Admin Username
               </label>
-              <div className="relative flex items-center">
-                <FiUser className="absolute left-3.5 text-amber-400/80 w-4 h-4 pointer-events-none" />
+              <div className="relative">
+                <FiUser className="pointer-events-none absolute left-3.5 top-1/2 h-[17px] w-[17px] -translate-y-1/2 text-slate-400" />
                 <input
                   id="reg-username"
                   type="text"
@@ -309,18 +214,18 @@ function RegisterScreen({ onRegistered }: Props): React.JSX.Element {
                   placeholder="e.g. admin"
                   autoComplete="username"
                   disabled={submitting}
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 focus:border-amber-400 focus:bg-slate-800 rounded-xl text-sm text-white placeholder-slate-500 outline-none transition-all shadow-inner focus:ring-2 focus:ring-amber-500/20"
+                  className={inputClass}
                 />
               </div>
             </div>
 
-            {/* Password & Strength */}
-            <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider" htmlFor="reg-password">
+            {/* Password */}
+            <div>
+              <label className={labelClass} htmlFor="reg-password">
                 Password
               </label>
-              <div className="relative flex items-center">
-                <FiLock className="absolute left-3.5 text-amber-400/80 w-4 h-4 pointer-events-none" />
+              <div className="relative">
+                <FiLock className="pointer-events-none absolute left-3.5 top-1/2 h-[17px] w-[17px] -translate-y-1/2 text-slate-400" />
                 <input
                   id="reg-password"
                   type={showPassword ? 'text' : 'password'}
@@ -329,21 +234,28 @@ function RegisterScreen({ onRegistered }: Props): React.JSX.Element {
                   placeholder="Enter a secure password"
                   autoComplete="new-password"
                   disabled={submitting}
-                  className="w-full pl-10 pr-11 py-2.5 bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 focus:border-amber-400 focus:bg-slate-800 rounded-xl text-sm text-white placeholder-slate-500 outline-none transition-all shadow-inner focus:ring-2 focus:ring-amber-500/20"
+                  className={inputClass}
                 />
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 text-slate-400 hover:text-slate-200 p-1 cursor-pointer"
-                  tabIndex={-1}
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  disabled={submitting}
+                  title={showPassword ? 'Hide password' : 'Show password'}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  aria-pressed={showPassword}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 transition-colors hover:text-slate-700 cursor-pointer"
                 >
-                  {showPassword ? <FiEyeOff className="w-4 h-4" /> : <FiEye className="w-4 h-4" />}
+                  {showPassword ? (
+                    <FiEyeOff className="h-[17px] w-[17px]" />
+                  ) : (
+                    <FiEye className="h-[17px] w-[17px]" />
+                  )}
                 </button>
               </div>
 
               {password.length > 0 && (
-                <div className="space-y-1 pt-1">
-                  <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                <div className="space-y-1 pt-1.5">
+                  <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
                     <div
                       className="h-full rounded-full transition-all duration-300"
                       style={{
@@ -352,7 +264,7 @@ function RegisterScreen({ onRegistered }: Props): React.JSX.Element {
                       }}
                     />
                   </div>
-                  <div className="flex justify-between text-[11px] text-slate-400">
+                  <div className="flex justify-between text-[11px] text-slate-500">
                     <span>Password Strength:</span>
                     <span className="font-bold" style={{ color: strength.color }}>{strength.label}</span>
                   </div>
@@ -361,22 +273,25 @@ function RegisterScreen({ onRegistered }: Props): React.JSX.Element {
             </div>
 
             {/* Confirm Password */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider" htmlFor="reg-confirm">
+            <div>
+              <div className="mb-2 flex items-center justify-between">
+                <label className="text-[13px] font-semibold text-slate-700" htmlFor="reg-confirm">
                   Confirm Password
                 </label>
                 {passwordsMatch && (
-                  <span className="text-[11px] font-bold text-emerald-400 flex items-center gap-1">
-                    <FiCheck className="w-3 h-3" /> Passwords match
+                  <span className="flex items-center gap-1 text-xs font-semibold text-emerald-600">
+                    <FiCheck className="h-3.5 w-3.5" />
+                    Passwords match
                   </span>
                 )}
                 {passwordsMismatch && (
-                  <span className="text-[11px] font-bold text-rose-400">Mismatch</span>
+                  <span className="text-xs font-semibold text-rose-600">
+                    Mismatch
+                  </span>
                 )}
               </div>
-              <div className="relative flex items-center">
-                <FiLock className="absolute left-3.5 text-amber-400/80 w-4 h-4 pointer-events-none" />
+              <div className="relative">
+                <FiLock className="pointer-events-none absolute left-3.5 top-1/2 h-[17px] w-[17px] -translate-y-1/2 text-slate-400" />
                 <input
                   id="reg-confirm"
                   type={showConfirmPassword ? 'text' : 'password'}
@@ -385,15 +300,28 @@ function RegisterScreen({ onRegistered }: Props): React.JSX.Element {
                   placeholder="Re-enter password"
                   autoComplete="new-password"
                   disabled={submitting}
-                  className="w-full pl-10 pr-11 py-2.5 bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 focus:border-amber-400 focus:bg-slate-800 rounded-xl text-sm text-white placeholder-slate-500 outline-none transition-all shadow-inner focus:ring-2 focus:ring-amber-500/20"
+                  className={`${inputClass} ${
+                    passwordsMismatch
+                      ? 'border-rose-300 focus:border-rose-400 focus:ring-rose-500/10'
+                      : passwordsMatch
+                        ? 'border-emerald-300 focus:border-emerald-400'
+                        : ''
+                  }`}
                 />
                 <button
                   type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 text-slate-400 hover:text-slate-200 p-1 cursor-pointer"
-                  tabIndex={-1}
+                  onClick={() => setShowConfirmPassword((prev) => !prev)}
+                  disabled={submitting}
+                  title={showConfirmPassword ? 'Hide password' : 'Show password'}
+                  aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                  aria-pressed={showConfirmPassword}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 transition-colors hover:text-slate-700 cursor-pointer"
                 >
-                  {showConfirmPassword ? <FiEyeOff className="w-4 h-4" /> : <FiEye className="w-4 h-4" />}
+                  {showConfirmPassword ? (
+                    <FiEyeOff className="h-[17px] w-[17px]" />
+                  ) : (
+                    <FiEye className="h-[17px] w-[17px]" />
+                  )}
                 </button>
               </div>
             </div>
@@ -402,21 +330,23 @@ function RegisterScreen({ onRegistered }: Props): React.JSX.Element {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full py-3.5 px-4 rounded-xl font-bold text-sm bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-300 hover:via-amber-400 hover:to-amber-500 text-slate-950 shadow-lg shadow-amber-500/25 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed transform active:scale-[0.99] mt-3"
+              className="mt-2 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 px-4 text-sm font-bold text-white shadow-md shadow-amber-500/20 transition-all duration-200 hover:from-amber-600 hover:to-amber-700 hover:shadow-lg active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
             >
-              <FiUserPlus className="w-4 h-4 font-bold" />
+              <FiUserPlus className="h-[17px] w-[17px]" />
               <span>{submitting ? 'Initializing Master Database...' : 'Complete Master Setup & Enter ERP'}</span>
             </button>
           </form>
 
           {/* Security Notice */}
-          <div className="pt-3 border-t border-slate-800/80 flex items-center justify-center gap-2 text-xs text-slate-500 font-medium">
-            <FiShield className="w-4 h-4 text-emerald-500" />
-            <span>Air-Gapped Offline Protection • Local SQLite Storage</span>
+          <div className="mt-7 border-t border-slate-100 pt-5">
+            <div className="flex items-center justify-center gap-2 text-xs font-medium text-slate-500">
+              <FiShield className="h-4 w-4 text-emerald-600" />
+              <span>Protected with DPAPI Air-Gapped Encryption</span>
+            </div>
           </div>
-        </div>
+        </section>
       </div>
-    </div>
+    </main>
   )
 }
 

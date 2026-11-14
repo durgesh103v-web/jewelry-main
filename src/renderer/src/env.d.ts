@@ -8,7 +8,6 @@ type AuthState = {
   businessType: BusinessType | null
   authenticated: boolean
 }
-
 type AuthSession = {
   userId: string
   username: string

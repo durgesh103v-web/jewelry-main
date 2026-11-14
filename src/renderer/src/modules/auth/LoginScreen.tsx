@@ -1,3 +1,4 @@
+
 import React, { useState, type FormEvent } from 'react'
 import {
   FiUser,
@@ -7,15 +8,12 @@ import {
   FiLogIn,
   FiShield,
   FiAlertCircle,
-  FiAward,
   FiKey,
   FiCheckCircle,
   FiArrowLeft,
-  FiCheck,
-  FiLayers,
-  FiCpu,
-  FiHardDrive
+  FiCheck
 } from 'react-icons/fi'
+
 import { getFriendlyErrorMessage } from '../../utils/getFriendlyErrorMessage'
 
 type Props = {
@@ -25,29 +23,48 @@ type Props = {
 
 type Mode = 'login' | 'forgot'
 
-function LoginScreen({ knownUsername, onLoggedIn }: Props): React.JSX.Element {
+const inputClass =
+  'w-full h-12 pl-11 pr-11 rounded-xl border border-slate-200 bg-slate-50/70 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-200 hover:border-slate-300 focus:border-amber-500 focus:bg-white focus:ring-4 focus:ring-amber-500/10 disabled:cursor-not-allowed disabled:opacity-60'
+
+const labelClass =
+  'mb-2 block text-[13px] font-semibold text-slate-700'
+
+function LoginScreen({
+  knownUsername,
+  onLoggedIn,
+}: Props): React.JSX.Element {
   const [mode, setMode] = useState<Mode>('login')
   const [username, setUsername] = useState(knownUsername ?? '')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
-  // Forgot password form state
+  // Password recovery state
   const [recoveryCode, setRecoveryCode] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
-  const passwordsMatch = confirmPassword.length > 0 && newPassword === confirmPassword
-  const passwordsMismatch = confirmPassword.length > 0 && newPassword !== confirmPassword
+  const passwordsMatch =
+    confirmPassword.length > 0 && newPassword === confirmPassword
 
-  const handleLoginSubmit = async (event: FormEvent): Promise<void> => {
-    event.preventDefault()
+  const passwordsMismatch =
+    confirmPassword.length > 0 && newPassword !== confirmPassword
+
+  const clearMessages = (): void => {
     setError('')
     setSuccess('')
+  }
+
+  const handleLoginSubmit = async (
+    event: FormEvent<HTMLFormElement>
+  ): Promise<void> => {
+    event.preventDefault()
+    clearMessages()
 
     if (!username.trim() || !password) {
       setError('Please enter both your username and password.')
@@ -56,7 +73,12 @@ function LoginScreen({ knownUsername, onLoggedIn }: Props): React.JSX.Element {
 
     try {
       setSubmitting(true)
-      const session = await window.api.auth.login({ username: username.trim(), password })
+
+      const session = await window.api.auth.login({
+        username: username.trim(),
+        password,
+      })
+
       onLoggedIn(session)
     } catch (err) {
       setError(getFriendlyErrorMessage(err))
@@ -65,23 +87,27 @@ function LoginScreen({ knownUsername, onLoggedIn }: Props): React.JSX.Element {
     }
   }
 
-  const handleResetSubmit = async (event: FormEvent): Promise<void> => {
+  const handleResetSubmit = async (
+    event: FormEvent<HTMLFormElement>
+  ): Promise<void> => {
     event.preventDefault()
-    setError('')
-    setSuccess('')
+    clearMessages()
 
     if (!username.trim()) {
       setError('Please enter your administrator username.')
       return
     }
+
     if (!recoveryCode.trim()) {
       setError('Please enter your Master Recovery Key.')
       return
     }
+
     if (newPassword.length < 4) {
       setError('New password must be at least 4 characters.')
       return
     }
+
     if (newPassword !== confirmPassword) {
       setError('New password and confirm password do not match.')
       return
@@ -89,12 +115,17 @@ function LoginScreen({ knownUsername, onLoggedIn }: Props): React.JSX.Element {
 
     try {
       setSubmitting(true)
+
       await window.api.auth.resetPassword({
         username: username.trim(),
         recoveryCode: recoveryCode.trim(),
-        newPassword
+        newPassword,
       })
-      setSuccess('Password reset successfully! Please sign in with your new password.')
+
+      setSuccess(
+        'Password reset successfully! Please sign in with your new password.'
+      )
+
       setPassword(newPassword)
       setMode('login')
       setRecoveryCode('')
@@ -108,176 +139,74 @@ function LoginScreen({ knownUsername, onLoggedIn }: Props): React.JSX.Element {
   }
 
   const switchToForgot = (): void => {
-    setError('')
-    setSuccess('')
+    clearMessages()
     setMode('forgot')
   }
 
   const switchToLogin = (): void => {
-    setError('')
+    clearMessages()
     setMode('login')
   }
 
   return (
-    <div className="min-h-screen w-full flex bg-slate-950 text-slate-100 font-sans select-none overflow-hidden">
-      {/* LEFT COLUMN: Luxury Showcase Hero Panel */}
-      <div className="hidden lg:flex lg:w-7/12 relative flex-col justify-between p-12 overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950/90 border-r border-amber-500/20">
-        {/* Ambient Gold & Sapphire Lighting Blooms */}
-        <div className="absolute -top-32 -left-32 w-96 h-96 bg-amber-500/15 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute top-1/2 -right-32 w-96 h-96 bg-indigo-500/15 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-32 left-1/4 w-96 h-96 bg-amber-600/10 rounded-full blur-3xl pointer-events-none" />
+    <main className="relative flex min-h-screen w-full items-center justify-center overflow-y-auto bg-[#f8f8f6] px-4 py-8 font-sans text-slate-900 selection:bg-amber-100 selection:text-amber-900">
 
-        {/* Top Branding Section */}
-        <div className="relative z-10">
-          <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-300 via-amber-500 to-amber-700 p-0.5 shadow-lg shadow-amber-500/20">
-              <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center text-amber-400 text-2xl font-bold">
-                <FiAward />
-              </div>
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl font-black tracking-wider text-white uppercase">
-                  Jewellery ERP
-                </h1>
-                <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 tracking-wider">
-                  Enterprise Suite
-                </span>
-              </div>
-              <p className="text-xs text-slate-400 font-medium tracking-wide">
-                Commercial Wholesale & Retail Jewellery Management
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Center Value Proposition & Feature Highlights */}
-        <div className="relative z-10 my-auto py-8 space-y-8 max-w-lg">
-          <div>
-            <span className="text-xs font-bold uppercase tracking-widest text-amber-400">
-              Terminal Authorization
-            </span>
-            <h2 className="text-3xl font-black text-white tracking-tight mt-1 leading-tight">
-              Precision Bullion Hishob, Fast Billing & Vault Security.
-            </h2>
-            <p className="text-sm text-slate-400 mt-2 leading-relaxed font-normal">
-              Designed specifically for jewellery manufacturers, wholesalers, and retail showrooms with offline-first DPAPI data isolation.
-            </p>
-          </div>
-
-          {/* 3 Luxury Feature Badges */}
-          <div className="space-y-4">
-            <div className="flex items-start gap-4 p-4 rounded-2xl bg-white/[0.03] border border-white/10 backdrop-blur-md transition-all hover:bg-white/[0.06] hover:border-amber-500/30">
-              <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shrink-0 mt-0.5">
-                <FiLayers className="w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="text-sm font-bold text-white leading-snug">
-                  Real-Time Bullion & Fine Metal Hishob
-                </h4>
-                <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">
-                  Automatic purity calculations, karigar issue/loss tracking, and daily metal ledger balances.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-4 p-4 rounded-2xl bg-white/[0.03] border border-white/10 backdrop-blur-md transition-all hover:bg-white/[0.06] hover:border-amber-500/30">
-              <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0 mt-0.5">
-                <FiCpu className="w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="text-sm font-bold text-white leading-snug">
-                  Thermal Barcode & RFID Hub
-                </h4>
-                <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">
-                  High-speed 100-item tray scanning, jewelry rat/tag printing, and rapid POS estimate billing.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-4 p-4 rounded-2xl bg-white/[0.03] border border-white/10 backdrop-blur-md transition-all hover:bg-white/[0.06] hover:border-amber-500/30">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0 mt-0.5">
-                <FiHardDrive className="w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="text-sm font-bold text-white leading-snug">
-                  100% Permanently Offline Operation
-                </h4>
-                <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">
-                  Hardware-bound cryptographic license. Never stops functioning during network blackouts.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom Status Footer */}
-        <div className="relative z-10 flex items-center justify-between text-xs text-slate-500 pt-6 border-t border-white/10">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="font-semibold text-slate-400">Encrypted Local SQLite Database</span>
-          </div>
-          <span className="font-mono text-slate-500">v1.0.0 Production</span>
-        </div>
+      {/* Background decoration */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -left-40 -top-40 h-96 w-96 rounded-full bg-amber-100/40 blur-3xl" />
+        <div className="absolute -bottom-40 -right-40 h-96 w-96 rounded-full bg-orange-100/30 blur-3xl" />
       </div>
 
-      {/* RIGHT COLUMN: Authentication Form Panel */}
-      <div className="w-full lg:w-5/12 flex items-center justify-center p-6 sm:p-12 relative bg-slate-900/60 backdrop-blur-2xl">
-        <div className="w-full max-w-md space-y-6">
-          {/* Mobile-Only Header Brand */}
-          <div className="lg:hidden text-center space-y-2 mb-6">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-slate-950 text-2xl font-bold mx-auto shadow-lg shadow-amber-500/20">
-              <FiAward />
-            </div>
-            <h2 className="text-xl font-black text-white uppercase tracking-wider">
-              Jewellery ERP
+      {/* Main Login Container */}
+      <div className="relative z-10 w-full max-w-[440px]">
+        {/* Login Card */}
+        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_45px_rgba(15,23,42,0.07)] sm:p-9">
+          {/* Form Heading */}
+          <div className="mb-7 text-center">
+            <h2 className="text-xl font-bold tracking-tight text-slate-900">
+              {mode === 'login' ? 'Sign in' : 'Account Recovery'}
             </h2>
-            <p className="text-xs text-slate-400">Commercial Billing & Inventory Suite</p>
-          </div>
-
-          {/* Form Header */}
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <h2 className="text-2xl font-bold text-white tracking-tight">
-                {mode === 'login' ? 'Welcome Back' : 'Master Key Recovery'}
-              </h2>
-              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30">
-                {mode === 'login' ? 'Terminal Login' : 'Admin Reset'}
-              </span>
-            </div>
-            <p className="text-xs text-slate-400">
-              {mode === 'login'
-                ? 'Enter your credentials to access your showroom terminal'
-                : 'Enter your username and the Master Recovery Key generated during setup'}
-            </p>
           </div>
 
           {/* Error Message */}
           {error && (
-            <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-start gap-2.5 animate-fadeIn">
-              <FiAlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+            <div
+              role="alert"
+              className="mb-5 flex items-start gap-3 rounded-xl border border-rose-200 bg-rose-50 p-3.5 text-sm text-rose-700"
+            >
+              <FiAlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
               <span className="leading-relaxed">{error}</span>
             </div>
           )}
 
           {/* Success Message */}
           {success && (
-            <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-start gap-2.5 animate-fadeIn">
-              <FiCheckCircle className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+            <div
+              role="status"
+              className="mb-5 flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3.5 text-sm text-emerald-700"
+            >
+              <FiCheckCircle className="mt-0.5 h-4 w-4 shrink-0" />
               <span className="leading-relaxed">{success}</span>
             </div>
           )}
 
           {mode === 'login' ? (
-            /* 1. LOGIN FORM */
-            <form onSubmit={handleLoginSubmit} className="space-y-4" noValidate>
-              {/* Username Input */}
-              <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider" htmlFor="login-username">
+            /* LOGIN FORM */
+            <form
+              onSubmit={handleLoginSubmit}
+              className="space-y-5"
+              noValidate
+            >
+
+              {/* Username */}
+              <div>
+                <label className={labelClass} htmlFor="login-username">
                   Username
                 </label>
-                <div className="relative flex items-center">
-                  <FiUser className="absolute left-3.5 text-amber-400/80 w-4 h-4 pointer-events-none" />
+
+                <div className="relative">
+                  <FiUser className="pointer-events-none absolute left-3.5 top-1/2 h-[17px] w-[17px] -translate-y-1/2 text-slate-400" />
+
                   <input
                     id="login-username"
                     type="text"
@@ -287,27 +216,31 @@ function LoginScreen({ knownUsername, onLoggedIn }: Props): React.JSX.Element {
                     placeholder="Enter your username"
                     autoComplete="username"
                     disabled={submitting}
-                    className="w-full pl-10 pr-4 py-3 bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 focus:border-amber-400 focus:bg-slate-800 rounded-xl text-sm text-white placeholder-slate-500 outline-none transition-all shadow-inner focus:ring-2 focus:ring-amber-500/20"
+                    className={inputClass}
                   />
                 </div>
               </div>
 
-              {/* Password Input */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider" htmlFor="login-password">
+              {/* Password */}
+              <div>
+                <div className="mb-2 flex items-center justify-between">
+                  <label className="text-[13px] font-semibold text-slate-700" htmlFor="login-password">
                     Password
                   </label>
+
                   <button
                     type="button"
                     onClick={switchToForgot}
-                    className="text-xs font-semibold text-amber-400 hover:text-amber-300 transition-colors cursor-pointer"
+                    disabled={submitting}
+                    className="text-xs cursor-pointer  font-semibold text-amber-600 transition-colors hover:text-amber-700 disabled:opacity-50"
                   >
                     Forgot password?
                   </button>
                 </div>
-                <div className="relative flex items-center">
-                  <FiLock className="absolute left-3.5 text-amber-400/80 w-4 h-4 pointer-events-none" />
+
+                <div className="relative">
+                  <FiLock className="pointer-events-none absolute left-3.5 top-1/2 h-[17px] w-[17px] -translate-y-1/2 text-slate-400" />
+
                   <input
                     id="login-password"
                     type={showPassword ? 'text' : 'password'}
@@ -317,43 +250,53 @@ function LoginScreen({ knownUsername, onLoggedIn }: Props): React.JSX.Element {
                     placeholder="Enter your password"
                     autoComplete="current-password"
                     disabled={submitting}
-                    className="w-full pl-10 pr-11 py-3 bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 focus:border-amber-400 focus:bg-slate-800 rounded-xl text-sm text-white placeholder-slate-500 outline-none transition-all shadow-inner focus:ring-2 focus:ring-amber-500/20"
+                    className={inputClass}
                   />
+
                   <button
                     type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 text-slate-400 hover:text-slate-200 p-1 cursor-pointer"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    disabled={submitting}
                     title={showPassword ? 'Hide password' : 'Show password'}
-                    tabIndex={-1}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    aria-pressed={showPassword}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 transition-colors hover:text-slate-700"
                   >
-                    {showPassword ? <FiEyeOff className="w-4 h-4" /> : <FiEye className="w-4 h-4" />}
+                    {showPassword
+                      ? <FiEyeOff className="h-[17px] w-[17px]" />
+                      : <FiEye className="h-[17px] w-[17px]" />}
                   </button>
                 </div>
               </div>
 
-              {/* Sign In Button */}
+              {/* Submit */}
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full py-3.5 px-4 rounded-xl font-bold text-sm bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-300 hover:via-amber-400 hover:to-amber-500 text-slate-950 shadow-lg shadow-amber-500/25 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed transform active:scale-[0.99] mt-2"
+                className="mt-2 flex  h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 px-4 text-sm font-bold text-white shadow-md shadow-amber-500/20 transition-all duration-200 hover:from-amber-600 hover:to-amber-700 hover:shadow-lg active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
               >
-                <FiLogIn className="w-4 h-4 font-bold" />
-                <span>{submitting ? 'Authenticating Terminal...' : 'Sign In to Showroom'}</span>
+                <FiLogIn className="h-[17px] w-[17px]" />
+
+                {submitting ? 'Authenticating...' : 'Sign In'}
               </button>
             </form>
           ) : (
-            /* 2. FORGOT / RESET PASSWORD FORM */
-            <form onSubmit={handleResetSubmit} className="space-y-4" noValidate>
-              <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-200/90 leading-relaxed">
-                Provide your username and the Master Recovery Key that was generated when you initialized this database.
-              </div>
+            /* FORGOT PASSWORD FORM */
+            <form
+              onSubmit={handleResetSubmit}
+              className="space-y-4"
+              noValidate
+            >
 
-              <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider" htmlFor="reset-username">
+              {/* Username */}
+              <div>
+                <label className={labelClass} htmlFor="reset-username">
                   Username
                 </label>
-                <div className="relative flex items-center">
-                  <FiUser className="absolute left-3.5 text-amber-400/80 w-4 h-4 pointer-events-none" />
+
+                <div className="relative">
+                  <FiUser className="pointer-events-none absolute left-3.5 top-1/2 h-[17px] w-[17px] -translate-y-1/2 text-slate-400" />
+
                   <input
                     id="reset-username"
                     type="text"
@@ -363,17 +306,20 @@ function LoginScreen({ knownUsername, onLoggedIn }: Props): React.JSX.Element {
                     placeholder="Enter administrator username"
                     autoComplete="username"
                     disabled={submitting}
-                    className="w-full pl-10 pr-4 py-3 bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 focus:border-amber-400 focus:bg-slate-800 rounded-xl text-sm text-white placeholder-slate-500 outline-none transition-all shadow-inner focus:ring-2 focus:ring-amber-500/20"
+                    className={inputClass}
                   />
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider" htmlFor="reset-recovery">
+              {/* Recovery Key */}
+              <div>
+                <label className={labelClass} htmlFor="reset-recovery">
                   Master Recovery Key
                 </label>
-                <div className="relative flex items-center">
-                  <FiKey className="absolute left-3.5 text-amber-400/80 w-4 h-4 pointer-events-none" />
+
+                <div className="relative">
+                  <FiKey className="pointer-events-none absolute left-3.5 top-1/2 h-[17px] w-[17px] -translate-y-1/2 text-slate-400" />
+
                   <input
                     id="reset-recovery"
                     type="text"
@@ -382,17 +328,20 @@ function LoginScreen({ knownUsername, onLoggedIn }: Props): React.JSX.Element {
                     placeholder="REC-XXXX-XXXX-XXXX"
                     autoComplete="off"
                     disabled={submitting}
-                    className="w-full pl-10 pr-4 py-3 bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 focus:border-amber-400 focus:bg-slate-800 rounded-xl text-sm font-mono text-amber-300 placeholder-slate-500 outline-none transition-all shadow-inner focus:ring-2 focus:ring-amber-500/20 uppercase"
+                    className={`${inputClass} font-mono uppercase tracking-wide`}
                   />
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider" htmlFor="reset-new-password">
+              {/* New Password */}
+              <div>
+                <label className={labelClass} htmlFor="reset-new-password">
                   New Password
                 </label>
-                <div className="relative flex items-center">
-                  <FiLock className="absolute left-3.5 text-amber-400/80 w-4 h-4 pointer-events-none" />
+
+                <div className="relative">
+                  <FiLock className="pointer-events-none absolute left-3.5 top-1/2 h-[17px] w-[17px] -translate-y-1/2 text-slate-400" />
+
                   <input
                     id="reset-new-password"
                     type={showNewPassword ? 'text' : 'password'}
@@ -401,35 +350,47 @@ function LoginScreen({ knownUsername, onLoggedIn }: Props): React.JSX.Element {
                     placeholder="Enter new password"
                     autoComplete="new-password"
                     disabled={submitting}
-                    className="w-full pl-10 pr-11 py-3 bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 focus:border-amber-400 focus:bg-slate-800 rounded-xl text-sm text-white placeholder-slate-500 outline-none transition-all shadow-inner focus:ring-2 focus:ring-amber-500/20"
+                    className={inputClass}
                   />
+
                   <button
                     type="button"
-                    onClick={() => setShowNewPassword(!showNewPassword)}
-                    className="absolute right-3 text-slate-400 hover:text-slate-200 p-1 cursor-pointer"
-                    tabIndex={-1}
+                    onClick={() => setShowNewPassword((prev) => !prev)}
+                    disabled={submitting}
+                    aria-label={showNewPassword ? 'Hide new password' : 'Show new password'}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
                   >
-                    {showNewPassword ? <FiEyeOff className="w-4 h-4" /> : <FiEye className="w-4 h-4" />}
+                    {showNewPassword
+                      ? <FiEyeOff className="h-[17px] w-[17px]" />
+                      : <FiEye className="h-[17px] w-[17px]" />}
                   </button>
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider" htmlFor="reset-confirm-password">
+              {/* Confirm Password */}
+              <div>
+                <div className="mb-2 flex items-center justify-between">
+                  <label className="text-[13px] font-semibold text-slate-700" htmlFor="reset-confirm-password">
                     Confirm New Password
                   </label>
+
                   {passwordsMatch && (
-                    <span className="text-[11px] font-bold text-emerald-400 flex items-center gap-1">
-                      <FiCheck className="w-3 h-3" /> Match
+                    <span className="flex items-center gap-1 text-xs font-semibold text-emerald-600">
+                      <FiCheck className="h-3.5 w-3.5" />
+                      Match
                     </span>
                   )}
+
                   {passwordsMismatch && (
-                    <span className="text-[11px] font-bold text-rose-400">Mismatch</span>
+                    <span className="text-xs font-semibold text-rose-600">
+                      Mismatch
+                    </span>
                   )}
                 </div>
-                <div className="relative flex items-center">
-                  <FiLock className="absolute left-3.5 text-amber-400/80 w-4 h-4 pointer-events-none" />
+
+                <div className="relative">
+                  <FiLock className="pointer-events-none absolute left-3.5 top-1/2 h-[17px] w-[17px] -translate-y-1/2 text-slate-400" />
+
                   <input
                     id="reset-confirm-password"
                     type={showConfirmPassword ? 'text' : 'password'}
@@ -438,47 +399,64 @@ function LoginScreen({ knownUsername, onLoggedIn }: Props): React.JSX.Element {
                     placeholder="Confirm new password"
                     autoComplete="new-password"
                     disabled={submitting}
-                    className="w-full pl-10 pr-11 py-3 bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 focus:border-amber-400 focus:bg-slate-800 rounded-xl text-sm text-white placeholder-slate-500 outline-none transition-all shadow-inner focus:ring-2 focus:ring-amber-500/20"
+                    className={`${inputClass} ${
+                      passwordsMismatch
+                        ? 'border-rose-300 focus:border-rose-400 focus:ring-rose-500/10'
+                        : passwordsMatch
+                          ? 'border-emerald-300 focus:border-emerald-400'
+                          : ''
+                    }`}
                   />
+
                   <button
                     type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 text-slate-400 hover:text-slate-200 p-1 cursor-pointer"
-                    tabIndex={-1}
+                    onClick={() => setShowConfirmPassword((prev) => !prev)}
+                    disabled={submitting}
+                    aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
                   >
-                    {showConfirmPassword ? <FiEyeOff className="w-4 h-4" /> : <FiEye className="w-4 h-4" />}
+                    {showConfirmPassword
+                      ? <FiEyeOff className="h-[17px] w-[17px]" />
+                      : <FiEye className="h-[17px] w-[17px]" />}
                   </button>
                 </div>
               </div>
 
+              {/* Reset Button */}
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full py-3.5 px-4 rounded-xl font-bold text-sm bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-300 hover:via-amber-400 hover:to-amber-500 text-slate-950 shadow-lg shadow-amber-500/25 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed transform active:scale-[0.99] mt-2"
+                className="cursor-pointer mt-2 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 px-4 text-sm font-bold text-white shadow-md shadow-amber-500/20 transition-all hover:from-amber-600 hover:to-amber-700 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
               >
-                <FiKey className="w-4 h-4 font-bold" />
-                <span>{submitting ? 'Resetting Password...' : 'Reset Password & Unlock'}</span>
+                <FiKey className="h-[17px] w-[17px]" />
+                {submitting ? 'Resetting Password...' : 'Reset Password & Unlock'}
               </button>
 
+              {/* Back Button */}
               <button
                 type="button"
                 onClick={switchToLogin}
-                className="w-full py-2.5 px-4 rounded-xl font-semibold text-xs text-slate-400 hover:text-white bg-slate-800/50 hover:bg-slate-800 border border-slate-700/60 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                disabled={submitting}
+                className="cursor-pointer  flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 disabled:opacity-50"
               >
-                <FiArrowLeft className="w-3.5 h-3.5" />
-                <span>Back to Sign In</span>
+                <FiArrowLeft className="h-4 w-4" />
+                Back to Sign In
               </button>
             </form>
           )}
 
-          {/* Security Notice */}
-          <div className="pt-4 border-t border-slate-800/80 flex items-center justify-center gap-2 text-xs text-slate-500 font-medium">
-            <FiShield className="w-4 h-4 text-emerald-500" />
-            <span>DPAPI Air-Gapped Encryption • Workstation Locked</span>
+          {/* Security Information */}
+          <div className="mt-7 border-t border-slate-100 pt-5">
+            <div className="flex items-center justify-center gap-2 text-xs font-medium text-slate-500">
+              <FiShield className="h-4 w-4 text-emerald-600" />
+              <span>Protected with DPAPI Air-Gapped Encryption</span>
+            </div>
           </div>
-        </div>
+        </section>
+
+    
       </div>
-    </div>
+    </main>
   )
 }
 
