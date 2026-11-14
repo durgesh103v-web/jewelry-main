@@ -25,5 +25,13 @@ export function registerAuthIpc(): void {
   ipcMain.handle('auth:reset-password', (_event, payload) => {
     return authService.resetPassword(payload)
   })
+
+  ipcMain.handle('auth:provision-owner', (_event, payload) => {
+    return authService.provisionOwner(payload)
+  })
+
+  ipcMain.handle('auth:check-sync', () => {
+    return authService.checkSync()
+  })
 }
 

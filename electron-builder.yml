@@ -1,4 +1,4 @@
-appId: com.electron.app
+appId: com.jewelleryerp.desktop
 productName: jewellery-erp-desktop
 directories:
   buildResources: build
@@ -6,7 +6,9 @@ files:
   - '!**/.vscode/*'
   - '!src/*'
   - '!license-server/**'
+  - '!admin-portal/**'
   - '!scripts/**'
+  - '!out/test-data/**'
   - '!electron.vite.config.{js,ts,mjs,cjs}'
   - '!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
@@ -20,6 +22,10 @@ nsis:
   shortcutName: ${productName}
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  deleteAppDataOnUninstall: false
 mac:
   entitlementsInherit: build/entitlements.mac.plist
   extendInfo:

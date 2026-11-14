@@ -2,14 +2,13 @@ import { useEffect, useState } from 'react'
 import { FiAward, FiShield } from 'react-icons/fi'
 import App from '../../App'
 import LoginScreen from './LoginScreen'
-import RegisterScreen from './RegisterScreen'
+import ProvisionOwnerScreen from './ProvisionOwnerScreen'
+import ChangePasswordScreen from './ChangePasswordScreen'
 import ActivationScreen from '../licensing/ActivationScreen'
 import { authStyles as s } from './authStyles'
 
-type Phase = 'loading' | 'activate' | 'register' | 'login' | 'ready'
+type Phase = 'loading' | 'activate' | 'provision' | 'first-change-password' | 'login' | 'ready'
 
-// Top-level gate: manages commercial license activation, first-run user setup,
-// authentication gate, and full application launch.
 function AuthGate(): React.JSX.Element {
   const [phase, setPhase] = useState<Phase>('loading')
   const [knownUsername, setKnownUsername] = useState<string | null>(null)
@@ -21,7 +20,7 @@ function AuthGate(): React.JSX.Element {
 
     async function initializeSystem(): Promise<void> {
       try {
-        // Step 1: Validate offline-first commercial license (Model A)
+        // Step 1: Validate offline-first commercial license
         const licenseStatus = await window.api.license.getStatus()
         if (cancelled) return
 
@@ -36,7 +35,13 @@ function AuthGate(): React.JSX.Element {
         if (cancelled) return
 
         setKnownUsername(authState.username)
-        setPhase(authState.registered ? 'login' : 'register')
+
+        if (!authState.registered) {
+          // If no local account exists, route to Showroom Owner Provisioning
+          setPhase('provision')
+        } else {
+          setPhase('login')
+        }
       } catch {
         if (!cancelled) setPhase('login')
       }
@@ -54,16 +59,37 @@ function AuthGate(): React.JSX.Element {
       .getState()
       .then((state) => {
         setKnownUsername(state.username)
-        setPhase(state.registered ? 'login' : 'register')
+        setPhase(state.registered ? 'login' : 'provision')
       })
       .catch(() => {
-        setPhase('register')
+        setPhase('provision')
       })
+  }
+
+  const handleProvisioned = (nextSession: AuthSession): void => {
+    setSession(nextSession)
+    setKnownUsername(nextSession.username)
+    if (nextSession.isTemporaryPassword) {
+      setPhase('first-change-password')
+    } else {
+      setPhase('ready')
+    }
   }
 
   const handleAuthenticated = (nextSession: AuthSession): void => {
     setSession(nextSession)
     setKnownUsername(nextSession.username)
+    if (nextSession.isTemporaryPassword) {
+      setPhase('first-change-password')
+    } else {
+      setPhase('ready')
+    }
+  }
+
+  const handlePasswordChanged = (): void => {
+    if (session) {
+      setSession({ ...session, isTemporaryPassword: false })
+    }
     setPhase('ready')
   }
 
@@ -102,8 +128,17 @@ function AuthGate(): React.JSX.Element {
     return <ActivationScreen onActivated={handleActivated} initialMessage={licenseMessage} />
   }
 
-  if (phase === 'register') {
-    return <RegisterScreen onRegistered={handleAuthenticated} />
+  if (phase === 'provision') {
+    return <ProvisionOwnerScreen onProvisioned={handleProvisioned} />
+  }
+
+  if (phase === 'first-change-password') {
+    return (
+      <ChangePasswordScreen
+        username={knownUsername || session?.username || 'Owner'}
+        onPasswordChanged={handlePasswordChanged}
+      />
+    )
   }
 
   if (phase === 'login' || !session) {

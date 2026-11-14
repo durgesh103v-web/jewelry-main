@@ -29,6 +29,10 @@ export function closeDatabase(): void {
   }
 }
 
+export function setDatabase(customDb: Database.Database | null): void {
+  db = customDb
+}
+
 export function getDatabase(): Database.Database {
   if (db) return db
 

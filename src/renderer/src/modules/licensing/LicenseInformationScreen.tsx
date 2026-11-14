@@ -121,15 +121,21 @@ const FEATURE_CATALOG: FeatureDetail[] = [
 function LicenseInformationScreen({ onClose }: Props): React.JSX.Element {
   const [licenseInfo, setLicenseInfo] = useState<LicenseInfo | null>(null)
   const [machineId, setMachineId] = useState<string>('')
+  const [authState, setAuthState] = useState<AuthState | null>(null)
   const [loading, setLoading] = useState(true)
-  const [copiedKey, setCopiedKey] = useState<'license' | 'machine' | null>(null)
+  const [copiedKey, setCopiedKey] = useState<'license' | 'machine' | 'shop' | null>(null)
 
   const loadLicenseData = (): void => {
     setLoading(true)
-    Promise.all([window.api.license.getInfo(), window.api.license.getMachineId()])
-      .then(([info, mid]) => {
+    Promise.all([
+      window.api.license.getInfo(),
+      window.api.license.getMachineId(),
+      window.api.auth.getState()
+    ])
+      .then(([info, mid, auth]) => {
         setLicenseInfo(info)
         setMachineId(mid)
+        setAuthState(auth)
       })
       .finally(() => setLoading(false))
   }
@@ -138,7 +144,7 @@ function LicenseInformationScreen({ onClose }: Props): React.JSX.Element {
     loadLicenseData()
   }, [])
 
-  const handleCopy = (text: string, type: 'license' | 'machine'): void => {
+  const handleCopy = (text: string, type: 'license' | 'machine' | 'shop'): void => {
     navigator.clipboard.writeText(text)
     setCopiedKey(type)
     setTimeout(() => setCopiedKey(null), 2500)
@@ -244,6 +250,27 @@ function LicenseInformationScreen({ onClose }: Props): React.JSX.Element {
                   <div className="text-slate-300">
                     Registered Firm: <span className="font-semibold text-white">{licenseInfo?.firmName || 'Jewellery Showroom'}</span>
                   </div>
+
+                  {authState?.centralShopId && (
+                    <>
+                      <span className="text-slate-600 hidden md:inline">•</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-slate-400">Shop ID:</span>
+                        <span className="font-mono font-bold text-amber-300">{authState.centralShopId}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleCopy(authState.centralShopId || '', 'shop')}
+                          className="text-slate-400 hover:text-white transition-colors cursor-pointer ml-0.5"
+                          title="Copy Shop ID"
+                        >
+                          <FiCopy className="w-3.5 h-3.5" />
+                        </button>
+                        {copiedKey === 'shop' && (
+                          <span className="text-[10px] font-bold text-emerald-400">Copied!</span>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -293,19 +320,21 @@ function LicenseInformationScreen({ onClose }: Props): React.JSX.Element {
             </div>
           </div>
 
-          {/* Card 2: Activated Date */}
+          {/* Card 2: Showroom Node & Sync Status */}
           <div className="bg-white rounded-xl border border-slate-200/90 p-4 shadow-2xs flex flex-col justify-between">
             <div className="flex items-center justify-between text-slate-500 mb-2">
-              <span className="text-xs font-bold uppercase tracking-wider">Activation Date</span>
+              <span className="text-xs font-bold uppercase tracking-wider">Showroom Node</span>
               <div className="w-7 h-7 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600">
-                <FiClock className="w-4 h-4" />
+                <FiShield className="w-4 h-4" />
               </div>
             </div>
             <div>
-              <div className="text-sm font-bold text-slate-900">
-                {formatDatePretty(licenseInfo?.activatedAt)}
+              <div className="text-sm font-bold text-slate-900 font-mono">
+                {authState?.centralShopId || 'STANDALONE-NODE'}
               </div>
-              <p className="text-[11px] text-slate-400 mt-0.5">Initial hardware registration</p>
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                Acknowledged Credential: Version {authState?.credentialVersion || 1} · Synchronized
+              </p>
             </div>
           </div>
 
@@ -343,7 +372,7 @@ function LicenseInformationScreen({ onClose }: Props): React.JSX.Element {
           {/* Card 4: Operating Mode */}
           <div className="bg-white rounded-xl border border-slate-200/90 p-4 shadow-2xs flex flex-col justify-between">
             <div className="flex items-center justify-between text-slate-500 mb-2">
-              <span className="text-xs font-bold uppercase tracking-wider">Network Mode</span>
+              <span className="text-xs font-bold uppercase tracking-wider">Operating Mode</span>
               <div className="w-7 h-7 rounded-lg bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-600">
                 <FiHardDrive className="w-4 h-4" />
               </div>
@@ -351,9 +380,11 @@ function LicenseInformationScreen({ onClose }: Props): React.JSX.Element {
             <div>
               <div className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                <span>100% Offline Ready</span>
+                <span>Offline-First Enabled</span>
               </div>
-              <p className="text-[11px] text-slate-400 mt-0.5">Zero daily online telemetry</p>
+              <p className="text-[11px] text-slate-500 mt-1 leading-snug">
+                Offline-first operation enabled. Online connectivity is required for initial activation, provisioning and central credential synchronization.
+              </p>
             </div>
           </div>
         </div>

@@ -3,11 +3,21 @@ import { electronAPI } from '@electron-toolkit/preload'
 
 type BusinessType = 'WHOLESALE' | 'RETAIL'
 
+type ProvisionOwnerPayload = {
+  shopId: string
+  username: string
+  temporaryPassword: string
+  recoveryKey: string
+}
+
 type AuthState = {
   registered: boolean
   username: string | null
   businessType: BusinessType | null
   authenticated: boolean
+  isTemporaryPassword?: boolean
+  centralShopId?: string | null
+  credentialVersion?: number
 }
 
 type AuthSession = {
@@ -15,6 +25,9 @@ type AuthSession = {
   username: string
   role: string
   businessType: BusinessType
+  isTemporaryPassword?: boolean
+  centralShopId?: string
+  credentialVersion?: number
 }
 
 type RegisterPayload = {
@@ -1923,7 +1936,11 @@ const api = {
       ipcRenderer.invoke('auth:change-password', payload),
 
     resetPassword: (payload: ResetPasswordPayload): Promise<{ success: boolean }> =>
-      ipcRenderer.invoke('auth:reset-password', payload)
+      ipcRenderer.invoke('auth:reset-password', payload),
+    provisionOwner: (payload: ProvisionOwnerPayload): Promise<AuthSession> =>
+      ipcRenderer.invoke('auth:provision-owner', payload),
+    checkSync: (): Promise<any> =>
+      ipcRenderer.invoke('auth:check-sync')
   },
 
   license: {

@@ -7,12 +7,25 @@ type AuthState = {
   username: string | null
   businessType: BusinessType | null
   authenticated: boolean
+  isTemporaryPassword?: boolean
+  centralShopId?: string | null
+  credentialVersion?: number
 }
 type AuthSession = {
   userId: string
   username: string
   role: string
   businessType: BusinessType
+  isTemporaryPassword?: boolean
+  centralShopId?: string
+  credentialVersion?: number
+}
+
+type ProvisionOwnerPayload = {
+  shopId: string
+  username: string
+  temporaryPassword: string
+  recoveryKey: string
 }
 
 type RegisterPayload = {
@@ -2017,6 +2030,8 @@ interface Window {
       logout: () => Promise<{ success: boolean }>
       changePassword: (payload: ChangePasswordPayload) => Promise<{ success: boolean }>
       resetPassword: (payload: ResetPasswordPayload) => Promise<{ success: boolean }>
+      provisionOwner: (payload: ProvisionOwnerPayload) => Promise<AuthSession>
+      checkSync: () => Promise<{ success: boolean; syncPending: boolean; serverCredentialVersion?: number; isTemporaryPassword?: boolean; message?: string }>
     }
 
     license: {

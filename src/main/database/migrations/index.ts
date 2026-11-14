@@ -28,6 +28,7 @@ import { migration027 } from './027_seed_item_opening_stock_data'
 import { migration028 } from './028_firm_master_enhanced_fields'
 import { migration029 } from './029_cash_fine_opening_enhanced_fields'
 import { migration030 } from './030_sales_invoice_pos_enhanced_fields'
+import { migration031 } from './031_central_provisioning'
 import { Migration } from './types'
 
 export const allMigrations: Migration[] = [
@@ -60,5 +61,6 @@ export const allMigrations: Migration[] = [
   migration027,
   migration028,
   migration029,
-  migration030
+  migration030,
+  migration031
 ]

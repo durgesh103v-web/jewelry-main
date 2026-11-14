@@ -1,4 +1,5 @@
 const mongoose = require('mongoose')
+const { hashSecretKey } = require('../services/credential.service')
 
 const EDITION_FEATURES = {
   BASIC: [
@@ -49,13 +50,32 @@ const ActivationRecordSchema = new mongoose.Schema({
 
 const LicenseSchema = new mongoose.Schema(
   {
+    shopId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Shop',
+      default: null,
+      index: true
+    },
+    // New primary lookup hash: SHA-256 of uppercase product key
+    productKeyHash: {
+      type: String,
+      unique: true,
+      sparse: true,
+      index: true
+    },
+    // Legacy productKey (retained optional for non-destructive backward compatibility)
+    // For newly generated licenses, this is omitted or populated as empty/masked.
     productKey: {
       type: String,
-      required: true,
-      unique: true,
+      sparse: true,
       trim: true,
       uppercase: true,
       index: true
+    },
+    // Masked representation for safe Admin display (e.g. JERP-PRO-****-****-PL8Q)
+    productKeyMasked: {
+      type: String,
+      default: ''
     },
     edition: {
       type: String,
@@ -65,7 +85,7 @@ const LicenseSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['AVAILABLE', 'ACTIVE', 'SUSPENDED', 'REVOKED', 'EXPIRED'],
+      enum: ['AVAILABLE', 'ACTIVE', 'SUSPENDED', 'REVOKED', 'EXPIRED', 'ARCHIVED'],
       default: 'AVAILABLE',
       index: true
     },
@@ -109,13 +129,32 @@ const LicenseSchema = new mongoose.Schema(
       default: []
     },
     notes: {
-      type: String
+      type: String,
+      default: ''
     }
   },
   {
     timestamps: true
   }
 )
+
+/**
+ * Pre-save hook: Ensure productKeyHash is computed if productKey is present
+ */
+LicenseSchema.pre('save', function (next) {
+  if (this.productKey && !this.productKeyHash) {
+    this.productKeyHash = hashSecretKey(this.productKey)
+  }
+  if (this.productKey && !this.productKeyMasked) {
+    const parts = this.productKey.split('-')
+    if (parts.length >= 5) {
+      this.productKeyMasked = `${parts[0]}-${parts[1]}-****-****-${parts[4]}`
+    } else {
+      this.productKeyMasked = '****-****-****'
+    }
+  }
+  next()
+})
 
 /**
  * Helper method to retrieve full features list for this license
@@ -126,6 +165,16 @@ LicenseSchema.methods.getAllFeatures = function () {
     return Array.from(new Set([...base, ...this.customFeatures]))
   }
   return base
+}
+
+/**
+ * Safe JSON output: ensure plaintext productKey is never serialized
+ */
+LicenseSchema.methods.toJSON = function () {
+  const obj = this.toObject()
+  delete obj.productKey
+  delete obj.__v
+  return obj
 }
 
 const License = mongoose.model('License', LicenseSchema)

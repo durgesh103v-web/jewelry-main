@@ -1,9 +1,69 @@
 import https from 'https'
 import http from 'http'
 import { URL } from 'url'
-import type { LicenseEdition, LicensePayload, SignedLicense } from './license.types'
-import { EDITION_FEATURES } from './license.types'
-import { signLicensePayload } from './license.crypto'
+import type { LicenseEdition, SignedLicense } from './license.types'
+
+export interface ProvisionOwnerParams {
+  shopId: string
+  username: string
+  temporaryPassword: string
+  recoveryKey: string
+  machineId: string
+}
+
+export interface ProvisionOwnerResult {
+  success: boolean
+  message?: string
+  shop?: {
+    shopId: string
+    shopName: string
+    businessType: 'WHOLESALE' | 'RETAIL'
+    edition: string
+  }
+  isTemporaryPassword?: boolean
+  credentialVersion?: number
+}
+
+export interface CheckSyncParams {
+  shopId: string
+  username: string
+  machineId: string
+  localCredentialVersion?: number
+}
+
+export interface CheckSyncResult {
+  success: boolean
+  syncPending: boolean
+  serverCredentialVersion?: number
+  lastAcknowledgedVersion?: number
+  isTemporaryPassword?: boolean
+  passwordVersion?: number
+  recoveryKeyVersion?: number
+  message?: string
+}
+
+export interface VerifyPasswordResult {
+  success: boolean
+  serverCredentialVersion?: number
+  isTemporaryPassword?: boolean
+  passwordVersion?: number
+  message?: string
+}
+
+export interface VerifyRecoveryKeyResult {
+  success: boolean
+  serverCredentialVersion?: number
+  recoveryKeyVersion?: number
+  message?: string
+}
+
+export interface AckSyncResult {
+  success: boolean
+  acknowledgedVersion?: number
+  serverCredentialVersion?: number
+  inSync?: boolean
+  message?: string
+}
 
 export interface ILicenseServerClient {
   activate(params: {
@@ -12,12 +72,28 @@ export interface ILicenseServerClient {
     product: string
     appVersion: string
   }): Promise<{ success: boolean; signedLicense?: SignedLicense; message?: string }>
-}
 
-// Development/Test Private Key matching the embedded Public Key
-const DEV_SIGNING_PRIVATE_KEY = `-----BEGIN PRIVATE KEY-----
-MC4CAQAwBQYDK2VwBCIEIOlBcKxNlSkKKoDHRx6/Fou1Cj2vSh4mZ8VUhT5mO8tk
------END PRIVATE KEY-----`
+  provisionOwner(params: ProvisionOwnerParams): Promise<ProvisionOwnerResult>
+  checkSync(params: CheckSyncParams): Promise<CheckSyncResult>
+  verifyPassword(params: {
+    shopId: string
+    username: string
+    password: string
+    machineId: string
+  }): Promise<VerifyPasswordResult>
+  verifyRecoveryKey(params: {
+    shopId: string
+    username: string
+    recoveryKey: string
+    machineId: string
+  }): Promise<VerifyRecoveryKeyResult>
+  ackSync(params: {
+    shopId: string
+    username: string
+    machineId: string
+    acknowledgedVersion: number
+  }): Promise<AckSyncResult>
+}
 
 /**
  * Parses an edition from a product key format, e.g. JERP-PRO-XXXX-XXXX-XXXX -> PROFESSIONAL
@@ -35,18 +111,82 @@ export function extractEditionFromKey(productKey: string): LicenseEdition {
 export function isValidProductKeyFormat(key: string): boolean {
   if (!key) return false
   const trimmed = key.trim().toUpperCase()
-  // Matches JERP-XXX-XXXX-XXXX-XXXX or standard 4-part / 5-part keys
   return /^[A-Z0-9]{3,5}(-[A-Z0-9]{3,5}){2,4}$/.test(trimmed)
 }
 
 /**
- * Default HTTP/HTTPS client for connecting to the remote licensing API.
+ * Production-ready HTTP/HTTPS client for connecting to the remote licensing API.
+ * NO embedded private keys exist in this client or application.
  */
 export class HttpLicenseServerClient implements ILicenseServerClient {
   private serverUrl: string
 
   constructor(serverUrl?: string) {
-    this.serverUrl = serverUrl || process.env.LICENSE_SERVER_URL || 'https://licensing.jewelleryerp.com'
+    this.serverUrl = serverUrl || process.env.LICENSE_SERVER_URL || 'http://localhost:5000'
+  }
+
+  setServerUrl(url: string): void {
+    this.serverUrl = url
+  }
+
+  getServerUrl(): string {
+    return this.serverUrl
+  }
+
+  private postJson<T>(endpoint: string, postData: Record<string, unknown>): Promise<T> {
+    return new Promise((resolve, reject) => {
+      try {
+        const parsedUrl = new URL(endpoint, this.serverUrl)
+        const isHttps = parsedUrl.protocol === 'https:'
+        const transport = isHttps ? https : http
+
+        const bodyString = JSON.stringify(postData)
+
+        const req = transport.request(
+          parsedUrl,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Content-Length': Buffer.byteLength(bodyString),
+              'User-Agent': 'JewelleryERP-Desktop-Client/1.0'
+            },
+            timeout: 10000
+          },
+          (res) => {
+            let data = ''
+            res.on('data', (chunk) => {
+              data += chunk
+            })
+            res.on('end', () => {
+              try {
+                const response = JSON.parse(data)
+                resolve(response as T)
+              } catch {
+                resolve({
+                  success: false,
+                  message: `Invalid JSON response from licensing server (HTTP ${res.statusCode}).`
+                } as unknown as T)
+              }
+            })
+          }
+        )
+
+        req.on('error', (e) => {
+          reject(new Error(`License server connection error: ${e.message}`))
+        })
+
+        req.on('timeout', () => {
+          req.destroy()
+          reject(new Error('Connection to licensing server timed out. Check internet connection.'))
+        })
+
+        req.write(bodyString)
+        req.end()
+      } catch (err) {
+        reject(err)
+      }
+    })
   }
 
   async activate(params: {
@@ -64,134 +204,119 @@ export class HttpLicenseServerClient implements ILicenseServerClient {
       }
     }
 
-    // If server is configured or reachable, attempt remote HTTPS activation
-    if (process.env.LICENSE_SERVER_URL && !process.env.LICENSE_DEV_SIMULATOR) {
-      try {
-        return await this.remoteActivate(params)
-      } catch (err: unknown) {
-        const error = err as Error
-        return {
-          success: false,
-          message: error.message || 'Unable to connect to license server. Please verify your internet connection.'
-        }
+    try {
+      const response = await this.postJson<{
+        success: boolean
+        signedLicense?: SignedLicense
+        message?: string
+      }>('/api/licenses/activate', {
+        productKey: key,
+        machineId: params.machineId,
+        product: params.product,
+        appVersion: params.appVersion
+      })
+
+      return response
+    } catch (err: unknown) {
+      const error = err as Error
+      return {
+        success: false,
+        message: error.message || 'Unable to connect to license server. Please verify your internet connection.'
       }
     }
-
-    // Default offline-friendly license generator / dev simulator:
-    // Generates a cryptographically valid signed license payload for the given machine ID.
-    return this.generateDevSignedLicense(params)
   }
 
-  private generateDevSignedLicense(params: {
-    productKey: string
-    machineId: string
-    product: string
-    appVersion: string
-  }): Promise<{ success: boolean; signedLicense?: SignedLicense; message?: string }> {
-    const edition = extractEditionFromKey(params.productKey)
-    const now = new Date()
-    const expiry = new Date(now)
-    expiry.setFullYear(expiry.getFullYear() + 1) // 1 year validity
-
-    const payload: LicensePayload = {
-      licenseId: `LIC-${now.getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}`,
-      product: 'JEWELLERY_ERP',
-      edition,
-      status: 'ACTIVE',
-      machineId: params.machineId,
-      customerName: 'Authorized Showroom Customer',
-      firmName: 'Jewellery Showroom ERP Node',
-      activatedAt: now.toISOString(),
-      expiresAt: expiry.toISOString(),
-      features: EDITION_FEATURES[edition],
-      version: 1
+  async provisionOwner(params: ProvisionOwnerParams): Promise<ProvisionOwnerResult> {
+    try {
+      const response = await this.postJson<ProvisionOwnerResult>(
+        '/api/licenses/provision-owner',
+        params as unknown as Record<string, unknown>
+      )
+      return response
+    } catch (err: unknown) {
+      const error = err as Error
+      return {
+        success: false,
+        message: error.message || 'Unable to connect to central licensing server during owner provisioning.'
+      }
     }
-
-    const signature = signLicensePayload(payload, DEV_SIGNING_PRIVATE_KEY)
-
-    return Promise.resolve({
-      success: true,
-      signedLicense: {
-        payload,
-        signature
-      }
-    })
   }
 
-  private remoteActivate(params: {
-    productKey: string
-    machineId: string
-    product: string
-    appVersion: string
-  }): Promise<{ success: boolean; signedLicense?: SignedLicense; message?: string }> {
-    return new Promise((resolve, reject) => {
-      try {
-        const parsedUrl = new URL('/api/licenses/activate', this.serverUrl)
-        const isHttps = parsedUrl.protocol === 'https:'
-        const transport = isHttps ? https : http
-
-        const postData = JSON.stringify({
-          productKey: params.productKey.trim().toUpperCase(),
-          machineId: params.machineId,
-          product: params.product,
-          appVersion: params.appVersion
-        })
-
-        const req = transport.request(
-          parsedUrl,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Content-Length': Buffer.byteLength(postData),
-              'User-Agent': 'JewelleryERP-Desktop-Client/1.0'
-            },
-            timeout: 10000
-          },
-          (res) => {
-            let data = ''
-            res.on('data', (chunk) => {
-              data += chunk
-            })
-            res.on('end', () => {
-              try {
-                const response = JSON.parse(data)
-                if (res.statusCode === 200 && response.success && response.signedLicense) {
-                  resolve({
-                    success: true,
-                    signedLicense: response.signedLicense
-                  })
-                } else {
-                  resolve({
-                    success: false,
-                    message: response.message || `Activation failed (HTTP ${res.statusCode})`
-                  })
-                }
-              } catch {
-                resolve({
-                  success: false,
-                  message: 'Invalid response from license server.'
-                })
-              }
-            })
-          }
-        )
-
-        req.on('error', (e) => {
-          reject(new Error(`License server connection error: ${e.message}`))
-        })
-
-        req.on('timeout', () => {
-          req.destroy()
-          reject(new Error('Connection to license server timed out.'))
-        })
-
-        req.write(postData)
-        req.end()
-      } catch (err) {
-        reject(err)
+  async checkSync(params: CheckSyncParams): Promise<CheckSyncResult> {
+    try {
+      const response = await this.postJson<CheckSyncResult>(
+        '/api/licenses/check-sync',
+        params as unknown as Record<string, unknown>
+      )
+      return response
+    } catch (err: unknown) {
+      const error = err as Error
+      return {
+        success: false,
+        syncPending: false,
+        message: error.message
       }
-    })
+    }
+  }
+
+  async verifyPassword(params: {
+    shopId: string
+    username: string
+    password: string
+    machineId: string
+  }): Promise<VerifyPasswordResult> {
+    try {
+      return await this.postJson<VerifyPasswordResult>(
+        '/api/licenses/verify-password',
+        params as unknown as Record<string, unknown>
+      )
+    } catch (err: unknown) {
+      const error = err as Error
+      return {
+        success: false,
+        message: error.message || 'Unable to verify password centrally.'
+      }
+    }
+  }
+
+  async verifyRecoveryKey(params: {
+    shopId: string
+    username: string
+    recoveryKey: string
+    machineId: string
+  }): Promise<VerifyRecoveryKeyResult> {
+    try {
+      return await this.postJson<VerifyRecoveryKeyResult>(
+        '/api/licenses/verify-recovery-key',
+        params as unknown as Record<string, unknown>
+      )
+    } catch (err: unknown) {
+      const error = err as Error
+      return {
+        success: false,
+        message: error.message || 'Unable to verify master recovery key centrally.'
+      }
+    }
+  }
+
+  async ackSync(params: {
+    shopId: string
+    username: string
+    machineId: string
+    acknowledgedVersion: number
+  }): Promise<AckSyncResult> {
+    try {
+      return await this.postJson<AckSyncResult>(
+        '/api/licenses/ack-sync',
+        params as unknown as Record<string, unknown>
+      )
+    } catch (err: unknown) {
+      const error = err as Error
+      return {
+        success: false,
+        message: error.message || 'Unable to acknowledge credential synchronization.'
+      }
+    }
   }
 }
 

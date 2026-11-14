@@ -9,10 +9,20 @@
     "seed": "node seed-20-keys.js"
   },
   "dependencies": {
+    "argon2": "^0.45.2",
+    "connect-mongo": "^6.0.0",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
+    "express-rate-limit": "^8.7.4",
+    "express-session": "^1.19.0",
+    "helmet": "^8.3.0",
     "jewellery-erp-desktop": "file:..",
-    "mongoose": "^8.4.1"
+    "mongoose": "^8.4.1",
+    "pdfkit": "^0.20.2"
+  },
+  "devDependencies": {
+    "supertest": "^7.3.2"
   }
 }

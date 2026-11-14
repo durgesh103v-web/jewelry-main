@@ -1,0 +1,15 @@
+{
+  "/_not-found/page": "app/_not-found/page.js",
+  "/activations/page": "app/activations/page.js",
+  "/keys/page": "app/keys/page.js",
+  "/licenses/[id]/page": "app/licenses/[id]/page.js",
+  "/dashboard/page": "app/dashboard/page.js",
+  "/licenses/page": "app/licenses/page.js",
+  "/owners/page": "app/owners/page.js",
+  "/login/page": "app/login/page.js",
+  "/owners/[id]/page": "app/owners/[id]/page.js",
+  "/recovery/page": "app/recovery/page.js",
+  "/page": "app/page.js",
+  "/shops/create/page": "app/shops/create/page.js",
+  "/shops/page": "app/shops/page.js"
+}
