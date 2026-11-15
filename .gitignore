@@ -12,6 +12,7 @@ dist/
 out/
 build/
 release/
+.next/
 *.tsbuildinfo
 
 # Environment & Secrets (NEVER COMMIT PRODUCTION KEYS/SECRETS)

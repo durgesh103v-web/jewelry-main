@@ -116,6 +116,20 @@ MC4CAQAwBQYDK2VwBCIEIOlBcKxNlSkKKoDHRx6/Fou1Cj2vSh4mZ8VUhT5mO8tk
 // Mount Protected Super Admin API
 app.use('/api/admin', adminRoutes)
 
+// Root Welcome / Discovery Endpoint
+app.get('/', (req, res) => {
+  res.status(200).json({
+    name: 'Jewellery ERP Licensing & Security API',
+    status: 'online',
+    version: '1.0.0',
+    endpoints: {
+      health: '/api/health',
+      admin: '/api/admin',
+      licenses: '/api/licenses'
+    }
+  })
+})
+
 // Production Health Check Endpoint
 app.get('/api/health', (req, res) => {
   res.status(200).json({
