@@ -2571,5 +2571,37 @@ interface Window {
       getByBarcode: (barcode: string) => Promise<any>
       getDashboard: () => Promise<any>
     }
+
+    updater: {
+      getCurrentVersion: () => Promise<string>
+      getState: () => Promise<{
+        currentVersion: string
+        status: 'idle' | 'checking' | 'available' | 'not-available' | 'downloading' | 'downloaded' | 'error'
+        updateInfo: {
+          version: string
+          releaseDate?: string
+          releaseNotes?: string
+          totalBytes?: number
+        } | null
+        progress: {
+          percent: number
+          bytesPerSecond: number
+          transferred: number
+          total: number
+        } | null
+        error: string | null
+        lastCheckedAt: string | null
+        dismissedVersion: string | null
+      }>
+      checkForUpdates: () => Promise<{ success: boolean; message?: string }>
+      downloadUpdate: () => Promise<{ success: boolean; message?: string }>
+      installUpdate: () => Promise<{ success: boolean; message?: string }>
+      dismissUpdate: () => Promise<void>
+      onStatusChange: (callback: (state: any) => void) => () => void
+      onUpdateAvailable: (callback: (info: any) => void) => () => void
+      onDownloadProgress: (callback: (progress: any) => void) => () => void
+      onUpdateDownloaded: (callback: (info: any) => void) => () => void
+      onUpdateError: (callback: (error: string) => void) => () => void
+    }
   }
 }

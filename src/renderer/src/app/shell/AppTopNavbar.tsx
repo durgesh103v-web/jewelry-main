@@ -13,6 +13,7 @@ import {
 } from 'react-icons/fi'
 import { getMenusForBusinessType } from '../../config/appMenus'
 import type { AppMenuChild, BusinessTypeValue } from '../../types/menu'
+import { UpdateNotificationBell } from '../../components/updater/UpdateNotificationBell'
 
 export interface AppTopNavbarProps {
   activeScreenId: string
@@ -376,6 +377,9 @@ export const AppTopNavbar: React.FC<AppTopNavbarProps> = ({
 
         {/* Action Icon Suite */}
         <div className="flex items-center gap-1">
+          {/* Software Auto-Update Notification Bell */}
+          <UpdateNotificationBell />
+
           {/* WhatsApp */}
           {onOpenWhatsApp && (
             <button

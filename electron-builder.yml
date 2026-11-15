@@ -17,6 +17,10 @@ asarUnpack:
   - resources/**
 win:
   executableName: jewellery-erp-desktop
+  verifyUpdateCodeSignature: true
+  signtoolOptions:
+    publisherName:
+      - "Jewellery ERP Commercial Systems"
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}
@@ -47,5 +51,8 @@ appImage:
   artifactName: ${name}-${version}.${ext}
 npmRebuild: false
 publish:
-  provider: generic
-  url: https://example.com/auto-updates
+  provider: github
+  owner: durgesh103v-web
+  repo: jewelry-main
+  releaseType: release
+generateUpdatesFilesForAllChannels: true

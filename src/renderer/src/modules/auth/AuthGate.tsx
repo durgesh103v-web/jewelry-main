@@ -5,7 +5,6 @@ import LoginScreen from './LoginScreen'
 import ProvisionOwnerScreen from './ProvisionOwnerScreen'
 import ChangePasswordScreen from './ChangePasswordScreen'
 import ActivationScreen from '../licensing/ActivationScreen'
-import { authStyles as s } from './authStyles'
 
 type Phase = 'loading' | 'activate' | 'provision' | 'first-change-password' | 'login' | 'ready'
 
@@ -102,25 +101,27 @@ function AuthGate(): React.JSX.Element {
 
   if (phase === 'loading') {
     return (
-      <div style={s.screen}>
-        <div style={s.glowOrb1} />
-        <div style={s.glowOrb2} />
-        <div style={{ textAlign: 'center', color: '#ffffff', zIndex: 1 }}>
-          <div style={{ ...s.logoRing, width: '64px', height: '64px', fontSize: '28px', marginBottom: '16px' }}>
-            <FiAward />
-          </div>
-          <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 700, color: '#f8fafc' }}>
-            Jewellery ERP
-          </h2>
-          <p style={{ margin: '8px 0 0', fontSize: '13px', color: '#94a3b8' }}>
-            Validating hardware license and initializing database...
-          </p>
-          <div style={{ ...s.badge, marginTop: '16px' }}>
-            <FiShield size={12} />
-            <span>ENCRYPTED LOCAL STORAGE</span>
-          </div>
+      <main className="relative flex min-h-screen w-full items-center justify-center overflow-y-auto bg-[#f8f8f6] px-4 py-8 font-sans text-slate-900 selection:bg-amber-100 selection:text-amber-900">
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute -left-40 -top-40 h-96 w-96 rounded-full bg-amber-100/40 blur-3xl" />
+          <div className="absolute -bottom-40 -right-40 h-96 w-96 rounded-full bg-orange-100/30 blur-3xl" />
         </div>
-      </div>
+        <div className="relative z-10 w-full max-w-[400px]">
+          <section className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-[0_12px_45px_rgba(15,23,42,0.07)]">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-amber-100 text-amber-600 shadow-sm">
+              <FiAward className="h-7 w-7" />
+            </div>
+            <h2 className="text-xl font-bold tracking-tight text-slate-900">Jewellery ERP</h2>
+            <p className="mt-2 text-xs text-slate-500">Validating hardware license and initializing database...</p>
+            <div className="mt-4 flex justify-center">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-semibold text-slate-600">
+                <FiShield className="h-3 w-3 text-emerald-600" />
+                <span>ENCRYPTED LOCAL STORAGE</span>
+              </span>
+            </div>
+          </section>
+        </div>
+      </main>
     )
   }
 

@@ -60,6 +60,8 @@ import { registerManufacturingIpc } from './ipc/manufacturing.ipc'
 import { registerRepairIpc } from './ipc/repair.ipc'
 import { registerSchemeIpc } from './ipc/scheme.ipc'
 import { registerConsignmentIpc } from './ipc/consignment.ipc'
+import { registerUpdaterIpc } from './ipc/updater.ipc'
+import { updaterService } from './services/updater.service'
 
 // Only these URL schemes may be handed to the OS browser. Blocks file:// and
 // custom-scheme links that could otherwise be launched via window.open.
@@ -202,14 +204,22 @@ app.whenReady().then(() => {
   registerRepairIpc()
   registerSchemeIpc()
   registerConsignmentIpc()
+  registerUpdaterIpc()
 
   createWindow()
+
+  // Start background auto-update checks with 10s initial delay (every 6 hours)
+  updaterService.startPeriodicChecks()
 
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the
     // dock icon is clicked and there are no other windows open.
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
+})
+
+app.on('before-quit', () => {
+  updaterService.stopPeriodicChecks()
 })
 
 // Quit when all windows are closed, except on macOS. There, it's common

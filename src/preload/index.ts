@@ -2750,6 +2750,53 @@ const api = {
     listItems: (filter?: any): Promise<any[]> => ipcRenderer.invoke('consignment:list-items', filter),
     getByBarcode: (barcode: string): Promise<any> => ipcRenderer.invoke('consignment:get-by-barcode', barcode),
     getDashboard: (): Promise<any> => ipcRenderer.invoke('consignment:get-dashboard')
+  },
+
+  updater: {
+    getCurrentVersion: (): Promise<string> => ipcRenderer.invoke('updater:get-current-version'),
+    getState: (): Promise<any> => ipcRenderer.invoke('updater:get-state'),
+    checkForUpdates: (): Promise<{ success: boolean; message?: string }> =>
+      ipcRenderer.invoke('updater:check-for-updates'),
+    downloadUpdate: (): Promise<{ success: boolean; message?: string }> =>
+      ipcRenderer.invoke('updater:download-update'),
+    installUpdate: (): Promise<{ success: boolean; message?: string }> =>
+      ipcRenderer.invoke('updater:install-update'),
+    dismissUpdate: (): Promise<void> => ipcRenderer.invoke('updater:dismiss-update'),
+    onStatusChange: (callback: (state: any) => void): (() => void) => {
+      const listener = (_event: any, state: any): void => callback(state)
+      ipcRenderer.on('updater:status-changed', listener)
+      return () => {
+        ipcRenderer.removeListener('updater:status-changed', listener)
+      }
+    },
+    onUpdateAvailable: (callback: (info: any) => void): (() => void) => {
+      const listener = (_event: any, info: any): void => callback(info)
+      ipcRenderer.on('updater:available', listener)
+      return () => {
+        ipcRenderer.removeListener('updater:available', listener)
+      }
+    },
+    onDownloadProgress: (callback: (progress: any) => void): (() => void) => {
+      const listener = (_event: any, progress: any): void => callback(progress)
+      ipcRenderer.on('updater:progress', listener)
+      return () => {
+        ipcRenderer.removeListener('updater:progress', listener)
+      }
+    },
+    onUpdateDownloaded: (callback: (info: any) => void): (() => void) => {
+      const listener = (_event: any, info: any): void => callback(info)
+      ipcRenderer.on('updater:downloaded', listener)
+      return () => {
+        ipcRenderer.removeListener('updater:downloaded', listener)
+      }
+    },
+    onUpdateError: (callback: (error: string) => void): (() => void) => {
+      const listener = (_event: any, error: string): void => callback(error)
+      ipcRenderer.on('updater:error', listener)
+      return () => {
+        ipcRenderer.removeListener('updater:error', listener)
+      }
+    }
   }
 }
 

@@ -122,7 +122,7 @@ export class HttpLicenseServerClient implements ILicenseServerClient {
   private serverUrl: string
 
   constructor(serverUrl?: string) {
-    this.serverUrl = serverUrl || process.env.LICENSE_SERVER_URL || 'http://localhost:5000'
+    this.serverUrl = serverUrl || process.env.LICENSE_SERVER_URL || 'https://jewelry-main.onrender.com'
   }
 
   setServerUrl(url: string): void {

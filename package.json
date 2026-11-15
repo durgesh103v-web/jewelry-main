@@ -1,6 +1,6 @@
 {
   "name": "jewellery-erp-desktop",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "An Electron application with React and TypeScript",
   "main": "./out/main/index.js",
   "author": "example.com",
@@ -22,12 +22,12 @@
     "db:seed:demo": "node scripts/runSeed.js",
     "license:generate": "node scripts/generateProductKey.js"
   },
-
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.2",
     "@electron-toolkit/utils": "^4.0.0",
     "better-sqlite3": "^12.11.1",
     "dayjs": "^1.11.21",
+    "electron-updater": "^6.8.11",
     "jsbarcode": "^3.12.3",
     "react-icons": "^5.7.0",
     "uuid": "^14.0.1",
