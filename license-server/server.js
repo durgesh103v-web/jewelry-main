@@ -47,7 +47,7 @@ const defaultOrigins = [
   'https://admin.jewelleryerp.com'
 ]
 const CORS_ORIGINS = process.env.CORS_ORIGINS
-  ? process.env.CORS_ORIGINS.split(',').map((s) => s.trim())
+  ? Array.from(new Set([...process.env.CORS_ORIGINS.split(',').map((s) => s.trim()), ...defaultOrigins]))
   : defaultOrigins
 
 app.use(
@@ -55,10 +55,18 @@ app.use(
     origin: function (origin, callback) {
       // Allow requests with no origin (e.g. mobile apps, curl, Electron desktop client)
       if (!origin) return callback(null, true)
+
+      // Allow if in configured CORS_ORIGINS
       if (CORS_ORIGINS.includes(origin)) {
         return callback(null, true)
       }
-      return callback(new Error(`CORS blocked request from unauthorized origin: ${origin}`))
+
+      // Automatically allow any Vercel domain (*.vercel.app)
+      if (/^https:\/\/([a-zA-Z0-9-]+\.)*vercel\.app$/.test(origin)) {
+        return callback(null, true)
+      }
+
+      return callback(null, false)
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
