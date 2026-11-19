@@ -67,10 +67,8 @@ const LicenseSchema = new mongoose.Schema(
     // For newly generated licenses, this is omitted or populated as empty/masked.
     productKey: {
       type: String,
-      sparse: true,
       trim: true,
-      uppercase: true,
-      index: true
+      uppercase: true
     },
     // Masked representation for safe Admin display (e.g. JERP-PRO-****-****-PL8Q)
     productKeyMasked: {
