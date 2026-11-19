@@ -25,12 +25,15 @@ export class ApiError extends Error {
 export async function apiRequest<T = any>(endpoint: string, options: RequestOptions = {}): Promise<T> {
   const { data, headers = {}, ...customConfig } = options
 
+  const token = typeof window !== 'undefined' ? localStorage.getItem('jewel_admin_token') : null
+
   const config: RequestInit = {
     ...customConfig,
     credentials: 'include', // Include HTTP-only session cookies
     headers: {
       'Content-Type': 'application/json',
       'X-Requested-With': 'XMLHttpRequest', // Anti-CSRF protection
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...headers
     }
   }
@@ -50,6 +53,9 @@ export async function apiRequest<T = any>(endpoint: string, options: RequestOpti
   }
 
   if (!response.ok) {
+    if (response.status === 401 && typeof window !== 'undefined') {
+      localStorage.removeItem('jewel_admin_token')
+    }
     const errorMessage = responseData?.message || `Request failed with status ${response.status}`
     throw new ApiError(errorMessage, response.status, responseData)
   }
@@ -59,16 +65,28 @@ export async function apiRequest<T = any>(endpoint: string, options: RequestOpti
 
 export const adminApi = {
   // Authentication
-  login: (identifier: string, password: string) =>
-    apiRequest<{ success: boolean; admin: any }>('/admin/auth/login', {
+  login: async (identifier: string, password: string) => {
+    const res = await apiRequest<{ success: boolean; admin: any; token?: string }>('/admin/auth/login', {
       method: 'POST',
       data: { identifier, password }
-    }),
+    })
+    if (res.token && typeof window !== 'undefined') {
+      localStorage.setItem('jewel_admin_token', res.token)
+    }
+    return res
+  },
 
-  logout: () =>
-    apiRequest<{ success: boolean }>('/admin/auth/logout', {
-      method: 'POST'
-    }),
+  logout: async () => {
+    try {
+      await apiRequest<{ success: boolean }>('/admin/auth/logout', {
+        method: 'POST'
+      })
+    } finally {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('jewel_admin_token')
+      }
+    }
+  },
 
   getMe: () =>
     apiRequest<{ success: boolean; admin: any }>('/admin/auth/me', {

@@ -1,5 +1,34 @@
 const rateLimit = require('express-rate-limit')
+const crypto = require('crypto')
 const { AdminUser } = require('../models/AdminUser')
+
+function generateAdminToken(admin) {
+  const payload = {
+    adminId: admin._id ? admin._id.toString() : String(admin),
+    username: admin.username || '',
+    role: admin.role || 'SUPER_ADMIN',
+    exp: Date.now() + 7 * 24 * 60 * 60 * 1000 // 7 days validity
+  }
+  const secret = process.env.SESSION_SECRET || 'jewel_sec_sess_99338877_production_grade_secret'
+  const data = Buffer.from(JSON.stringify(payload)).toString('base64url')
+  const sig = crypto.createHmac('sha256', secret).update(data).digest('base64url')
+  return `${data}.${sig}`
+}
+
+function verifyAdminToken(token) {
+  if (!token || typeof token !== 'string' || !token.includes('.')) return null
+  const [data, sig] = token.split('.')
+  const secret = process.env.SESSION_SECRET || 'jewel_sec_sess_99338877_production_grade_secret'
+  const expectedSig = crypto.createHmac('sha256', secret).update(data).digest('base64url')
+  if (sig !== expectedSig) return null
+  try {
+    const payload = JSON.parse(Buffer.from(data, 'base64url').toString('utf8'))
+    if (payload.exp && Date.now() > payload.exp) return null
+    return payload
+  } catch {
+    return null
+  }
+}
 
 /**
  * Strict Rate Limiter for Login Attempts:
@@ -65,7 +94,21 @@ function verifyCsrfHeader(req, res, next) {
  * Immediately invalidates sessions if the administrator account is suspended or locked.
  */
 async function requireSuperAdmin(req, res, next) {
-  if (!req.session || !req.session.adminId) {
+  let adminId = req.session?.adminId
+
+  // Fallback to Bearer token in Authorization header (bypasses cross-site cookie restrictions)
+  if (!adminId) {
+    const authHeader = req.headers['authorization'] || req.headers['x-admin-token']
+    if (authHeader) {
+      const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : String(authHeader).trim()
+      const verified = verifyAdminToken(token)
+      if (verified && verified.adminId) {
+        adminId = verified.adminId
+      }
+    }
+  }
+
+  if (!adminId) {
     return res.status(401).json({
       success: false,
       message: 'Unauthorized: No active Super Admin session.'
@@ -73,9 +116,9 @@ async function requireSuperAdmin(req, res, next) {
   }
 
   try {
-    const admin = await AdminUser.findById(req.session.adminId)
+    const admin = await AdminUser.findById(adminId)
     if (!admin) {
-      req.session.destroy(() => {})
+      if (req.session) req.session.destroy(() => {})
       return res.status(401).json({
         success: false,
         message: 'Unauthorized: Administrator account no longer exists.'
@@ -83,7 +126,7 @@ async function requireSuperAdmin(req, res, next) {
     }
 
     if (admin.status !== 'ACTIVE') {
-      req.session.destroy(() => {})
+      if (req.session) req.session.destroy(() => {})
       return res.status(403).json({
         success: false,
         message: 'Administrator account has been suspended or locked. Session terminated.'
@@ -170,5 +213,7 @@ module.exports = {
   verifyCredentialsLimiter,
   syncLimiter,
   verifyCsrfHeader,
-  requireSuperAdmin
+  requireSuperAdmin,
+  generateAdminToken,
+  verifyAdminToken
 }

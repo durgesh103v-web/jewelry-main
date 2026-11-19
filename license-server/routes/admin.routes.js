@@ -17,7 +17,7 @@ const {
 } = require('../services/credential.service')
 const { logAudit } = require('../services/audit.service')
 const { generateOnboardingPdf } = require('../services/pdf.service')
-const { loginLimiter, adminActionLimiter, verifyCsrfHeader, requireSuperAdmin } = require('../middleware/adminAuth')
+const { loginLimiter, adminActionLimiter, verifyCsrfHeader, requireSuperAdmin, generateAdminToken } = require('../middleware/adminAuth')
 
 // Enforce CSRF protection on all state-mutating Admin routes
 router.use(verifyCsrfHeader)
@@ -115,6 +115,8 @@ router.post('/auth/login', loginLimiter, async (req, res) => {
     req.session.adminUsername = admin.username
     req.session.role = admin.role
 
+    const token = generateAdminToken(admin)
+
     await logAudit({
       adminId: admin._id,
       adminUsername: admin.username,
@@ -129,6 +131,7 @@ router.post('/auth/login', loginLimiter, async (req, res) => {
     return res.json({
       success: true,
       message: 'Super Admin authenticated successfully.',
+      token,
       admin: admin.toJSON()
     })
   } catch (err) {
